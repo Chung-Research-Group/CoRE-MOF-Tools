@@ -1,5 +1,5 @@
 from PACMANCharge import pmcharge
-import os, glob
+import os, glob, shutil
 import pandas as pd
 
 
@@ -23,7 +23,7 @@ class run:
                     digits=10,
                     atom_type=True,
                     neutral=True,
-                    keep_connect=True
+                    keep_connect=False
                 )
                 
                 pbe, bandgap = pmcharge.Energy(cif_file=mof)
@@ -33,7 +33,7 @@ class run:
                     'pbe': pbe,
                     'bandgap': bandgap
                 })
-
+                shutil.move(mof.replace(".cif","_pacman.cif"), os.path.join(self.output,mof.split("/")[-1].replace(".cif","_pacman.cif")))
             except Exception as e:
                 print(f"Failed to process {name}: {e}")
 

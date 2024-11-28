@@ -1,8 +1,8 @@
 import os, glob
 import pandas as pd
-from .cp_app.descriptors import cv_features
-from .cp_app.featurizer import featurize_structure
-from .cp_app.predictions import predict_Cv_ensemble_structure_multitemperatures
+from cp_app.descriptors import cv_features
+from cp_app.featurizer import featurize_structure
+from cp_app.predictions import predict_Cv_ensemble_structure_multitemperatures
 
 
 class run:
@@ -40,7 +40,7 @@ class run:
         featurize_structure(cif_file, verbos=False, saveto=os.path.join(save_folder, f"{name}_features.csv"))
         current_path = os.getcwd()
         predict_Cv_ensemble_structure_multitemperatures(
-            path_to_models=current_path+"/features/ML/cp_app/ensemble_models_smallML_120_100",
+            path_to_models=current_path+"/cp_app/ensemble_models_smallML_120_100",
             structure_name=name + ".cif",
             features_file=os.path.join(save_folder, f"{name}_features.csv"), 
             FEATURES=cv_features,
