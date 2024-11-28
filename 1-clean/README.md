@@ -12,7 +12,8 @@
 -  keep ion for charge balance
   <img src="/figs/clean.png" alt="Schematic for clean" width="600" height="300">
 
-## Usage                  
+## Usage                       
+                                                                      
 ```
 from preprocess import run
 run(input_folder="./example/origin/", output_folder="./example/out_preprocess/")

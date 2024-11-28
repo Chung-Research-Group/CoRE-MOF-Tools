@@ -1,0 +1,1 @@
+./example/zeo//ALIDIL_FSR_pd.txt    3.11329 2.74705  3.11329

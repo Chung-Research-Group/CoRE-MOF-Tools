@@ -1,4 +1,4 @@
-from .mof_collection import MofCollection
+from mof_collection import MofCollection
 import warnings
 
 def run(input_folder,output_folder,num_batches=1):

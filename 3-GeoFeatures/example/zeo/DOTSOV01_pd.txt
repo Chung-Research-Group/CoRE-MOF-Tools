@@ -1,0 +1,1 @@
+./example/zeo//DOTSOV01_pd.txt    13.26301 6.69712  13.26301

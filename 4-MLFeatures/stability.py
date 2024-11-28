@@ -92,17 +92,17 @@ class run:
     def process(self):
         current_path = os.getcwd()
         dependencies = {'precision':precision,'recall':recall,'f1':f1}
-        solvent_model = keras.models.load_model(current_path+'/features/ML/models/final_model_flag_few_epochs.h5', custom_objects=dependencies)
-        thermal_model = keras.models.load_model(current_path+'/features/ML/models/final_model_T_few_epochs.h5', custom_objects=dependencies)
-        with open(current_path+'/features/ML/models/solvent_scaler.pkl', 'rb') as f:
+        solvent_model = keras.models.load_model(current_path+'/models/final_model_flag_few_epochs.h5', custom_objects=dependencies)
+        thermal_model = keras.models.load_model(current_path+'/models/final_model_T_few_epochs.h5', custom_objects=dependencies)
+        with open(current_path+'/models/solvent_scaler.pkl', 'rb') as f:
             solvent_scaler = pkl.load(f)
-        with open(current_path+'/features/ML/models/thermal_x_scaler.pkl', 'rb') as f:
+        with open(current_path+'/models/thermal_x_scaler.pkl', 'rb') as f:
             thermal_x_scaler = pkl.load(f)
-        with open(current_path+'/features/ML/models/thermal_y_scaler.pkl', 'rb') as f:
+        with open(current_path+'/models/thermal_y_scaler.pkl', 'rb') as f:
             thermal_y_scaler = pkl.load(f)
-        with open(current_path+'/features/ML/models/water_model.pkl', 'rb') as f:
+        with open(current_path+'/models/water_model.pkl', 'rb') as f:
             water_model = cloudpickle.load(f)
-        with open(current_path+'/features/ML/models/water_scaler.pkl', 'rb') as f:
+        with open(current_path+'/models/water_scaler.pkl', 'rb') as f:
             water_scaler = pkl.load(f)
 
         os.makedirs(self.output, exist_ok=True)

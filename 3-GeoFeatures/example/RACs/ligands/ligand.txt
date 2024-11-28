@@ -1,0 +1,4 @@
+ALIDIL_FSR, Anchors list: {3}, SBU connectlist: {3}
+ALIDIL_FSR, Anchors list: {2}, SBU connectlist: {2}
+ALIDIL_FSR, Anchors list: {1}, SBU connectlist: {1}
+ALIDIL_FSR, Anchors list: {0}, SBU connectlist: {0}

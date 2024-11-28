@@ -1,4 +1,5 @@
-## Usage
+## Usage                               
+                                    
 ```
 import stability, pacman, cp
 

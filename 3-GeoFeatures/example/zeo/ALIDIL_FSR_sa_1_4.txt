@@ -1,0 +1,3 @@
+@ ./example/zeo//ALIDIL_FSR_sa_1_4.txt Unitcell_volume: 1432.51   Density: 1.73934   ASA_A^2: 0 ASA_m^2/cm^3: 0 ASA_m^2/g: 0 NASA_A^2: 12.5375 NASA_m^2/cm^3: 87.5211 NASA_m^2/g: 50.3185
+Number_of_channels: 0 Channel_surface_area_A^2: 
+Number_of_pockets: 8 Pocket_surface_area_A^2: 3.27413  2.95662  0.0348672  0.0744065  2.98993  0.0631089  0.071679  3.07272  

@@ -1,0 +1,129 @@
+{
+   "cif_okay": true,
+   "problematic": false,
+   "has_oms": true,
+   "metal_sites": [
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": true,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 2.3684757858670005e-15
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 1.8947806286936005e-15
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 1.4210854715202005e-15
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 9.473903143468002e-16
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 9.473903143468002e-16
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 3.315866100213801e-15
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 9.473903143468002e-16
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 0.0
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 9.473903143468002e-16
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 9.473903143468002e-16
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 4.736951571734001e-16
+      },
+      {
+         "metal": "Cu",
+         "type": "Cu_5L_over_open_plane",
+         "is_open": true,
+         "unique": false,
+         "problematic": false,
+         "number_of_linkers": 5,
+         "t_factor": 2.842170943040401e-15
+      }
+   ],
+   "oms_density": 0.0002208479227961639,
+   "checksum": "705298b327afe2818831663f18610bd1ca1a3f34e3be19549cd0747837be8e89",
+   "metal_species": [
+      "Cu"
+   ],
+   "non_metal_species": [
+      "H",
+      "O",
+      "C"
+   ],
+   "name": "DOTSOV01",
+   "uc_volume": 4528.002742063236,
+   "density": 0.8872892084135969,
+   "date_created": "2024-11-29T01:37:37.253408"
+}

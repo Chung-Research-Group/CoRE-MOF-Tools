@@ -1,7 +1,7 @@
 import os, csv, glob, warnings
 from ase.io import read
 from pymatgen.io.ase import AseAtomsAdaptor
-from .mofchecker import MOFChecker
+from mofchecker import MOFChecker
 import warnings
 warnings.filterwarnings('ignore')
 
