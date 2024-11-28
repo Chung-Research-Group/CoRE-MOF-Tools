@@ -1,0 +1,71 @@
+UseGPUReduction no
+Useflag yes
+
+NumberOfInitializationCycles 10000000
+NumberOfEquilibrationCycles  0
+NumberOfProductionCycles     10000000
+
+UseMaxStep  no
+MaxStepPerCycle 20
+
+RestartFile no
+RandomSeed  0
+
+BMCBiasingMethod LJ_Biasing
+
+NumberOfTrialPositions 10
+NumberOfTrialOrientations 10
+NumberOfBlocks 1
+AdsorbateAllocateSpace 10240
+NumberOfSimulations 1
+SingleSimulation yes
+
+DifferentFrameworks yes
+InputFileType cif
+FrameworkName # S
+UnitCells # UC
+Temperature #T
+Pressure   # P
+
+OverlapCriteria 1e5
+CutOffVDW # cutoff
+#CutOffCoulomb 14.0
+
+ChargeMethod                          Ewald
+EwaldPrecision                        1e-6
+UseChargesFromCIFFile                 yes
+
+UseDNNforHostGuest no
+
+Component 0 MoleculeName H2O
+            MolFraction         0.0082
+            IdealGasRosenbluthWeight 1.0
+            FugacityCoefficient      1.0
+            TranslationProbability   1.0
+            RotationProbability      1.0
+            ReinsertionProbability   1.0
+            SwapProbability          1.0
+            IdentityChangeProbability 1.0
+            CreateNumberOfMolecules 0  
+
+Component 1 MoleculeName CO2
+            MolFraction       0.09918
+            IdealGasRosenbluthWeight 1.0
+            FugacityCoefficient      1.0
+            TranslationProbability   1.0
+            RotationProbability      1.0
+            ReinsertionProbability   1.0
+            SwapProbability          1.0
+            IdentityChangeProbability 1.0
+            CreateNumberOfMolecules 0
+
+Component 2 MoleculeName N2
+            MolFraction         0.89262
+            IdealGasRosenbluthWeight 1.0
+            FugacityCoefficient      1.0
+            TranslationProbability   1.0
+            RotationProbability      1.0
+            ReinsertionProbability   1.0
+            SwapProbability          1.0
+            IdentityChangeProbability 1.0
+            CreateNumberOfMolecules 0                  

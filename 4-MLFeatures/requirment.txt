@@ -1,0 +1,13 @@
+ase
+joblib
+matminer
+networkx
+numpy
+openpyxl
+pandas
+pymatgen
+scikit-learn==1.3.0
+scipy
+tqdm
+PACMAN-charge
+molSimplify

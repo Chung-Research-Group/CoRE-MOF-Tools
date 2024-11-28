@@ -1,0 +1,6 @@
+pymatgen
+ase
+backports.cached-property
+cached-property
+element-coder
+structuregraph-helpers

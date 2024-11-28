@@ -1,0 +1,4 @@
+pymatgen
+ase
+scipy
+six

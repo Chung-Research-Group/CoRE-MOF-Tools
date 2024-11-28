@@ -1,0 +1,9 @@
+matminer
+networkx
+numpy
+openpyxl
+pandas
+pymatgen
+scipy
+molSimplify
+juliacall

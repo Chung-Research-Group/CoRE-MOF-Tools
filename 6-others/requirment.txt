@@ -1,0 +1,10 @@
+ase
+networkx
+numpy
+openpyxl
+pandas
+pymatgen
+scipy
+tqdm
+molSimplify
+juliacall
