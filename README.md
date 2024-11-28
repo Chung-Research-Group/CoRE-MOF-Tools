@@ -11,7 +11,7 @@ This repository includes tools developed to collect, curate, and classify Comput
 ### Script Introduction & Reference                                 
 0-database: This folder includes script to check publication dates and publisher infomration from a DOI input.
 
-1-clean:
+- 1-clean:
   -   preprocess.py: a pre-processing script to split mutil CIFs and making them primitive and P1. 
   -   clean.py: a solvent removal script to remove free and bound solvents <sup>[1](),[2](https://doi.org/10.1021/acs.jced.9b00835),[3](https://doi.org/10.1021/cm502594j)</sup>. 
 - 2-NCRCheck:
