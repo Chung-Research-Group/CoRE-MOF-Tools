@@ -1,12 +1,11 @@
-### The Script and Tools of CoRE MOF 2024 Project
-
 <img src="./figs/logo.png" alt="coremof2024" width="500"> 
 
 #### :sparkles: Download CoRE MOF Database in [here](https://zenodo.org/uploads/14216942)                                
 #### :bar_chart: Download All data and figures in [here](https://zenodo.org/uploads/14227627)                                
                                                                                                                  
+This repository includes tools developed to collect, curate, and classify Computation-Ready, Experimental MOF database. 
 
-[Web-app-Beta](https://core-mof-2024-app-pzyfgryb3ac9gjxpuhpvapp.streamlit.app/) for Database and Tutoria.                     
+[Web-app-Beta](https://core-mof-2024-app-pzyfgryb3ac9gjxpuhpvapp.streamlit.app/) for Database and Tutorial.                     
 :construction_worker: We will make a **new** Web APP.
 
 ### Script Introduction & Reference                                 
