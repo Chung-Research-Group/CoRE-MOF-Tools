@@ -15,7 +15,7 @@
 ## Usage                  
 ```
 from preprocess import run
-run(input_folder="./example/origin/", output_folder="./example/out_pre/")
+run(input_folder="./example/origin/", output_folder="./example/out_preprocess/")
 
 from clean import run
 run(input_folder="./out_pre/", output_folder="./out_clean/")
