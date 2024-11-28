@@ -11,3 +11,12 @@
 -  remove Coordinating solvent
 -  keep ion for charge balance
   <img src="/figs/clean.png" alt="Schematic for clean" width="600" height="300">
+
+## Usage                  
+```
+from preprocess import run
+run(input_folder="./test/", output_folder="./out_test/")
+
+from clean import run
+run(input_folder="./out_test/", output_folder="./clean_test/")
+```
