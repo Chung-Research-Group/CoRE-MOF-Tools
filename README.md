@@ -9,10 +9,11 @@ This repository includes tools developed to collect, curate, and classify Comput
 :construction_worker: We will make a **new** Web APP.
 
 ### Script Introduction & Reference                                 
-- 0-database: This folder includes script to check publication dates and publisher infomration from a DOI input.
-- 1-clean:              
-  -   pre-process (split mutil CIFs, make primitive and P1)
-  -   remove solvent<sup>[1](),[2](https://doi.org/10.1021/acs.jced.9b00835),[3](https://doi.org/10.1021/cm502594j)</sup>
+0-database: This folder includes script to check publication dates and publisher infomration from a DOI input.
+
+1-clean:
+  -   preprocess.py: a pre-processing script to split mutil CIFs and making them primitive and P1. 
+  -   clean.py: a solvent removal script to remove free and bound solvents <sup>[1](),[2](https://doi.org/10.1021/acs.jced.9b00835),[3](https://doi.org/10.1021/cm502594j)</sup>. 
 - 2-NCRCheck:
   -   check MOFs by Chen and Manz<sup>[1](https://doi.org/10.1039/D0RA02498H),[2](https://doi.org/10.1039/C9RA07327B)</sup>
   -   [mofchecker](https://github.com/kjappelbaum/mofchecker)
