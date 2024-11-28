@@ -18,5 +18,5 @@ from preprocess import run
 run(input_folder="./example/origin/", output_folder="./example/out_preprocess/")
 
 from clean import run
-run(input_folder="./out_preprocess/", output_folder="./out_clean/")
+run(input_folder="./example/out_preprocess/", output_folder="./example/out_clean/")
 ```
