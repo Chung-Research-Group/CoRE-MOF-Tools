@@ -9,7 +9,7 @@ This repository includes tools developed to collect, curate, and classify Comput
 :construction_worker: We will make a **new** Web APP.
 
 ### Script Introduction & Reference                                 
-- 0-database: check publication time and journal
+- 0-database: This folder includes script to check publication dates and publisher infomration from a DOI input.
 - 1-clean:              
   -   pre-process (split mutil CIFs, make primitive and P1)
   -   remove solvent<sup>[1](),[2](https://doi.org/10.1021/acs.jced.9b00835),[3](https://doi.org/10.1021/cm502594j)</sup>
