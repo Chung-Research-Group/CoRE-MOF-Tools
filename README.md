@@ -32,12 +32,6 @@ This repository includes tools developed to collect, curate, and classify Comput
   - [RASPA3](https://github.com/iRASPA/RASPA3)<sup>[1](https://doi.org/10.1063/5.0226249)<sup>
   - [gRASPA](https://github.com/snurr-group/gRASPA)<sup>[1](https://doi.org/10.1021/acs.jctc.4c01058)<sup>                                                                                      
 - 6-others:
-  - ~~[oxidation states prediction](https://github.com/kjappelbaum/oximachinerunner)<sup>[1](https://doi.org/10.1038/s41557-021-00717-y)<sup>~~
-  - ~~[decompose structure](https://zenodo.org/records/7091192)<sup>[1](https://doi.org/10.1016/j.matt.2023.03.009)<sup>~~
   - match structures      
-- Process (Temperature Swing Adsorption) simuation Develop by [Sunghyun Yoon](https://orcid.org/0000-0003-4151-1459) (윤성현) in [MTAP Lab](https://sites.google.com/view/mtap-lab)                                                                                    
-***Please note that many of the tools mentioned here make use of other packages, such as pymatgen, ASE, and others.***
-                                                              
                                                 
-Although we have provided references for each software or toolkit, please also consider citing the CoRE MOF 2024 paper.                              
 If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an **[Issues](https://github.com/mtap-research/CoRE-MOF-Tools/issues/new/choose)** and submit it. We will address it as soon as possible.
