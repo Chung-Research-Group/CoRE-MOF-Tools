@@ -40,4 +40,4 @@
                                                               
                                                 
 Although we have provided references for each software or toolkit, please also consider citing the CoRE MOF 2024 paper.                              
-If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an ``` Issues ``` and submit it. We will address it as soon as possible.
+If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an ``` [Issues](https://github.com/mtap-research/CoRE-MOF-Tools/issues/new/choose) ``` and submit it. We will address it as soon as possible.
