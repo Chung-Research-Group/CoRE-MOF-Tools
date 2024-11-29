@@ -32,6 +32,7 @@ This repository includes tools developed to collect, curate, and classify Comput
   - [RASPA3](https://github.com/iRASPA/RASPA3)<sup>[1](https://doi.org/10.1063/5.0226249)<sup>
   - [gRASPA](https://github.com/snurr-group/gRASPA)<sup>[1](https://doi.org/10.1021/acs.jctc.4c01058)<sup>                                                                                      
 - 6-others:
-  - match structures      
+  - match structures
+  - DDEC files to CIF
                                                 
 If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an **[Issues](https://github.com/mtap-research/CoRE-MOF-Tools/issues/new/choose)** and submit it. We will address it as soon as possible.
