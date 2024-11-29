@@ -1,0 +1,4 @@
+﻿CriticalTemperature,CriticalPressure,AcentricFactor,Type,atom,posx,posy,posz,Bonds0,Bonds1
+126.192,3395800,0.0372,rigid,N_n2,0,0,0.55,0,1
+,,,,N_com,0,0,0,1,2
+,,,,N_n2,0,0,-0.55,,

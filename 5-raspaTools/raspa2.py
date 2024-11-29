@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import logging
 import pandas as pd
-from GZTOOLs.utils import unit_cell, predict_charge, load_lists
+from utils import unit_cell, predict_charge, load_lists
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 

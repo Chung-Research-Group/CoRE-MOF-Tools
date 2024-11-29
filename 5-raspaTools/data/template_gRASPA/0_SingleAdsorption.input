@@ -28,8 +28,8 @@ Temperature #T
 Pressure   # P
 
 OverlapCriteria 1e5
-CutOffVDW # cutoff
-#CutOffCoulomb 14.0
+CutOffVDW 14
+CutOffCoulomb 14
 
 ChargeMethod                          Ewald
 EwaldPrecision                        1e-6

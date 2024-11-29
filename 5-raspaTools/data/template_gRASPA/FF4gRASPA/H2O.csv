@@ -1,0 +1,5 @@
+﻿CriticalTemperature,CriticalPressure,AcentricFactor,Type,atom,posx,posy,posz,Bonds0,Bonds1
+647.14,22064000,0.344,rigid,O_h2o,-7.147,-0.096,1.844,0,1
+,,,,H_h2o,-7.599,-0.678,1.233,0,2
+,,,,H_h2o,-6.635,-0.684,2.4,0,3
+,,,,M_h2o,-7.14,-0.246,1.837,,
