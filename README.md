@@ -38,25 +38,25 @@ This repository includes tools developed to collect, curate, and classify Comput
 
 ### Authors
                                                    
-**Guobin Zhao**, Pusan National University
-**Logan M. Brabson**, Georgia Institute of Technology
-**Saumil Chheda**, University of Minnesota, University of California (Berkeley)
-**Ju Huang**, University of Toronto
-**Haewon Kim**, Pusan National University
-**Kunhuan Liu**, Northwestern University
-**Kenji Mochida**, Northwestern University
-**Thang D. Pham**, Northwestern University
-**Prerna**, University of Minnesota 
-**Gianmarco G. Terrones**, Massachusetts Institute of Technology
-**Sunghyun Yoon**, Pusan National University
-**Lionel Zoubritzky**, Université PSL (Paris Sciences & Lettres), Air Liquide (Campus Innovation Paris)
-**François-Xavier Coudert**, Université PSL (Paris Sciences & Lettres)
-**Maciej Haranczyk**, IMDEA Materials Institute
-**Heather J. Kulik**, Massachusetts Institute of Technology
-**Seyed Mohamad Moosavi**, University of Toronto
-**David S. Sholl**, Oak Ridge National Laboratory
-**J. Ilja Siepmann**, University of Minnesota 
-**Randall Q. Snurr**, Northwestern University
-**Yongchul G. Chung**, Pusan National University                                                                         
+**Guobin Zhao**, Pusan National University                                               
+**Logan M. Brabson**, Georgia Institute of Technology                                          
+**Saumil Chheda**, University of Minnesota, University of California (Berkeley)                       
+**Ju Huang**, University of Toronto                                  
+**Haewon Kim**, Pusan National University                           
+**Kunhuan Liu**, Northwestern University                      
+**Kenji Mochida**, Northwestern University                         
+**Thang D. Pham**, Northwestern University                                  
+**Prerna**, University of Minnesota                         
+**Gianmarco G. Terrones**, Massachusetts Institute of Technology                            
+**Sunghyun Yoon**, Pusan National University                                      
+**Lionel Zoubritzky**, Université PSL (Paris Sciences & Lettres), Air Liquide (Campus Innovation Paris)        
+**François-Xavier Coudert**, Université PSL (Paris Sciences & Lettres)                             
+**Maciej Haranczyk**, IMDEA Materials Institute                                 
+**Heather J. Kulik**, Massachusetts Institute of Technology                        
+**Seyed Mohamad Moosavi**, University of Toronto                                   
+**David S. Sholl**, Oak Ridge National Laboratory                           
+**J. Ilja Siepmann**, University of Minnesota                         
+**Randall Q. Snurr**, Northwestern University                               
+**Yongchul G. Chung**, Pusan National University                                                                                                  
     
 If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an **[Issues](https://github.com/mtap-research/CoRE-MOF-Tools/issues/new/choose)** and submit it. We will address it as soon as possible.
