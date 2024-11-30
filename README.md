@@ -29,7 +29,6 @@ This repository includes tools developed to collect, curate, and classify Comput
   - [thermal and activation](https://pubs.acs.org/doi/suppl/10.1021/jacs.1c07217/suppl_file/ja1c07217_si_002.zip)<sup>[1](https://doi.org/10.1021/jacs.1c07217)<sup>
 - 5-raspaTools: generate / submit input files, check jobs and get output files for
   - [RASPA2](https://github.com/iRASPA/RASPA2)<sup>[1](https://doi.org/10.1080/08927022.2015.1010082),[2](https://doi.org/10.1080/08927022.2013.819102),[3](https://doi.org/10.1080/08927022.2013.819102),[4](https://doi.org/10.1002/adts.201900135)
-  - [RASPA3](https://github.com/iRASPA/RASPA3)<sup>[1](https://doi.org/10.1063/5.0226249)<sup>
   - [gRASPA](https://github.com/snurr-group/gRASPA)<sup>[1](https://doi.org/10.1021/acs.jctc.4c01058)<sup>                                                                                      
 - 6-others:
   - match structures

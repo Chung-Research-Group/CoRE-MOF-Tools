@@ -27,8 +27,4 @@ Result(task="Widom",use_pacman=True, s_list="s_list",t_list="t_list",out_folder=
 ```
 check gRASPA folder
 ```
-
-## RASPA3
-
-It will be done soon.                            
-
+                        
