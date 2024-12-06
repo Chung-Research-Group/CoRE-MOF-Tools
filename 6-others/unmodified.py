@@ -16,11 +16,11 @@ def check_same(cif_1, cif_2):
     result = checker.fit(stru_1, stru_2)
     return result
 
-data_name = pd.read_csv("../../../../dataset/dataset-v5/unrelaxed/CoREMOF2024DB_public/CR/ASR_data.csv")["refcode"].iloc[5:8]
+data_name = pd.read_csv("ASR_data.csv")["refcode"].iloc[:]
 
 for refcode in data_name:
     name = refcode.replace("_ASR_pacman", "")
-    cif_1 = f"../../../../dataset/dataset-v5/unrelaxed/dataset-ASR/{refcode}.cif"
-    cif_2 = f"../../../../dataset/ori_no_read/old/SI/{name}.cif"
+    cif_1 = f"dataset-ASR/{refcode}.cif"
+    cif_2 = f"ori/{name}.cif"
     result = check_same(cif_1, cif_2)
     print(name,result)
