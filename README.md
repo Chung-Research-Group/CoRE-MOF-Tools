@@ -17,7 +17,7 @@ This repository includes tools developed to collect, curate, and classify Comput
 - 2-NCRCheck:
   -   check MOFs by Chen and Manz<sup>[1](https://doi.org/10.1039/D0RA02498H),[2](https://doi.org/10.1039/C9RA07327B)</sup>
   -   [mofchecker](https://github.com/kjappelbaum/mofchecker)
-- 3-GeoFeatures:
+- 3-MOFFeatures:
   - pore properties by [Zeo++](https://github.com/richardjgowers/zeoplusplus)<sup>[1](https://doi.org/10.1016/j.micromeso.2011.08.020),[2](https://doi.org/10.1021/ci200386x)</sup>, [open metal site](https://github.com/emmhald/open_metal_detector)<sup>[1](https://doi.org/10.1021/acs.jced.9b00835)<sup>
   - topology by [CrystalNets](https://github.com/coudertlab/CrystalNets.jl)<sup>[1](https://doi.org/10.21468/SciPostChem.1.2.005)<sup>
   - [revised autocorrelation functions](https://github.com/hjkgrp/molSimplify)<sup>[1](https://doi.org/10.1002/jcc.24437),[2](https://doi.org/10.1021/acs.iecr.8b04015)<sup>

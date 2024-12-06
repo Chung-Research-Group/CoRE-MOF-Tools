@@ -1,3 +1,5 @@
+Note that the probes used for the Zeo++ computed features we provide in the CoRE MOF 2024 database tables are 1.655 angstroms (for ASA computations, 0 for the others).The probes for zeopp.py are the ones that are used in the training of the stability model in 4-MLFeatures.
+
 ## Usage                                
                                    
 ```
