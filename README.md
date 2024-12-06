@@ -5,12 +5,13 @@
                                                                                                                  
 This repository includes tools developed to collect, curate, and classify Computation-Ready, Experimental MOF database. 
 
-[Web-app-Beta](https://core-mof-2024-app-pzyfgryb3ac9gjxpuhpvapp.streamlit.app/) for Database and Tutorial.                     
-:construction_worker: We will make a **new** Web APP.
+**Developed by:** [Guobin Zhao](https://github.com/sxm13)                                                                                                                                  
 
-### Script Introduction & Reference                                 
-0-database: This folder includes script to check publication dates and publisher infomration from a DOI input.
+[Web Application (alpha version)](https://core-mof-2024-app-pzyfgryb3ac9gjxpuhpvapp.streamlit.app/) for Database and Tutorial.                     
+:construction_worker: A new web application will be coming soon!
 
+### Direcotry organization                                
+- 0-database: This folder includes script to check publication dates and publisher infomration from a DOI input.
 - 1-clean:
   -   preprocess.py: a pre-processing script to split mutil CIFs and making them primitive and P1. 
   -   clean.py: a solvent removal script to remove free and bound solvents <sup>[1](),[2](https://doi.org/10.1021/acs.jced.9b00835),[3](https://doi.org/10.1021/cm502594j)</sup>. 
@@ -33,29 +34,5 @@ This repository includes tools developed to collect, curate, and classify Comput
 - 6-others:
   - match structures
   - DDEC files to CIF
-
-
-### Authors
-                                                   
-**Guobin Zhao**, Pusan National University                                               
-**Logan M. Brabson**, Georgia Institute of Technology                                          
-**Saumil Chheda**, University of Minnesota, University of California (Berkeley)                       
-**Ju Huang**, University of Toronto                                  
-**Haewon Kim**, Pusan National University                           
-**Kunhuan Liu**, Northwestern University                      
-**Kenji Mochida**, Northwestern University                         
-**Thang D. Pham**, Northwestern University                                  
-**Prerna**, University of Minnesota                         
-**Gianmarco G. Terrones**, Massachusetts Institute of Technology                            
-**Sunghyun Yoon**, Pusan National University                                      
-**Lionel Zoubritzky**, Université PSL (Paris Sciences & Lettres), Air Liquide (Campus Innovation Paris)        
-**François-Xavier Coudert**, Université PSL (Paris Sciences & Lettres)                             
-**Maciej Haranczyk**, IMDEA Materials Institute                                 
-**Heather J. Kulik**, Massachusetts Institute of Technology                        
-**Seyed Mohamad Moosavi**, University of Toronto                                   
-**David S. Sholl**, Oak Ridge National Laboratory                           
-**J. Ilja Siepmann**, University of Minnesota                         
-**Randall Q. Snurr**, Northwestern University                               
-**Yongchul G. Chung**, Pusan National University                                                                                                  
     
 If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an **[Issues](https://github.com/mtap-research/CoRE-MOF-Tools/issues/new/choose)** and submit it. We will address it as soon as possible.
