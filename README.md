@@ -5,10 +5,12 @@
                                                                                                                  
 This repository includes tools developed to collect, curate, and classify Computation-Ready, Experimental MOF database. 
 
+**Developed by:** [Guobin Zhao](https://github.com/sxm13)                                                                                                                                  
+
 [Web Application (alpha version)](https://core-mof-2024-app-pzyfgryb3ac9gjxpuhpvapp.streamlit.app/) for Database and Tutorial.                     
 :construction_worker: A new web application will be coming soon!
 
-### Script Introduction & Reference                                 
+### Direcotry organization                                
 - 0-database: This folder includes script to check publication dates and publisher infomration from a DOI input.
 - 1-clean:
   -   preprocess.py: a pre-processing script to split mutil CIFs and making them primitive and P1. 
@@ -32,8 +34,5 @@ This repository includes tools developed to collect, curate, and classify Comput
 - 6-others:
   - match structures
   - DDEC files to CIF
-
-
-**Developed by:** [Guobin Zhao](https://github.com/sxm13)                                                                                                                                  
     
 If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an **[Issues](https://github.com/mtap-research/CoRE-MOF-Tools/issues/new/choose)** and submit it. We will address it as soon as possible.
