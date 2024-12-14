@@ -7,7 +7,7 @@ This repository includes tools developed to collect, curate, and classify Comput
 
 **Developed by:** [Guobin Zhao](https://github.com/sxm13)                                                                                                                                  
 
-[Web Application (alpha version)](https://core-mof-2024-app-pzyfgryb3ac9gjxpuhpvapp.streamlit.app/) for Database and Tutorial.                     
+[Web Application (alpha version)](https://c931-164-125-221-129.ngrok-free.app) for Database and Tutorial.                     
 :construction_worker: A new web application will be coming soon!
 
 ### Direcotry organization                                
