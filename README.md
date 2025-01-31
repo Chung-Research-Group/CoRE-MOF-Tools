@@ -34,5 +34,9 @@ This repository includes tools developed to collect, curate, and classify Comput
 - 6-others:
   - match structures
   - DDEC files to CIF
+
+- 7-data4API:
+  - name list of CSD CIFs, ZIP for CIFs from SI
+  - information for each CR / NCR structure
     
 If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an **[Issues](https://github.com/mtap-research/CoRE-MOF-Tools/issues/new/choose)** and submit it. We will address it as soon as possible.
