@@ -7,7 +7,7 @@ This repository includes tools developed to collect, curate, and classify Comput
 
 **Developed by:** [Guobin Zhao](https://github.com/sxm13)                                                                                                                                  
 
-[Web Application (alpha version)](https://c931-164-125-221-129.ngrok-free.app) for Database and Tutorial.                     
+[Web Application (alpha version)](http://www.coremof.org) for Database and Tutorial.                     
 :construction_worker: A new web application will be coming soon!
 
 ### Direcotry organization                                
@@ -38,5 +38,6 @@ This repository includes tools developed to collect, curate, and classify Comput
 - 7-data4API:
   - name list of CSD CIFs, ZIP for CIFs from SI
   - information for each CR / NCR structure
+  - jupyter notebook examples of usage of CoRE MOF API
     
 If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an **[Issues](https://github.com/mtap-research/CoRE-MOF-Tools/issues/new/choose)** and submit it. We will address it as soon as possible.
