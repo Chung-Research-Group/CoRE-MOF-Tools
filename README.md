@@ -34,6 +34,7 @@ This repository includes tools developed to collect, curate, and classify Comput
 - 6-others:
   - match structures
   - DDEC files to CIF
+  - check that the ASR and FSR are exactly the same structure
 
 - 7-data4API:
   - name list of CSD CIFs, ZIP for CIFs from SI
