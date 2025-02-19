@@ -11,16 +11,26 @@ ATR = {'H':0.38, 'Li':0.86, 'Be':0.53, 'B':1.01, 'C':0.88, 'N':0.86, 'O':0.89, '
       'Ru':1.58, 'Rh':1.63, 'Pd':1.68, 'Ag':1.56, 'Cd':1.56, 'In':1.53, 'Sn':1.64, 'Sb':1.64, 'Te':1.65, 'I':1.58, 'Cs':1.85, 'Ba':1.52,
       'La':1.91, 'Ce':1.98, 'Pr':1.75, 'Nd':1.92, 'Sm':1.89, 'Eu':1.83, 'Gd':1.79, 'Tb':1.82, 'Dy':1.79, 'Ho':1.63, 'Er':1.80, 'Tm':1.84,
       'Yb':1.80, 'Lu':1.86, 'Hf':1.73, 'W':1.33, 'Re':1.29, 'Ir':1.50, 'Pt':1.66, 'Au':1.68, 'Hg':1.88, 'Pb':1.72, 'Bi':1.72, 'Th':1.97,
-      'U':1.76, 'Np':1.73, 'Pu':1.71}
-Coef_A = {'H':-0.6093, 'B':-2.2011, 'C':-1.2685, 'N':-1.2680, 'O':-1.0525, 'Cl':-0.7621, 'Br':-0.8003}
-Coef_C = {'H':0.5927, 'B':3.4380, 'C':1.8855, 'N':1.8401, 'O':1.5189, 'Cl':1.3723, 'Br':1.5272}
+      'U':1.76, 'Np':1.73, 'Pu':1.71} # atom typing radii from https://doi.org/10.1039/C9RA07327B
+
+# log10(BO) = Coef_A × d + Coef_C
+# BO is the bond order, d is the distance between two atoms
+Coef_A = {'H':-0.6093, 'B':-2.2011, 'C':-1.2685, 'N':-1.2680, 'O':-1.0525, 'Cl':-0.7621, 'Br':-0.8003} # A is the slope
+Coef_C = {'H':0.5927, 'B':3.4380, 'C':1.8855, 'N':1.8401, 'O':1.5189, 'Cl':1.3723, 'Br':1.5272} # C is a constant
 BO_list = ['H','B','C','N','O','Cl','Br']
 metals = ['Li','Be','Na','Mg','Al','K','Ca','Sc','Ti','V','Cr','Mn','Fe','Co','Ni','Cu','Zn','Ga','Rb','Sr','Y','Zr','Nb','Mo','Ru','Rh',
          'Pd','Ag','Cd','In','Sn','Cs','Ba','La','Ce','Pr','Nd','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu','Hf','W','Re','Re','Ir',
          'Pt','Au','Hg','Pb','Bi','Th','U','Np','Pu'] # do not include metalloids
 
 class run():
+    """
+    NCR classification was performed on the input structure's by Chen_Manz and mofchecker 1.0 respectively.
+    """
     def __init__(self, input_folder, output_folder):
+        """
+        input_folder: the folder contain crystal structures
+        output_folder: the folder used for saving check results
+        """
         self.input_folder = input_folder
         self.input_files = glob.glob(os.path.join(input_folder, "*.cif"))
         self.output = output_folder
@@ -47,6 +57,15 @@ class run():
                     mof_checker_writer.writerow([mof_name, mof_issues])
 
     def Chen_Manz(self,cif_file):
+        """
+        1. An empirical bond order analysis (see Chen and Manz paper) was performed to identify under and overbonded carbon atoms. Coefficients for this analysis were only determined for carbon atoms
+        bonded to H, B, C, N, O, Cl, and Br. Any carbon atom bonded to an atom not included in this list was excluded from the under/overbonded carbon analysis. Thus, there are likely structures
+        that pass the screening but do contain under or overbonded carbon atoms in reality.
+        
+        2. Nine (9) structures from the new set contain elements that are not included in Chen and Manz's list of effective atomic radii (Ar, Os, Ta, Kr, Tc, Ne, Xe, Lr). These structures are listed in
+        the 'Unscreened Structures' tab of the Excel file and were not screened. These structures can easily be screened by including atomic radii for these elements, but note that the radii used in this study
+        are not the same as the covalent radii commonly found in the literature (see paper).
+        """
         try:
             name = cif_file.split(".cif")[0].split("/")[-1]
             atoms = read(cif_file)
@@ -102,6 +121,9 @@ class run():
         
 
     def mof_checker(self,mof):
+        """
+        Reference: https://doi.org/10.26434/chemrxiv-2025-bh607
+        """
         name = mof.split("/")[-1].replace(".cif", "")
         results = {}
         try:
