@@ -1,14 +1,12 @@
 <img src="./figs/logo.png" alt="coremof2024" width="500"> 
 
-#### :sparkles: Download CoRE MOF Database in [here](https://zenodo.org/uploads/14216942)                                
-#### :bar_chart: Download All data and figures in [here](https://zenodo.org/uploads/14227627)                                
+#### :sparkles: Download CoRE MOF Database in [here](https://zenodo.org/uploads/14216942)                                                             
                                                                                                                  
 This repository includes tools developed to collect, curate, and classify Computation-Ready, Experimental MOF database. 
 
 **Developed by:** [Guobin Zhao](https://github.com/sxm13)                                                                                                                                  
 
-[Web Application (alpha version)](http://www.coremof.org) for Database and Tutorial.                     
-:construction_worker: A new web application will be coming soon!
+[Web Application](https://mof-db.pusan.ac.kr/) for Database and Tutorial.                     
 
 ### Direcotry organization                                
 - 0-database: This folder includes script to check publication dates and publisher infomration from a DOI input.
