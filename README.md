@@ -33,6 +33,8 @@ This repository includes tools developed to collect, curate, and classify Comput
   - match structures
   - DDEC files to CIF
   - check that the ASR and FSR are exactly the same structure
+  - convert data from excel to AIF (adsorption information file)
+  - read data from .aif file
 
 - 7-data4API:
   - name list of CSD CIFs, ZIP for CIFs from SI
