@@ -1,10 +1,9 @@
 <img src="./figs/logo.png" alt="coremof2024" width="500"> 
 
-#### :sparkles: Download CoRE MOF Database in [here](https://zenodo.org/uploads/14216942)                                                             
+#### :sparkles: Download CoRE MOF Database in [here](https://zenodo.org/records/14510695)                                                             
                                                                                                                  
 This repository includes tools developed to collect, curate, and classify Computation-Ready, Experimental MOF database. 
 
-**Developed by:** [Guobin Zhao](https://github.com/sxm13)                                                                                                                                  
 
 [Web Application](https://mof-db.pusan.ac.kr/) for Database and Tutorial.                     
 
@@ -42,3 +41,5 @@ This repository includes tools developed to collect, curate, and classify Comput
   - jupyter notebook examples of usage of CoRE MOF API
     
 If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an **[Issues](https://github.com/mtap-research/CoRE-MOF-Tools/issues/new/choose)** and submit it. We will address it as soon as possible.
+
+**Developed by:** [Guobin Zhao](https://github.com/sxm13)                                                                                                                                  
