@@ -1,5 +1,6 @@
 <img src="./figs/logo.png" alt="coremof2024" width="500"> 
-
+[![Static Badge](https://img.shields.io/badge/chemrxiv-2024.nvmnr.v2-brightgreen?style=flat)](https://doi.org/10.26434/chemrxiv-2024-nvmnr-v2)                
+                                       
 #### :sparkles: Download CoRE MOF Database in [here](https://zenodo.org/records/14510695)                                                             
                                                                                                                  
 This repository includes tools developed to collect, curate, and classify Computation-Ready, Experimental MOF database. 
