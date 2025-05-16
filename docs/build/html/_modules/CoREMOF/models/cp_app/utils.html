@@ -1,0 +1,226 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoREMOF.models.cp_app.utils &mdash; CoREMOF_tools 0.0.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../../_static/documentation_options.js?v=f7cdbf68"></script>
+      <script src="../../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../../index.html" class="icon icon-home">
+            CoREMOF_tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">CoREMOF_tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">CoREMOF.models.cp_app.utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for CoREMOF.models.cp_app.utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;The utilities for ``cp_app``.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+
+<span class="n">Kb</span><span class="o">=</span><span class="mf">1.3806504e-23</span>  <span class="c1"># Boltzmann constant in [J/K]</span>
+<span class="n">Ph</span><span class="o">=</span><span class="mf">1.98644586e-23</span> <span class="c1"># Planck constant in [J.cm]</span>
+<span class="n">Avo</span><span class="o">=</span><span class="mf">6.02214076e23</span> <span class="c1"># 1/mol</span>
+<span class="n">J2cal</span><span class="o">=</span><span class="mf">0.2390</span>
+<span class="n">th2cm</span><span class="o">=</span><span class="mf">33.35641</span>
+
+<div class="viewcode-block" id="read_vibspectrum">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.read_vibspectrum">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_vibspectrum</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="n">frequencies</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="k">as</span> <span class="n">fi</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fi</span><span class="o">.</span><span class="n">readlines</span><span class="p">()[</span><span class="mi">3</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+            <span class="n">frequencies</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">2</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">frequencies</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="read_frequencies_from_mesh">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.read_frequencies_from_mesh">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_frequencies_from_mesh</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="n">mesh</span><span class="o">=</span><span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+    <span class="n">w</span><span class="o">=</span><span class="p">[</span><span class="n">fr</span><span class="p">[</span><span class="s2">&quot;frequency&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">fr</span> <span class="ow">in</span> <span class="n">mesh</span><span class="p">[</span><span class="s2">&quot;phonon&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;band&quot;</span><span class="p">]]</span>
+    <span class="n">w</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">w</span><span class="p">)</span><span class="o">*</span><span class="n">th2cm</span>
+    <span class="k">return</span> <span class="n">w</span></div>
+
+
+<div class="viewcode-block" id="cv_from_pdos">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.cv_from_pdos">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cv_from_pdos</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">pdos</span><span class="p">):</span>
+    <span class="n">pdos</span><span class="o">=</span><span class="n">pdos</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">pdos</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">Ph</span> <span class="o">*</span> <span class="n">pdos</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">Kb</span> <span class="o">/</span> <span class="n">temp</span>
+    <span class="n">expVal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">cv_contributions</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">pdos</span><span class="p">[:,</span><span class="mi">1</span><span class="p">:],</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span> <span class="n">Avo</span><span class="o">*</span><span class="n">Kb</span> <span class="o">*</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">expVal</span> <span class="o">/</span> <span class="p">(</span><span class="n">expVal</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">cv_contributions</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="cv_from_dos">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.cv_from_dos">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cv_from_dos</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">totaldos</span><span class="p">):</span>
+    <span class="n">dos</span><span class="o">=</span><span class="n">totaldos</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">totaldos</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">Ph</span> <span class="o">*</span> <span class="n">dos</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">Kb</span> <span class="o">/</span> <span class="n">temp</span>
+    <span class="n">expVal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">cv_contributions</span><span class="o">=</span> <span class="n">dos</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span> <span class="n">Avo</span><span class="o">*</span><span class="n">Kb</span> <span class="o">*</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">expVal</span> <span class="o">/</span> <span class="p">(</span><span class="n">expVal</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">cv_contributions</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="cv_from_frequencies">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.cv_from_frequencies">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cv_from_frequencies</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">freqs</span><span class="p">):</span>
+    <span class="n">freqs</span><span class="o">=</span><span class="n">freqs</span><span class="p">[</span><span class="n">freqs</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">Ph</span> <span class="o">*</span> <span class="n">freqs</span> <span class="o">/</span> <span class="n">Kb</span> <span class="o">/</span> <span class="n">temp</span>
+    <span class="n">expVal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">cv_contributions</span><span class="o">=</span><span class="n">Avo</span><span class="o">*</span><span class="n">Kb</span> <span class="o">*</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">expVal</span> <span class="o">/</span> <span class="p">(</span><span class="n">expVal</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">cv_contributions</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="read_totaldos">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.read_totaldos">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_totaldos</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">skiprows</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">*=</span><span class="n">th2cm</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="read_pdos">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.read_pdos">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_pdos</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span><span class="n">skiprows</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">data</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">*=</span><span class="n">th2cm</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="add_type_label">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.add_type_label">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">add_type_label</span><span class="p">(</span><span class="n">mydict</span><span class="p">,</span><span class="n">atomtype</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">label</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">atomtype</span> <span class="ow">in</span> <span class="n">mydict</span><span class="p">:</span>
+        <span class="n">mydict</span><span class="p">[</span><span class="n">atomtype</span><span class="p">][</span><span class="n">name</span><span class="p">]</span><span class="o">=</span><span class="n">label</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mydict</span><span class="p">[</span><span class="n">atomtype</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="n">label</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">mydict</span></div>
+
+
+<div class="viewcode-block" id="read_atoms_from_mesh">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.read_atoms_from_mesh">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_atoms_from_mesh</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
+    <span class="n">mesh</span><span class="o">=</span><span class="n">yaml</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+    <span class="n">w</span><span class="o">=</span><span class="p">[</span><span class="n">fr</span><span class="p">[</span><span class="s2">&quot;frequency&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">fr</span> <span class="ow">in</span> <span class="n">mesh</span><span class="p">[</span><span class="s2">&quot;phonon&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;band&quot;</span><span class="p">]]</span>
+    <span class="n">w</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">w</span><span class="p">)</span><span class="o">*</span><span class="n">th2cm</span>
+    <span class="k">return</span> <span class="n">w</span></div>
+
+
+<div class="viewcode-block" id="cv_from_pdos_site">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.cv_from_pdos_site">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cv_from_pdos_site</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span> <span class="n">pdos</span><span class="p">,</span><span class="n">site</span><span class="p">):</span>
+    <span class="n">pdos</span><span class="o">=</span><span class="n">pdos</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">pdos</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">)]</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">Ph</span> <span class="o">*</span> <span class="n">pdos</span><span class="p">[:,</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="n">Kb</span> <span class="o">/</span> <span class="n">temp</span>
+    <span class="n">expVal</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">cv_contributions</span><span class="o">=</span> <span class="n">pdos</span><span class="p">[:,</span><span class="n">site</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span> <span class="n">Avo</span><span class="o">*</span><span class="n">Kb</span> <span class="o">*</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">expVal</span> <span class="o">/</span> <span class="p">(</span><span class="n">expVal</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">cv_contributions</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="select_structures">
+<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.utils.select_structures">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">select_structures</span><span class="p">(</span><span class="n">nsamples</span><span class="p">,</span><span class="n">df</span><span class="p">):</span>
+    <span class="n">selected</span><span class="o">=</span><span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">structure_type</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;structure_type&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+        <span class="n">selected</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;structure_type&quot;</span><span class="p">]</span><span class="o">==</span><span class="n">structure_type</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">selected</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;structure_type&quot;</span><span class="p">]</span><span class="o">==</span><span class="n">structure_type</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="o">&gt;</span><span class="n">nsamples</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="k">for</span> <span class="n">atom_type</span> <span class="ow">in</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;atom_types&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+        <span class="n">selected</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;atom_types&quot;</span><span class="p">]</span><span class="o">==</span><span class="n">atom_type</span><span class="p">]</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="o">&gt;</span><span class="n">nsamples</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">break</span>
+        
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected</span><span class="p">)</span><span class="o">&lt;</span> <span class="n">nsamples</span><span class="p">:</span>
+        <span class="n">selected</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        
+    <span class="k">return</span> <span class="n">selected</span></div>
+
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, MTAP @ Pusan National University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

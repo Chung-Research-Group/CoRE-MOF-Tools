@@ -1,0 +1,404 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoREMOF.calculation.mof_features &mdash; CoREMOF_tools 0.0.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=f7cdbf68"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CoREMOF_tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CoREMOF_tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">CoREMOF.calculation.mof_features</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for CoREMOF.calculation.mof_features</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Analysis topology, open metal sites, revised autocorrelation and so on.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.symmetry.analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpacegroupAnalyzer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.io.ase</span><span class="w"> </span><span class="kn">import</span> <span class="n">AseAtomsAdaptor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ase.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">read</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.core.structure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Structure</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="nn">juliacall</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.calculation.mof_collection</span><span class="w"> </span><span class="kn">import</span> <span class="n">MofCollection</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">remove</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">molSimplify.Informatics.MOF.MOF_descriptors</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_MOF_descriptors</span>
+
+
+<div class="viewcode-block" id="SpaceGroup">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_features.SpaceGroup">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">SpaceGroup</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis space group of structure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">       </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always nan</span>
+<span class="sd">            -   hall symbol by [&quot;hall_symbol&quot;]</span>
+<span class="sd">            -   space group number by [&quot;space_group_number&quot;]</span>
+<span class="sd">            -   crystal system by [&quot;crystal_system&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+           
+    <span class="n">result_sg</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result_sg</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;nan&quot;</span>
+    <span class="n">atoms</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+    <span class="n">structure_</span> <span class="o">=</span> <span class="n">AseAtomsAdaptor</span><span class="o">.</span><span class="n">get_structure</span><span class="p">(</span><span class="n">atoms</span><span class="p">)</span>
+    <span class="n">result_</span> <span class="o">=</span> <span class="n">SpacegroupAnalyzer</span><span class="p">(</span><span class="n">structure_</span><span class="p">,</span> <span class="n">symprec</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">angle_tolerance</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">hall_symbol</span> <span class="o">=</span> <span class="n">result_</span><span class="o">.</span><span class="n">get_hall</span><span class="p">()</span>
+    <span class="n">space_group_number</span> <span class="o">=</span> <span class="n">result_</span><span class="o">.</span><span class="n">get_space_group_number</span><span class="p">()</span>
+    <span class="n">crystal_system</span> <span class="o">=</span> <span class="n">result_</span><span class="o">.</span><span class="n">get_crystal_system</span><span class="p">()</span>
+    <span class="n">result_sg</span><span class="p">[</span><span class="s2">&quot;hall_symbol&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">hall_symbol</span>
+    <span class="n">result_sg</span><span class="p">[</span><span class="s2">&quot;space_group_number&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">space_group_number</span>
+    <span class="n">result_sg</span><span class="p">[</span><span class="s2">&quot;crystal_system&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">crystal_system</span>
+
+    <span class="k">return</span> <span class="n">result_sg</span></div>
+
+
+<div class="viewcode-block" id="Mass">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_features.Mass">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Mass</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis total mass of structure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">       </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always amu</span>
+<span class="sd">            -   total mass by [&quot;total_mass&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">result_m</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result_m</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;amu&quot;</span>
+    <span class="n">atoms</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+    <span class="n">total_mass</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">get_masses</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="n">result_m</span><span class="p">[</span><span class="s2">&quot;total_mass&quot;</span><span class="p">]</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">total_mass</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result_m</span></div>
+
+
+<div class="viewcode-block" id="Volume">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_features.Volume">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Volume</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis total volume of structure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">       </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always Å^3</span>
+<span class="sd">            -   total volume by [&quot;total_volume&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">result_v</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result_v</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;Å^3&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">cif_file</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="n">atoms</span> <span class="o">=</span> <span class="n">Structure</span><span class="o">.</span><span class="n">from_str</span><span class="p">(</span><span class="n">cif_file</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;cif&quot;</span><span class="p">)</span>
+    <span class="n">total_volume</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">volume</span>
+    <span class="n">result_v</span><span class="p">[</span><span class="s2">&quot;total_volume&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">total_volume</span>
+
+    <span class="k">return</span> <span class="n">result_v</span></div>
+
+
+<div class="viewcode-block" id="n_atom">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_features.n_atom">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">n_atom</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis number of atoms of structure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">       </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always nan</span>
+<span class="sd">            -   number of atoms by [&quot;number_atoms&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">result_na</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result_na</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;nan&quot;</span>
+    <span class="n">atoms</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+    <span class="n">number_atoms</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)</span>
+    <span class="n">result_na</span><span class="p">[</span><span class="s2">&quot;number_atoms&quot;</span><span class="p">]</span><span class="o">=</span><span class="n">number_atoms</span>
+
+    <span class="k">return</span> <span class="n">result_na</span></div>
+
+
+<div class="viewcode-block" id="topology">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_features.topology">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">topology</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">node_type</span><span class="o">=</span><span class="s2">&quot;single&quot;</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis topology of structure by CrystalNets.jl (https://github.com/coudertlab/CrystalNets.jl?tab=readme-ov-file).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">        node_type (str): the clustering algorithm used to group atoms into vertices. single: each already-defined cluster is mapped to a vertex; all: keep points of extension for organic clusters.</span>
+<span class="sd">       </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   dimension by [&quot;dimension&quot;]</span>
+<span class="sd">            -   topology by [&quot;topology&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">package_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;mof_features.py&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;JULIA_DEPOT_PATH&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">package_directory</span>
+
+    <span class="n">juliacall</span><span class="o">.</span><span class="n">Main</span><span class="o">.</span><span class="n">seval</span><span class="p">(</span><span class="s1">&#39;import Pkg; Pkg.add(&quot;CrystalNets&quot;)&#39;</span><span class="p">)</span>
+
+    <span class="n">jl</span> <span class="o">=</span> <span class="n">juliacall</span><span class="o">.</span><span class="n">newmodule</span><span class="p">(</span><span class="s2">&quot;topo&quot;</span><span class="p">)</span>
+    <span class="n">jl</span><span class="o">.</span><span class="n">seval</span><span class="p">(</span><span class="s2">&quot;using CrystalNets&quot;</span><span class="p">)</span>
+
+    <span class="n">options</span> <span class="o">=</span> <span class="n">jl</span><span class="o">.</span><span class="n">CrystalNets</span><span class="o">.</span><span class="n">Options</span><span class="p">(</span><span class="n">structure</span><span class="o">=</span><span class="n">jl</span><span class="o">.</span><span class="n">StructureType</span><span class="o">.</span><span class="n">MOF</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">jl</span><span class="o">.</span><span class="n">determine_topology</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">options</span><span class="p">)</span>
+    <span class="n">result_tp</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result_save</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">node_type</span><span class="o">==</span><span class="s2">&quot;single&quot;</span><span class="p">:</span>
+            <span class="n">result_</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">jl</span><span class="o">.</span><span class="n">Clustering</span><span class="o">.</span><span class="n">SingleNodes</span><span class="p">]</span>
+            <span class="n">result_save</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">node_type</span><span class="o">==</span><span class="s2">&quot;all&quot;</span><span class="p">:</span>
+            <span class="n">result_</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="n">jl</span><span class="o">.</span><span class="n">Clustering</span><span class="o">.</span><span class="n">AllNodes</span><span class="p">]</span>
+            <span class="n">result_save</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_</span><span class="p">)</span>
+
+    <span class="n">result_tp</span><span class="p">[</span><span class="s2">&quot;dimension&quot;</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">result_tp</span><span class="p">[</span><span class="s2">&quot;topology&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="n">result_save</span><span class="p">:</span>
+        
+        <span class="n">result_tp</span><span class="p">[</span><span class="s2">&quot;dimension&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">jl</span><span class="o">.</span><span class="n">ndims</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">genome</span><span class="p">))</span>
+        <span class="n">result_tp</span><span class="p">[</span><span class="s2">&quot;topology&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">info</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">result_tp</span></div>
+
+
+
+<div class="viewcode-block" id="get_oms_file">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_features.get_oms_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_oms_file</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis open metal site of structure from CoRE MOF 2019 (https://github.com/emmhald/open_metal_detector).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">       </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   all types of metal by [&quot;Metal Types&quot;]</span>
+<span class="sd">            -    has OMS or not by [&quot;Has OMS&quot;], -&gt; True or False</span>
+<span class="sd">            -    of type of OMS if has by [&quot;OMS Types&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        
+    <span class="n">a_mof_collection</span> <span class="o">=</span> <span class="n">MofCollection</span><span class="p">(</span><span class="n">path_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">structure</span><span class="p">],</span> 
+                                 <span class="n">analysis_folder</span><span class="o">=</span><span class="s2">&quot;tmp_oms&quot;</span><span class="p">)</span>
+    <span class="n">a_mof_collection</span><span class="o">.</span><span class="n">analyse_mofs</span><span class="p">(</span><span class="n">num_batches</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">oms_result</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="s2">&quot;Metal Types&quot;</span><span class="p">:</span> <span class="n">a_mof_collection</span><span class="o">.</span><span class="n">mof_oms_df</span><span class="p">[</span><span class="s2">&quot;Metal Types&quot;</span><span class="p">][</span><span class="n">structure</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+                    <span class="s2">&quot;Has OMS&quot;</span><span class="p">:</span> <span class="n">a_mof_collection</span><span class="o">.</span><span class="n">mof_oms_df</span><span class="p">[</span><span class="s2">&quot;Has OMS&quot;</span><span class="p">][</span><span class="n">structure</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+                    <span class="s2">&quot;OMS Types&quot;</span><span class="p">:</span> <span class="n">a_mof_collection</span><span class="o">.</span><span class="n">mof_oms_df</span><span class="p">[</span><span class="s2">&quot;OMS Types&quot;</span><span class="p">][</span><span class="n">structure</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]],</span>
+                <span class="p">}</span>
+
+    <span class="n">remove</span><span class="o">.</span><span class="n">remove_dir_with_permissions</span><span class="p">(</span><span class="s2">&quot;tmp_oms&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">oms_result</span></div>
+
+
+
+<div class="viewcode-block" id="get_oms_folder">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_features.get_oms_folder">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_oms_folder</span><span class="p">(</span><span class="n">input_folder</span><span class="p">,</span> <span class="n">n_batch</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis open metal site of folder with structures from CoRE MOF 2019 (https://github.com/emmhald/open_metal_detector).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_folder (str): path to your folder.</span>
+<span class="sd">        n_batch (int): number of batches.</span>
+<span class="sd">       </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   all types of metal of each structure by [structure][&quot;Metal Types&quot;]</span>
+<span class="sd">            -   has OMS or not of each structure by [structure][&quot;Has OMS&quot;], -&gt; True or False</span>
+<span class="sd">            -   type of OMS if has of each structure by [structure][&quot;OMS Types&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mof_collection</span> <span class="o">=</span> <span class="n">MofCollection</span><span class="o">.</span><span class="n">from_folder</span><span class="p">(</span><span class="n">collection_folder</span> <span class="o">=</span> <span class="n">input_folder</span><span class="p">,</span> 
+                                                <span class="n">analysis_folder</span><span class="o">=</span><span class="s2">&quot;tmp_oms&quot;</span><span class="p">)</span>
+    <span class="n">mof_collection</span><span class="o">.</span><span class="n">analyse_mofs</span><span class="p">(</span><span class="n">num_batches</span><span class="o">=</span><span class="n">n_batch</span><span class="p">,</span><span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">oms_result</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">mof_collection</span><span class="o">.</span><span class="n">mof_oms_df</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        
+        <span class="n">oms_result</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                            <span class="s2">&quot;Metal Types&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                            <span class="s2">&quot;Has OMS&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                            <span class="s2">&quot;OMS Types&quot;</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                        <span class="p">}</span>
+
+    <span class="n">remove</span><span class="o">.</span><span class="n">remove_dir_with_permissions</span><span class="p">(</span><span class="s2">&quot;tmp_oms&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">oms_result</span></div>
+
+
+
+<div class="viewcode-block" id="RACs">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_features.RACs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">RACs</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Revised Autocorrelation features (https://github.com/hjkgrp/molSimplify).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_folder (str): path to your folder.</span>
+<span class="sd">        n_batch (int): number of batches.</span>
+<span class="sd">       </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   metal by [&quot;Metal&quot;]</span>
+<span class="sd">            -   linker by [&quot;Linker&quot;]</span>
+<span class="sd">            -   function group by [&quot;Function-group&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">metal_fnames</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;D_mc-I-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-S-2-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;D_mc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-Z-2-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;D_mc-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-I-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-I-2-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;f-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-Z-0-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;f-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-I-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-I-1-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;mc-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-T-2-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;mc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-3-all&#39;</span><span class="p">]</span>
+
+    <span class="n">linker_fnames</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;D_lc-I-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-S-2-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;D_lc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-Z-2-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;D_lc-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-alpha-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-alpha-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-alpha-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-alpha-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-chi-1-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;D_lc-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-I-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-S-2-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-3-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;lc-alpha-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-alpha-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-alpha-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-alpha-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-chi-3-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;f-lig-I-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-I-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-I-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-I-3&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-S-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-S-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-S-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-S-3&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-T-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-T-1&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;f-lig-T-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-T-3&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-3&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-chi-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-chi-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-chi-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-chi-3&#39;</span><span class="p">]</span>
+
+    <span class="n">fg_fnames</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;D_func-I-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-S-1-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;D_func-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-Z-0-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;D_func-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-alpha-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-alpha-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-alpha-2-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;D_func-alpha-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-I-0-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;func-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-T-0-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;func-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-alpha-0-all&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;func-alpha-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-alpha-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-alpha-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-chi-3-all&#39;</span><span class="p">]</span>
+
+    <span class="n">result_rac</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result_rac</span><span class="p">[</span><span class="s2">&quot;Metal&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result_rac</span><span class="p">[</span><span class="s2">&quot;Linker&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result_rac</span><span class="p">[</span><span class="s2">&quot;Function-group&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;tmp_rac&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    
+    <span class="n">full_names</span><span class="p">,</span> <span class="n">full_descriptors</span> <span class="o">=</span> <span class="n">get_MOF_descriptors</span><span class="p">(</span>
+                                                        <span class="n">structure</span><span class="p">,</span>
+                                                        <span class="mi">3</span><span class="p">,</span>
+                                                        <span class="n">path</span><span class="o">=</span><span class="s1">&#39;tmp_rac&#39;</span><span class="p">,</span>
+                                                        <span class="n">xyzpath</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;tmp_rac/</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">.xyz&#39;</span><span class="p">,</span>
+                                                        <span class="n">max_num_atoms</span><span class="o">=</span><span class="mi">6000</span>
+                                                        <span class="p">)</span>
+                                                        
+    <span class="n">descriptor_data</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">full_names</span><span class="p">,</span> <span class="n">full_descriptors</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">metal</span> <span class="ow">in</span> <span class="n">metal_fnames</span><span class="p">:</span>
+        <span class="n">result_rac</span><span class="p">[</span><span class="s2">&quot;Metal&quot;</span><span class="p">][</span><span class="n">metal</span><span class="p">]</span> <span class="o">=</span>  <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">descriptor_data</span><span class="p">[</span><span class="n">metal</span><span class="p">]),</span> <span class="mi">4</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">linker</span> <span class="ow">in</span> <span class="n">linker_fnames</span><span class="p">:</span>
+        <span class="n">result_rac</span><span class="p">[</span><span class="s2">&quot;Linker&quot;</span><span class="p">][</span><span class="n">linker</span><span class="p">]</span> <span class="o">=</span>  <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">descriptor_data</span><span class="p">[</span><span class="n">linker</span><span class="p">]),</span> <span class="mi">4</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">fg</span> <span class="ow">in</span> <span class="n">fg_fnames</span><span class="p">:</span>
+        <span class="n">result_rac</span><span class="p">[</span><span class="s2">&quot;Function-group&quot;</span><span class="p">][</span><span class="n">fg</span><span class="p">]</span> <span class="o">=</span>  <span class="nb">round</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">descriptor_data</span><span class="p">[</span><span class="n">fg</span><span class="p">]),</span> <span class="mi">4</span><span class="p">)</span>
+
+    <span class="n">remove</span><span class="o">.</span><span class="n">remove_dir_with_permissions</span><span class="p">(</span><span class="s2">&quot;tmp_rac&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result_rac</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, MTAP @ Pusan National University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

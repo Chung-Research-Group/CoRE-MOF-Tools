@@ -1,3 +1,0 @@
-@ ./example/zeo//DOTSOV01_pov_1_86.txt Unitcell_volume: 4528   Density: 0.887291   POAV_A^3: 2754.84 POAV_Volume_fraction: 0.6084 POAV_cm^3/g: 0.685683 PONAV_A^3: 177.045 PONAV_Volume_fraction: 0.0391 PONAV_cm^3/g: 0.0440667
-PROBE_OCCUPIABLE_VOL_CALC: filename| density(g/cm3)| probe rad| N points| probe ctr A fract| probe ctr NA fract| A fract| NA fract| narrow fract |ovlp fract.
-PROBE_OCCUPIABLE___RESULT: ./example/zeo//DOTSOV01_pov_1_86.txt	0.887291	1.86	10000	0.2553	0.0024	0.6084	0.0391	0.071	0.2815

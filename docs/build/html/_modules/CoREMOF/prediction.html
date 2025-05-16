@@ -1,0 +1,619 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoREMOF.prediction &mdash; CoREMOF_tools 0.0.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f7cdbf68"></script>
+      <script src="../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CoREMOF_tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CoREMOF_tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">CoREMOF.prediction</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for CoREMOF.prediction</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;ML-predicted features.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">PACMANCharge</span><span class="w"> </span><span class="kn">import</span> <span class="n">pmcharge</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">warnings</span><span class="o">,</span><span class="w"> </span><span class="nn">shutil</span><span class="o">,</span><span class="w"> </span><span class="nn">joblib</span><span class="o">,</span><span class="w"> </span><span class="nn">requests</span><span class="o">,</span><span class="w"> </span><span class="nn">cloudpickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">keras</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">keras.backend</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">K</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pkl</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.calculation</span><span class="w"> </span><span class="kn">import</span> <span class="n">Zeopp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.calculation.mof_features</span><span class="w"> </span><span class="kn">import</span> <span class="n">RACs</span><span class="p">,</span> <span class="n">Volume</span>
+
+<span class="n">package_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;prediction.py&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="get_files_from_github">
+<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.get_files_from_github">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_files_from_github</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;query files from github due to limit of uploading size by PyPi.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        repo (str): github repository.</span>
+<span class="sd">        path (str): the path of models.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   response of downloading.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        
+    <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://api.github.com/repos/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/contents/</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;Accept&#39;</span><span class="p">:</span> <span class="s1">&#39;application/vnd.github.v3+json&#39;</span><span class="p">}</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+    <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span> 
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="download_file">
+<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.download_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">download_file</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">save_path</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;download models from github due to limit of uploading size by PyPi.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        url (str): link of downloading file.</span>
+<span class="sd">        save_path (str): the path to save files.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>    
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">save_path</span><span class="p">):</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">save_path</span><span class="p">),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> 
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">save_path</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+            <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Downloaded </span><span class="si">{</span><span class="n">save_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+
+
+<span class="n">repo</span> <span class="o">=</span> <span class="s1">&#39;sxm13/CoREMOF_tools&#39;</span>
+<span class="n">github_paths</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;models/cp_app/ensemble_models_smallML_120_100/300&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;models/cp_app/ensemble_models_smallML_120_100/350&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;models/cp_app/ensemble_models_smallML_120_100/400&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;models/stability&#39;</span>
+<span class="p">]</span>
+<span class="n">local_directories</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;/models/cp_app/ensemble_models_smallML_120_100/300&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;/models/cp_app/ensemble_models_smallML_120_100/350&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;/models/cp_app/ensemble_models_smallML_120_100/400&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;/models/stability&#39;</span>
+<span class="p">]</span>
+
+<span class="n">path_map</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">github_paths</span><span class="p">,</span> <span class="n">local_directories</span><span class="p">))</span>
+
+<span class="k">for</span> <span class="n">github_path</span> <span class="ow">in</span> <span class="n">github_paths</span><span class="p">:</span>
+    <span class="n">files_info</span> <span class="o">=</span> <span class="n">get_files_from_github</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">github_path</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">file_info</span> <span class="ow">in</span> <span class="n">files_info</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">file_info</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;file&#39;</span><span class="p">:</span>
+            <span class="n">raw_url</span> <span class="o">=</span> <span class="n">file_info</span><span class="p">[</span><span class="s1">&#39;download_url&#39;</span><span class="p">]</span>
+            <span class="n">local_path_suffix</span> <span class="o">=</span> <span class="n">path_map</span><span class="p">[</span><span class="n">github_path</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+            <span class="n">local_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">package_directory</span><span class="p">,</span> <span class="n">local_path_suffix</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_info</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]))</span>
+            <span class="n">download_file</span><span class="p">(</span><span class="n">raw_url</span><span class="p">,</span> <span class="n">local_file_path</span><span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.models.cp_app.descriptors</span><span class="w"> </span><span class="kn">import</span> <span class="n">cv_features</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.models.cp_app.featurizer</span><span class="w"> </span><span class="kn">import</span> <span class="n">featurize_structure</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.models.cp_app.predictions</span><span class="w"> </span><span class="kn">import</span> <span class="n">predict_Cv_ensemble_structure_multitemperatures</span>
+
+
+<div class="viewcode-block" id="pacman">
+<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.pacman">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pacman</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">output_folder</span><span class="o">=</span><span class="s2">&quot;result_pacman&quot;</span><span class="p">,</span> <span class="n">charge_type</span><span class="o">=</span><span class="s2">&quot;DDEC6&quot;</span><span class="p">,</span> <span class="n">digits</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">atom_type</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keep_connect</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;predict partial atom charge by PACMAN Charge: https://doi.org/10.1021/acs.jctc.4c00434.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your structure.</span>
+<span class="sd">        output_folder (str): the path to save CIF with predicted charges.</span>
+<span class="sd">        charge_type (str): models of DDEC6, Bader, CM5 or REPEAT.</span>
+<span class="sd">        digits (int): number of decimal places to print for partial atomic charges. ML models were trained on a 6-digit dataset.</span>
+<span class="sd">        atom_type (bool): keep the same partial atomic charge for the same atom types (based on the similarity of partial atomic charges up to 2 decimal places).</span>
+<span class="sd">        neutral (bool): keep the net charge is zero. We use &quot;mean&quot; method to neuralize the system where the excess charges are equally distributed across all atoms.</span>
+<span class="sd">        keep_connect (bool): retain the atomic and connection information (such as _atom_site_adp_type, bond) for the structure.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary &amp; cif:</span>
+<span class="sd">            -   predicted PBE energy and bandgap of your structure.</span>
+<span class="sd">            -   CIF with predicted charges.</span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+        
+    <span class="n">results_eb</span> <span class="o">=</span> <span class="p">{}</span>
+    
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_folder</span><span class="p">):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">results_eb</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">pmcharge</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+            <span class="n">cif_file</span><span class="o">=</span><span class="n">structure</span><span class="p">,</span>
+            <span class="n">charge_type</span><span class="o">=</span><span class="n">charge_type</span><span class="p">,</span>
+            <span class="n">digits</span><span class="o">=</span><span class="n">digits</span><span class="p">,</span>
+            <span class="n">atom_type</span><span class="o">=</span><span class="n">atom_type</span><span class="p">,</span>
+            <span class="n">neutral</span><span class="o">=</span><span class="n">neutral</span><span class="p">,</span>
+            <span class="n">keep_connect</span><span class="o">=</span><span class="n">keep_connect</span>
+        <span class="p">)</span>
+        
+        <span class="n">pbe</span><span class="p">,</span> <span class="n">bandgap</span> <span class="o">=</span> <span class="n">pmcharge</span><span class="o">.</span><span class="n">Energy</span><span class="p">(</span><span class="n">cif_file</span><span class="o">=</span><span class="n">structure</span><span class="p">)</span>
+        
+        <span class="n">results_eb</span><span class="p">[</span><span class="s2">&quot;PBE Energy&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pbe</span>
+        <span class="n">results_eb</span><span class="p">[</span><span class="s2">&quot;Bandgap&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">bandgap</span>
+      
+        <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">structure</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span><span class="s2">&quot;_pacman.cif&quot;</span><span class="p">),</span>
+                    <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span>
+                                <span class="n">structure</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span><span class="s2">&quot;_pacman.cif&quot;</span><span class="p">)))</span>
+
+        <span class="k">return</span> <span class="n">results_eb</span>
+    
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="cp">
+<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.cp">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cp</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="p">[</span><span class="mi">300</span><span class="p">,</span> <span class="mi">350</span><span class="p">,</span> <span class="mi">400</span><span class="p">]):</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;predict heat capacity by GBR models at different temperatures: https://doi.org/10.1038/s41563-022-01374-3.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your structure.</span>
+<span class="sd">        T (list): the temperatures of your system.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always &quot;J/g/K&quot;, &quot;J/mol/K&quot;.</span>
+<span class="sd">            -   predicted heat capacity of your structure.    </span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+        
+    <span class="n">name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">featurize_structure</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">verbos</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">saveto</span><span class="o">=</span><span class="s2">&quot;features.csv&quot;</span><span class="p">)</span>
+    
+    <span class="n">predict_Cv_ensemble_structure_multitemperatures</span><span class="p">(</span>
+                                                    <span class="n">path_to_models</span><span class="o">=</span><span class="n">package_directory</span><span class="o">+</span><span class="s2">&quot;models/cp_app/ensemble_models_smallML_120_100&quot;</span><span class="p">,</span>
+                                                    <span class="n">structure_name</span><span class="o">=</span><span class="n">name</span> <span class="o">+</span> <span class="s2">&quot;.cif&quot;</span><span class="p">,</span>
+                                                    <span class="n">features_file</span><span class="o">=</span><span class="s2">&quot;features.csv&quot;</span><span class="p">,</span> 
+                                                    <span class="n">FEATURES</span><span class="o">=</span><span class="n">cv_features</span><span class="p">,</span>
+                                                    <span class="n">temperatures</span><span class="o">=</span><span class="n">T</span><span class="p">,</span>
+                                                    <span class="n">save_to</span><span class="o">=</span><span class="s2">&quot;cp.csv&quot;</span>
+                                                    <span class="p">)</span>
+    <span class="n">result_</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;cp.csv&quot;</span><span class="p">)</span>
+    <span class="n">result_cp</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result_cp</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;J/g/K&quot;</span><span class="p">,</span> <span class="s2">&quot;J/mol/K&quot;</span>
+
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">T</span><span class="p">:</span>
+        <span class="n">result_cp</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">result_</span><span class="p">[</span><span class="s2">&quot;Cv_gravimetric_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_mean&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                        <span class="n">result_</span><span class="p">[</span><span class="s2">&quot;Cv_molar_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_mean&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+        <span class="n">result_cp</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_std&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">result_</span><span class="p">[</span><span class="s2">&quot;Cv_gravimetric_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_std&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                        <span class="n">result_</span><span class="p">[</span><span class="s2">&quot;Cv_molar_&quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">t</span><span class="p">)</span><span class="o">+</span><span class="s2">&quot;_std&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;features.csv&quot;</span><span class="p">)</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s2">&quot;cp.csv&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">result_cp</span></div>
+
+
+
+<div class="viewcode-block" id="precision">
+<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.precision">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">precision</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the precision metric for binary classification.</span>
+
+<span class="sd">    Precision is defined as the ratio of correctly predicted positive observations </span>
+<span class="sd">    to the total predicted positive observations. It is given by:</span>
+
+<span class="sd">        precision = TP / (TP + FP)</span>
+
+<span class="sd">    where:</span>
+<span class="sd">        - TP (True Positives)  : Correctly predicted positive cases</span>
+<span class="sd">        - FP (False Positives)  : Incorrectly predicted positive cases</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y_true (tensor): Ground truth binary labels (0 or 1).</span>
+<span class="sd">        y_pred (tensor): Predicted probabilities or binary predictions.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tensor: Precision score (between 0 and 1).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        
+    <span class="n">true_positives</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">y_true</span> <span class="o">*</span> <span class="n">y_pred</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+    <span class="n">predicted_positives</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+    <span class="n">precision</span> <span class="o">=</span> <span class="n">true_positives</span> <span class="o">/</span> <span class="p">(</span><span class="n">predicted_positives</span> <span class="o">+</span> <span class="n">K</span><span class="o">.</span><span class="n">epsilon</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">precision</span></div>
+
+
+
+<div class="viewcode-block" id="recall">
+<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.recall">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">recall</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the recall metric for binary classification.</span>
+
+<span class="sd">    Recall (also known as Sensitivity or True Positive Rate) measures the proportion </span>
+<span class="sd">    of actual positives that are correctly identified by the model. It is given by:</span>
+
+<span class="sd">        recall = TP / (TP + FN)</span>
+
+<span class="sd">    where:</span>
+<span class="sd">        - TP (True Positives)  : Correctly predicted positive cases</span>
+<span class="sd">        - FN (False Negatives)  : Actual positive cases that were predicted as negative</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y_true (tensor): Ground truth binary labels (0 or 1).</span>
+<span class="sd">        y_pred (tensor): Predicted probabilities or binary predictions.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tensor: Recall score (between 0 and 1).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">true_positives</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">y_true</span> <span class="o">*</span> <span class="n">y_pred</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+    <span class="n">possible_positives</span> <span class="o">=</span> <span class="n">K</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">K</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)))</span>
+    <span class="n">recall</span> <span class="o">=</span> <span class="n">true_positives</span> <span class="o">/</span> <span class="p">(</span><span class="n">possible_positives</span> <span class="o">+</span> <span class="n">K</span><span class="o">.</span><span class="n">epsilon</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">recall</span></div>
+
+
+
+<div class="viewcode-block" id="f1">
+<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.f1">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">f1</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the F1-score for binary classification.</span>
+
+<span class="sd">    The F1-score is the harmonic mean of precision and recall, providing a balanced </span>
+<span class="sd">    metric when the dataset is imbalanced. It is given by:</span>
+
+<span class="sd">        F1 = 2 * (precision * recall) / (precision + recall)</span>
+
+<span class="sd">    where:</span>
+<span class="sd">        - Precision = TP / (TP + FP)</span>
+<span class="sd">        - Recall    = TP / (TP + FN)</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y_true (tensor): Ground truth binary labels (0 or 1).</span>
+<span class="sd">        y_pred (tensor): Predicted probabilities or binary predictions.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tensor: F1-score (between 0 and 1).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        
+    <span class="n">p</span> <span class="o">=</span> <span class="n">precision</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">recall</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">((</span><span class="n">p</span> <span class="o">*</span> <span class="n">r</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="n">r</span> <span class="o">+</span> <span class="n">K</span><span class="o">.</span><span class="n">epsilon</span><span class="p">()))</span></div>
+
+
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
+<span class="c1"># tf.config.set_visible_devices([], &#39;GPU&#39;)</span>
+
+<span class="c1"># os.environ[&#39;CUDA_VISIBLE_DEVICES&#39;] = &#39;-1&#39;</span>
+<div class="viewcode-block" id="stability">
+<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.stability">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">stability</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;predict stability of MOFs: https://doi.org/10.1021/jacs.1c07217, https://doi.org/10.1021/jacs.4c05879.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your structure.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always &quot;nan, °C, nan&quot;.</span>
+<span class="sd">            -   predicted thermal, solvent and water stabilities.     </span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+        
+    <span class="n">solvent_feature_names</span> <span class="o">=</span> <span class="p">[</span>
+                            <span class="s1">&#39;f-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-Z-0-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-I-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-I-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-S-0-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;mc-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;mc-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-T-0-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;mc-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-S-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;mc-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-chi-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_mc-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-Z-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_mc-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-S-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_mc-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-chi-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-chi-1&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-lig-chi-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-chi-3&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-2&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-lig-Z-3&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-I-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-I-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-I-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-I-3&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-lig-T-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-T-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-T-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-T-3&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-S-0&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-lig-S-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-S-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-S-3&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-chi-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;lc-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;lc-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-T-0-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;lc-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-S-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;lc-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-chi-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_lc-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-Z-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_lc-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-S-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_lc-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-chi-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;func-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-Z-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;func-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-I-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-I-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;func-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-T-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;func-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;func-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-chi-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_func-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-Z-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_func-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-S-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_func-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-S-3-all&#39;</span><span class="p">]</span>
+
+    <span class="n">thermal_feature_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;f-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-chi-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-I-0-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-S-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;mc-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;mc-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-I-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;mc-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-T-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;mc-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-S-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-S-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_mc-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-chi-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_mc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-T-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_mc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-S-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_mc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-chi-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-chi-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-chi-2&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-lig-chi-3&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-3&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-lig-I-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-I-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-I-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-I-3&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-T-0&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-lig-T-1&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-T-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-T-3&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-S-0&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-S-1&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-lig-S-2&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-S-3&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-chi-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;lc-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-Z-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;lc-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-I-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-T-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;lc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;lc-S-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;lc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-chi-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_lc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-T-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_lc-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_lc-S-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_lc-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-chi-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-chi-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;func-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-Z-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;func-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-I-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-I-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-I-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;func-I-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-T-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-T-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-T-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;func-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;func-S-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-chi-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-chi-3-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_func-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-Z-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-T-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_func-T-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-T-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-S-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_func-S-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_func-S-3-all&#39;</span><span class="p">]</span>
+
+    <span class="n">water_feature_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mc-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-Z-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-Z-2-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;D_mc-Z-1-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-chi-3-all&#39;</span><span class="p">,</span> <span class="s1">&#39;mc-Z-1-all&#39;</span><span class="p">,</span>
+                            <span class="s1">&#39;mc-Z-0-all&#39;</span><span class="p">,</span> <span class="s1">&#39;D_mc-chi-2-all&#39;</span><span class="p">,</span> <span class="s1">&#39;f-lig-Z-2&#39;</span><span class="p">,</span>
+                            <span class="s2">&quot;ASA&quot;</span><span class="p">,</span>
+                            <span class="s1">&#39;f-lig-I-0&#39;</span><span class="p">,</span> <span class="s1">&#39;func-S-1-all&#39;</span><span class="p">]</span>
+
+    <span class="n">result_stability</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">result_stability</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;nan, °C, nan&quot;</span>
+
+    <span class="n">dependencies</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;precision&#39;</span><span class="p">:</span><span class="n">precision</span><span class="p">,</span><span class="s1">&#39;recall&#39;</span><span class="p">:</span><span class="n">recall</span><span class="p">,</span><span class="s1">&#39;f1&#39;</span><span class="p">:</span><span class="n">f1</span><span class="p">}</span>
+    <span class="n">solvent_model</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/models/stability/final_model_flag_few_epochs.h5&#39;</span><span class="p">,</span> <span class="n">custom_objects</span><span class="o">=</span><span class="n">dependencies</span><span class="p">)</span>
+    <span class="n">thermal_model</span> <span class="o">=</span> <span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/models/stability/final_model_T_few_epochs.h5&#39;</span><span class="p">,</span> <span class="n">custom_objects</span><span class="o">=</span><span class="n">dependencies</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/models/stability/solvent_scaler.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">solvent_scaler</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/models/stability/thermal_x_scaler.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">thermal_x_scaler</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/models/stability/thermal_y_scaler.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">thermal_y_scaler</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/models/stability/water_model.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">water_model</span> <span class="o">=</span> <span class="n">cloudpickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/models/stability/water_scaler.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">water_scaler</span> <span class="o">=</span> <span class="n">pkl</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="n">results_pd</span> <span class="o">=</span> <span class="n">Zeopp</span><span class="o">.</span><span class="n">PoreDiameter</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+    <span class="n">results_pv</span> <span class="o">=</span> <span class="n">Zeopp</span><span class="o">.</span><span class="n">PoreVolume</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="mf">1.86</span><span class="p">,</span> <span class="mf">1.86</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">results_sa</span> <span class="o">=</span> <span class="n">Zeopp</span><span class="o">.</span><span class="n">SurfaceArea</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="mf">1.86</span><span class="p">,</span> <span class="mf">1.86</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">result_v</span> <span class="o">=</span> <span class="n">Volume</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+    <span class="n">results_sa_1_4</span> <span class="o">=</span> <span class="n">Zeopp</span><span class="o">.</span><span class="n">SurfaceArea</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.4</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">result_RACs</span> <span class="o">=</span> <span class="n">RACs</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+<span class="w">    </span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        zeopp4sol in the start</span>
+<span class="sd">        LCD,</span>
+<span class="sd">        PLD,</span>
+<span class="sd">        LFPD,</span>
+<span class="sd">        GPOAV_1_86,</span>
+<span class="sd">        GPONAV_1_86,</span>
+<span class="sd">        GPOV_1_86,</span>
+<span class="sd">        GSA_1_86,</span>
+<span class="sd">        POAV_1_86,</span>
+<span class="sd">        POAV_vol_frac_1_86,</span>
+<span class="sd">        PONAV_1_86,</span>
+<span class="sd">        PONAV_vol_frac_1_86,</span>
+<span class="sd">        VPOV_1_86,</span>
+<span class="sd">        VSA_1_86,</span>
+<span class="sd">        cell_volume</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">X_solvent</span> <span class="o">=</span> <span class="p">[</span><span class="n">results_pd</span><span class="p">[</span><span class="s2">&quot;LCD&quot;</span><span class="p">],</span>
+                    <span class="n">results_pd</span><span class="p">[</span><span class="s2">&quot;PLD&quot;</span><span class="p">],</span>
+                    <span class="n">results_pd</span><span class="p">[</span><span class="s2">&quot;LFPD&quot;</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;PV&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NPV&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;PV&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NPV&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">results_sa</span><span class="p">[</span><span class="s2">&quot;ASA&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;PV&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;VF&quot;</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NPV&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NVF&quot;</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;VF&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NVF&quot;</span><span class="p">],</span>
+                    <span class="n">results_sa</span><span class="p">[</span><span class="s2">&quot;ASA&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">result_v</span><span class="p">[</span><span class="s2">&quot;total_volume&quot;</span><span class="p">]</span>
+                <span class="p">]</span>
+    
+    <span class="k">for</span> <span class="n">fn_sol</span> <span class="ow">in</span> <span class="n">solvent_feature_names</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">X_solvent</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_RACs</span><span class="p">[</span><span class="s2">&quot;Metal&quot;</span><span class="p">][</span><span class="n">fn_sol</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">X_solvent</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_RACs</span><span class="p">[</span><span class="s2">&quot;Linker&quot;</span><span class="p">][</span><span class="n">fn_sol</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">X_solvent</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_RACs</span><span class="p">[</span><span class="s2">&quot;Function-group&quot;</span><span class="p">][</span><span class="n">fn_sol</span><span class="p">])</span>
+
+    <span class="c1"># X_solvent = np.array(X_solvent).reshape(-1, 1).flatten().reshape(1, -1).tolist()</span>
+    
+    <span class="n">X_solvent</span> <span class="o">=</span> <span class="n">solvent_scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">([</span><span class="n">X_solvent</span><span class="p">])</span>
+    <span class="n">solvent_model_prob</span> <span class="o">=</span> <span class="n">solvent_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_solvent</span><span class="p">)</span>
+    <span class="n">solvent_model_prob</span> <span class="o">=</span> <span class="n">solvent_model_prob</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">result_stability</span><span class="p">[</span><span class="s2">&quot;solvent removal probability&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">solvent_model_prob</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">        zeopp4therm in the end</span>
+<span class="sd">        LCD,</span>
+<span class="sd">        PLD,</span>
+<span class="sd">        LFPD,</span>
+<span class="sd">        GPOAV_1_86,</span>
+<span class="sd">        GPONAV_1_86,</span>
+<span class="sd">        GPOV_1_86,</span>
+<span class="sd">        GSA_1_86,</span>
+<span class="sd">        POAV_1_86,</span>
+<span class="sd">        POAV_vol_frac_1_86,</span>
+<span class="sd">        PONAV_1_86,</span>
+<span class="sd">        PONAV_vol_frac_1_86,</span>
+<span class="sd">        VPOV_1_86,</span>
+<span class="sd">        VSA_1_86,</span>
+<span class="sd">        cell_volume</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+
+    <span class="n">X_thermal</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">fn_them</span> <span class="ow">in</span> <span class="n">thermal_feature_names</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">X_thermal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_RACs</span><span class="p">[</span><span class="s2">&quot;Metal&quot;</span><span class="p">][</span><span class="n">fn_them</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">X_thermal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_RACs</span><span class="p">[</span><span class="s2">&quot;Linker&quot;</span><span class="p">][</span><span class="n">fn_them</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="n">X_thermal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_RACs</span><span class="p">[</span><span class="s2">&quot;Function-group&quot;</span><span class="p">][</span><span class="n">fn_them</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">zeo_them</span> <span class="ow">in</span> <span class="p">[</span><span class="n">results_pd</span><span class="p">[</span><span class="s2">&quot;LCD&quot;</span><span class="p">],</span>
+                    <span class="n">results_pd</span><span class="p">[</span><span class="s2">&quot;PLD&quot;</span><span class="p">],</span>
+                    <span class="n">results_pd</span><span class="p">[</span><span class="s2">&quot;LFPD&quot;</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;PV&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NPV&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;PV&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NPV&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">results_sa</span><span class="p">[</span><span class="s2">&quot;ASA&quot;</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;PV&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;VF&quot;</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NPV&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NVF&quot;</span><span class="p">],</span>
+                    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;VF&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NVF&quot;</span><span class="p">],</span>
+                    <span class="n">results_sa</span><span class="p">[</span><span class="s2">&quot;ASA&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                    <span class="n">result_v</span><span class="p">[</span><span class="s2">&quot;total_volume&quot;</span><span class="p">]</span>
+                <span class="p">]:</span>
+        
+        <span class="n">X_thermal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">zeo_them</span><span class="p">)</span>
+    <span class="n">X_thermal</span> <span class="o">=</span> <span class="n">thermal_x_scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">([</span><span class="n">X_thermal</span><span class="p">])</span>
+    <span class="n">thermal_model_pred</span> <span class="o">=</span> <span class="n">thermal_y_scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">thermal_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_thermal</span><span class="p">))</span>
+    <span class="n">thermal_model_pred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">thermal_model_pred</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">thermal_model_pred</span> <span class="o">=</span> <span class="n">thermal_model_pred</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">result_stability</span><span class="p">[</span><span class="s2">&quot;thermal stability&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">thermal_model_pred</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">X_water</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">fn_water</span> <span class="ow">in</span> <span class="n">water_feature_names</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">X_water</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_RACs</span><span class="p">[</span><span class="s2">&quot;Metal&quot;</span><span class="p">][</span><span class="n">fn_water</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">X_water</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_RACs</span><span class="p">[</span><span class="s2">&quot;Linker&quot;</span><span class="p">][</span><span class="n">fn_water</span><span class="p">])</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">X_water</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result_RACs</span><span class="p">[</span><span class="s2">&quot;Function-group&quot;</span><span class="p">][</span><span class="n">fn_water</span><span class="p">])</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="n">X_water</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">results_sa_1_4</span><span class="p">[</span><span class="n">fn_water</span><span class="p">][</span><span class="mi">2</span><span class="p">])</span>
+
+    <span class="n">X_water</span> <span class="o">=</span> <span class="n">water_scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">([</span><span class="n">X_water</span><span class="p">])</span>
+
+    <span class="n">water_model_prob</span> <span class="o">=</span> <span class="n">water_model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X_water</span><span class="p">)[:,</span><span class="mi">1</span><span class="p">]</span>
+    <span class="c1"># water_model_label = water_model.predict(X_water)</span>
+    <span class="n">result_stability</span><span class="p">[</span><span class="s2">&quot;water probability&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">water_model_prob</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">return</span> <span class="n">result_stability</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, MTAP @ Pusan National University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

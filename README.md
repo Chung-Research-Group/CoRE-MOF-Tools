@@ -1,47 +1,36 @@
-<img src="./figs/logo.png" alt="coremof2024" width="500">             
-                                
-[![Static Badge](https://img.shields.io/badge/chemrxiv-2024.nvmnr.v2-brightgreen?style=flat)](https://doi.org/10.26434/chemrxiv-2024-nvmnr-v2)                
-                                       
-#### :sparkles: Download CoRE MOF Database in [here](https://zenodo.org/records/14510695)                                                             
-                                                                                                                 
-This repository includes tools developed to collect, curate, and classify Computation-Ready, Experimental MOF database. 
+<img src="https://raw.githubusercontent.com/mtap-research/CoRE-MOF-Tools/main/figs/logo.png" alt="coremof2024" width="500">
 
+[![Static Badge](https://img.shields.io/badge/chemrxiv-2024.nvmnr.v2-brightgreen?style=flat)](https://doi.org/10.26434/chemrxiv-2024-nvmnr-v2)
+[![Docs](https://img.shields.io/badge/API-Docs-blue?logo=readthedocs&logoColor=white)](https://coremof-tools.readthedocs.io/en/latest/index.html#)
+![GitHub repo size](https://img.shields.io/github/repo-size/sxm13/CoREMOF_tools?logo=github&logoColor=white&label=Repo%20Size)
+[![PyPI](https://img.shields.io/pypi/v/CoREMOF-tools?logo=pypi&logoColor=white)](https://pypi.org/project/CoREMOF-tools?logo=pypi&logoColor=white)
+[![Requires Python 3.9](https://img.shields.io/badge/Python-3.9-blue.svg?logo=python&logoColor=white)](https://python.org/downloads)
+[![GitHub license](https://img.shields.io/github/license/sxm13/CoREMOF_tools)](https://github.com/sxm13/CoREMOF_tools/blob/main/LICENSE)
+[![Downloads](https://pepy.tech/badge/CoREMOF_tools)](https://pepy.tech/project/CoREMOF_tools)
+[![GitHub issues](https://img.shields.io/github/issues/sxm13/CoREMOF_tools.svg)](https://GitHub.com/sxm13/CoREMOF_tools/issues/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15055758.svg)](https://doi.org/10.5281/zenodo.15055758)
+[![codecov](https://codecov.io/gh/sxm13/CoREMOF_tools/branch/main/graph/badge.svg)](https://codecov.io/gh/sxm13/CoREMOF_tools)
+[![Build Status](https://travis-ci.org/sxm13/CoREMOF_tools.svg?branch=master)](https://travis-ci.org/sxm13/CoREMOF_toolst)
+                         
+#### Installation                                                                                    
+This API includes tools developed to collect, curate, and classify Computation-Ready, Experimental MOF database.    
+You need to install the [CSD software and python API](https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html) before downloading the full CoRE MOF database.                                                            
+For using CoREMOF.calculation.Zeopp, you need to input `conda install -c conda-forge zeopp-lsmo` to install Zeo++.   
+For using CoREMOF.get_mofid, you need to install MOFid following the [manual](https://snurr-group.github.io/mofid/compiling/#installation). 
 
-[Web Application](https://mof-db.pusan.ac.kr/) for Database and Tutorial.                     
+#### Examples                                                                                     
+Available at [Github](https://github.com/mtap-research/CoRE-MOF-Tools/tree/main/7-data4API/examples) and [CoRE MOF Website](https://mof-db.pusan.ac.kr/API) to view examples.                         
+                            
 
-### Direcotry organization                                
-- 0-database: This folder includes script to check publication dates and publisher infomration from a DOI input.
-- 1-clean:
-  -   preprocess.py: a pre-processing script to split mutil CIFs and making them primitive and P1. 
-  -   clean.py: a solvent removal script to remove free and bound solvents <sup>[1](),[2](https://doi.org/10.1021/acs.jced.9b00835),[3](https://doi.org/10.1021/cm502594j)</sup>. 
-- 2-NCRCheck:
-  -   check MOFs by Chen and Manz<sup>[1](https://doi.org/10.1039/D0RA02498H),[2](https://doi.org/10.1039/C9RA07327B)</sup>
-  -   [mofchecker](https://github.com/kjappelbaum/mofchecker)
-- 3-MOFFeatures:
-  - pore properties by [Zeo++](https://github.com/richardjgowers/zeoplusplus)<sup>[1](https://doi.org/10.1016/j.micromeso.2011.08.020),[2](https://doi.org/10.1021/ci200386x)</sup>, [open metal site](https://github.com/emmhald/open_metal_detector)<sup>[1](https://doi.org/10.1021/acs.jced.9b00835)<sup>
-  - topology by [CrystalNets](https://github.com/coudertlab/CrystalNets.jl)<sup>[1](https://doi.org/10.21468/SciPostChem.1.2.005)<sup>
-  - [revised autocorrelation functions](https://github.com/hjkgrp/molSimplify)<sup>[1](https://doi.org/10.1002/jcc.24437),[2](https://doi.org/10.1021/acs.iecr.8b04015)<sup>
-  - others (mass, space group)          
-- 4-MLFeatures:
-  - predict partial atmoic charges by [PACMAN](https://github.com/mtap-research/PACMAN-charge)<sup>[1](https://doi.org/10.1021/acs.jctc.4c00434)<sup>
-  - [heat capacity](https://github.com/SeyedMohamadMoosavi/tools-cp-porousmat)<sup>[1](https://doi.org/10.1038/s41563-022-01374-3)<sup>
-  - [water stability](https://zenodo.org/records/12110918)<sup>[1](https://doi.org/10.1021/jacs.4c05879)<sup>
-  - [thermal and activation](https://pubs.acs.org/doi/suppl/10.1021/jacs.1c07217/suppl_file/ja1c07217_si_002.zip)<sup>[1](https://doi.org/10.1021/jacs.1c07217)<sup>
-- 5-raspaTools: generate / submit input files, check jobs and get output files for
-  - [RASPA2](https://github.com/iRASPA/RASPA2)<sup>[1](https://doi.org/10.1080/08927022.2015.1010082),[2](https://doi.org/10.1080/08927022.2013.819102),[3](https://doi.org/10.1080/08927022.2013.819102),[4](https://doi.org/10.1002/adts.201900135)
-  - [gRASPA](https://github.com/snurr-group/gRASPA)<sup>[1](https://doi.org/10.1021/acs.jctc.4c01058)<sup>                                                                                      
-- 6-others:
-  - match structures
-  - DDEC files to CIF
-  - check that the ASR and FSR are exactly the same structure
-  - convert data from excel to AIF (adsorption information file)
-  - read data from .aif file
-
-- 7-data4API:
-  - name list of CSD CIFs, ZIP for CIFs from SI
-  - information for each CR / NCR structure
-  - jupyter notebook examples of usage of CoRE MOF API
-    
-If you encounter any issues related to the CoRE MOF Database or the scripts mentioned above, please create an **[Issues](https://github.com/mtap-research/CoRE-MOF-Tools/issues/new/choose)** and submit it. We will address it as soon as possible.
-
-**Developed by:** [Guobin Zhao](https://github.com/sxm13)                                                                                                                                  
+#### Citation                                          
+- [CoRE MOF](https://chemrxiv.org/engage/chemrxiv/article-details/6757ca12f9980725cf91c7e0): Zhao G, Brabson L, Chheda S, Huang J, Kim H, Liu K, et al. CoRE MOF DB: a curated experimental metal-organic framework database with machine-learned properties for integrated material-process screening. ChemRxiv. 2024; doi:10.26434/chemrxiv-2024-nvmnr.                        
+- [Zeo++](https://www.sciencedirect.com/science/article/pii/S1387181111003738): T.F. Willems, C.H. Rycroft, M. Kazi, J.C. Meza, and M. Haranczyk, Algorithms and tools for high-throughput geometry- based analysis of crystalline porous materials, Microporous and Mesoporous Materials, 149 (2012) 134-141.                            
+- [Heat capacity](https://doi.org/10.1038/s41563-022-01374-3): Models from Moosavi, S.M., Novotny, B.A., Ongari, D. et al.A data-science approach to predict the heat capacity of nanoporous materials. Nat. Mater. 21 (2022), 1419-1425.
+- [Water stability](https://pubs.acs.org/doi/full/10.1021/jacs.4c05879): Terrones G G, Huang S P, Rivera M P, et al. Metal-organic framework stability in water and harsh environments from data-driven models trained on the diverse WS24 data set. Journal of the American Chemical Society, 146 (2024), 20333-20348.
+- [Activation and thermal stability](https://pubs.acs.org/doi/full/10.1021/jacs.1c07217): Nandy A, Duan C, Kulik H J. Using machine learning and data mining to leverage community knowledge for the engineering of stable metal-organic frameworks. Journal of the American Chemical Society, 143 (2021): 17535-17547.
+- [MOFid-v1](https://pubs.acs.org/doi/full/10.1021/acs.cgd.9b01050): Bucior B J, Rosen A S, Haranczyk M, et al. Identification schemes for metal-organic frameworks to enable rapid search and cheminformatics analysis. Crystal Growth & Design, 19 (2019), 6682-6697.
+- [PACMAN-charge](https://pubs.acs.org/doi/10.1021/acs.jctc.4c00434): Zhao G, Chung Y G. PACMAN: A Robust Partial Atomic Charge Predicter for Nanoporous Materials Based on Crystal Graph Convolution Networks. Journal of Chemical Theory and Computation, 20(2024), 5368-5380.
+- [Revised Autocorrelation](https://pubs.acs.org/doi/10.1021/acs.jpca.7b08750): Jon Paul Janet and Heather J. Kulik. Resolving Transition Metal Chemical Space: Feature Selection for Machine Learning and Structure-Property Relationships. The Journal of Physical Chemistry A. 121 (2017), 8939-8954. 
+- [Topology](https://doi.org/10.21468/SciPostChem.1.2.005): Zoubritzky L, Coudert F X. CrystalNets. jl: identification of crystal topologies. SciPost Chemistry, 1 (2022), 005.
+- [MOFChecker](https://chemrxiv.org/engage/chemrxiv/article-details/67aa2e72fa469535b9c2dcfd): JIN X, Jablonka K, Moubarak E, Li Y, Smit B. MOFChecker: An algorithm for Validating and Correcting Metal-Organic Framework (MOF) Structures. ChemRxiv, (2025).
+- [MOSAEC](https://chemrxiv.org/engage/chemrxiv/article-details/6706b96312ff75c3a1fb0365): White A, Gibaldi M, Burner J, Mayo RA, Woo T. Alarming structural error rates in MOF databases used in data driven workflows identified via a novel metal oxidation state-based method. ChemRxiv, (2024).

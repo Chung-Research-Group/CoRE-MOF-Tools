@@ -1,0 +1,378 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoREMOF.calculation package &mdash; CoREMOF 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="CoREMOF.models package" href="CoREMOF.models.html" />
+    <link rel="prev" title="CoREMOF package" href="CoREMOF.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CoREMOF
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="CoREMOF.html">CoREMOF package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="CoREMOF.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">CoREMOF.calculation package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-CoREMOF.calculation.Zeopp">CoREMOF.calculation.Zeopp module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-CoREMOF.calculation.atomic_parameters">CoREMOF.calculation.atomic_parameters module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#coremof-calculation-mof-module">CoREMOF.calculation.mof module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#coremof-calculation-mof-collection-module">CoREMOF.calculation.mof_collection module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#coremof-calculation-mof-features-module">CoREMOF.calculation.mof_features module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-CoREMOF.calculation">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="CoREMOF.models.html">CoREMOF.models package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="CoREMOF.utils.html">CoREMOF.utils package</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-curate-module">CoREMOF.curate module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-get-mofid-module">CoREMOF.get_mofid module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-prediction-module">CoREMOF.prediction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-structure-module">CoREMOF.structure module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#module-CoREMOF">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CoREMOF</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="CoREMOF.html">CoREMOF package</a></li>
+      <li class="breadcrumb-item active">CoREMOF.calculation package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/CoREMOF.calculation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="coremof-calculation-package">
+<h1>CoREMOF.calculation package<a class="headerlink" href="#coremof-calculation-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-CoREMOF.calculation.Zeopp">
+<span id="coremof-calculation-zeopp-module"></span><h2>CoREMOF.calculation.Zeopp module<a class="headerlink" href="#module-CoREMOF.calculation.Zeopp" title="Link to this heading"></a></h2>
+<p>Geometery properties calculation based on Zeo++ software
+You need install Zeo++ package independently from source (<a class="reference external" href="https://www.zeoplusplus.org/download.html">https://www.zeoplusplus.org/download.html</a>) or conda (<a class="reference external" href="https://anaconda.org/conda-forge/zeopp-lsmo">https://anaconda.org/conda-forge/zeopp-lsmo</a>)
+Befor run this class please test “network” commond is works or not.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.calculation.Zeopp.ChanDim">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.calculation.Zeopp.</span></span><span class="sig-name descname"><span class="pre">ChanDim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probe_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_accuracy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tmp_chan'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/calculation/Zeopp.html#ChanDim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.calculation.Zeopp.ChanDim" title="Link to this definition"></a></dt>
+<dd><p>Analysis dimension of channel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>structure</strong> (<em>str</em>) – path to your CIF.</p></li>
+<li><p><strong>probe_radius</strong> (<em>float</em>) – probe of radiu.</p></li>
+<li><p><strong>high_accuracy</strong> (<em>bool</em>) – use high accuracy or not.</p></li>
+<li><p><strong>prefix</strong> (<em>str</em>) – temporary file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>unit by [“unit”], always nan.</p></li>
+<li><p>dimention by [“Dimention”].</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.calculation.Zeopp.FrameworkDim">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.calculation.Zeopp.</span></span><span class="sig-name descname"><span class="pre">FrameworkDim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_accuracy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tmp_strinfo'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/calculation/Zeopp.html#FrameworkDim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.calculation.Zeopp.FrameworkDim" title="Link to this definition"></a></dt>
+<dd><p>Analysis dimension of framework.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>structure</strong> (<em>str</em>) – path to your CIF.</p></li>
+<li><p><strong>high_accuracy</strong> (<em>bool</em>) – use high accuracy or not.</p></li>
+<li><p><strong>prefix</strong> (<em>str</em>) – temporary file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>unit by [“unit”], always nan</p></li>
+<li><p>dimention by [“Dimention”]</p></li>
+<li><p>number of 2D framewor by [“N_1D”]</p></li>
+<li><p>number of 1D framework by [“N_2D”]</p></li>
+<li><p>number of 3D framewor by [“N_3D”]</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.calculation.Zeopp.PoreDiameter">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.calculation.Zeopp.</span></span><span class="sig-name descname"><span class="pre">PoreDiameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_accuracy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tmp_pd'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/calculation/Zeopp.html#PoreDiameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.calculation.Zeopp.PoreDiameter" title="Link to this definition"></a></dt>
+<dd><p>Analysis pore diameter of structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>structure</strong> (<em>str</em>) – path to your CIF.</p></li>
+<li><p><strong>high_accuracy</strong> (<em>bool</em>) – use high accuracy or not.</p></li>
+<li><p><strong>prefix</strong> (<em>str</em>) – temporary file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>unit by [“unit”], always angstrom, Å</p></li>
+<li><p>largest cavity diameter by [“LCD”]</p></li>
+<li><p>pore-limiting diameter by [“PLD”]</p></li>
+<li><p>largest free pore diameter by [“LFPD”]</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.calculation.Zeopp.PoreVolume">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.calculation.Zeopp.</span></span><span class="sig-name descname"><span class="pre">PoreVolume</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chan_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probe_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_accuracy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tmp_pv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/calculation/Zeopp.html#PoreVolume"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.calculation.Zeopp.PoreVolume" title="Link to this definition"></a></dt>
+<dd><p>Analysis pore volume of structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>structure</strong> (<em>str</em>) – path to your CIF.</p></li>
+<li><p><strong>chan_radius</strong> (<em>float</em>) – probe of channel, it is advised to keep chan_radius=probe_radius.</p></li>
+<li><p><strong>probe_radius</strong> (<em>float</em>) – probe of radiu.</p></li>
+<li><p><strong>num_samples</strong> (<em>int</em>) – number of MC samples per atom.</p></li>
+<li><p><strong>high_accuracy</strong> (<em>bool</em>) – use high accuracy or not.</p></li>
+<li><p><strong>prefix</strong> (<em>str</em>) – temporary file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>unit by [“unit”], always PV: Å^3, cm^3/g; VF: nan</p></li>
+<li><p>accessible pore volume by [“PV”]</p></li>
+<li><p>non-accessible pore volume by [“NPV”]</p></li>
+<li><p>accessible void fraction by [“VF”]</p></li>
+<li><p>non-accessible void fraction by [“NVF”]</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.calculation.Zeopp.SurfaceArea">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.calculation.Zeopp.</span></span><span class="sig-name descname"><span class="pre">SurfaceArea</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chan_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.655</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probe_radius</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.655</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high_accuracy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'tmp_sa'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/calculation/Zeopp.html#SurfaceArea"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.calculation.Zeopp.SurfaceArea" title="Link to this definition"></a></dt>
+<dd><p>Analysis surface area of structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>structure</strong> (<em>str</em>) – path to your CIF.</p></li>
+<li><p><strong>chan_radius</strong> (<em>float</em>) – probe of channel, it is advised to keep chan_radius=probe_radius.</p></li>
+<li><p><strong>probe_radius</strong> (<em>float</em>) – probe of radiu.</p></li>
+<li><p><strong>num_samples</strong> (<em>int</em>) – number of MC samples per atom.</p></li>
+<li><p><strong>high_accuracy</strong> (<em>bool</em>) – use high accuracy or not.</p></li>
+<li><p><strong>prefix</strong> (<em>str</em>) – temporary file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>unit by [“unit”], always Å^2, m^2/cm^3, m^2/g</p></li>
+<li><p>accessible surface area by [“ASA”]</p></li>
+<li><p>non-accessible surface area by [“NASA”]</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-CoREMOF.calculation.atomic_parameters">
+<span id="coremof-calculation-atomic-parameters-module"></span><h2>CoREMOF.calculation.atomic_parameters module<a class="headerlink" href="#module-CoREMOF.calculation.atomic_parameters" title="Link to this heading"></a></h2>
+<p>Parameters of atom used for open metal site analysis.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="CoREMOF.calculation.atomic_parameters.Atom">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">CoREMOF.calculation.atomic_parameters.</span></span><span class="sig-name descname"><span class="pre">Atom</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/calculation/atomic_parameters.html#Atom"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.calculation.atomic_parameters.Atom" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A class to hold atomic information, and check bonds. Covalent radii taken from DOI: Covalent radii revisited Beatriz Cordero, Verónica Gómez, Ana E. Platero-Prats, Marc Revés, Jorge Echeverría,  Eduard Cremades, Flavia Barragána and Santiago Alvarez Dalton Trans., 2008, 2832-2838. DOI: 10.1039/B801115J.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>element</strong> – Element of the Atom object. This determines it’s properties.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="CoREMOF.calculation.atomic_parameters.Atom.bond_tolerance">
+<span class="sig-name descname"><span class="pre">bond_tolerance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ele2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/calculation/atomic_parameters.html#Atom.bond_tolerance"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.calculation.atomic_parameters.Atom.bond_tolerance" title="Link to this definition"></a></dt>
+<dd><p>Determine if atom is a actinide.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="CoREMOF.calculation.atomic_parameters.Atom.check_bond">
+<span class="sig-name descname"><span class="pre">check_bond</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ele2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bond_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/calculation/atomic_parameters.html#Atom.check_bond"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.calculation.atomic_parameters.Atom.check_bond" title="Link to this definition"></a></dt>
+<dd><p>Check if the atom is bonded with a given atom</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="CoREMOF.calculation.atomic_parameters.Atom.co">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">co</span></span><a class="headerlink" href="#CoREMOF.calculation.atomic_parameters.Atom.co" title="Link to this definition"></a></dt>
+<dd><p>Coordination radius.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="CoREMOF.calculation.atomic_parameters.Atom.is_actinide">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_actinide</span></span><a class="headerlink" href="#CoREMOF.calculation.atomic_parameters.Atom.is_actinide" title="Link to this definition"></a></dt>
+<dd><p>Check if atom is a actinide.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="CoREMOF.calculation.atomic_parameters.Atom.is_heavy_metal">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_heavy_metal</span></span><a class="headerlink" href="#CoREMOF.calculation.atomic_parameters.Atom.is_heavy_metal" title="Link to this definition"></a></dt>
+<dd><p>Determine if atom has a covelant radii larger than 1.95.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="CoREMOF.calculation.atomic_parameters.Atom.is_lanthanide">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_lanthanide</span></span><a class="headerlink" href="#CoREMOF.calculation.atomic_parameters.Atom.is_lanthanide" title="Link to this definition"></a></dt>
+<dd><p>Check if atom is a lanthanide.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="CoREMOF.calculation.atomic_parameters.Atom.is_lanthanide_or_actinide">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_lanthanide_or_actinide</span></span><a class="headerlink" href="#CoREMOF.calculation.atomic_parameters.Atom.is_lanthanide_or_actinide" title="Link to this definition"></a></dt>
+<dd><p>Check if atom is a lanthanide or actinide.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="CoREMOF.calculation.atomic_parameters.Atom.is_metal">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_metal</span></span><a class="headerlink" href="#CoREMOF.calculation.atomic_parameters.Atom.is_metal" title="Link to this definition"></a></dt>
+<dd><p>Check if atom is metal or not.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="CoREMOF.calculation.atomic_parameters.Atom.max_bond">
+<span class="sig-name descname"><span class="pre">max_bond</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ele2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bond_tol</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/calculation/atomic_parameters.html#Atom.max_bond"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.calculation.atomic_parameters.Atom.max_bond" title="Link to this definition"></a></dt>
+<dd><p>Get the maximum possible distance between the Atom object and another atom of type ele2.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ele2</strong> – Element of the atom that the max_bond corresponds to.</p></li>
+<li><p><strong>bond_tol</strong> – Bold tolerance to use, if not set then the default will be used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The some of covelant radii for Atom and Atom(ele2) plus their covalant radii.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="coremof-calculation-mof-module">
+<h2>CoREMOF.calculation.mof module<a class="headerlink" href="#coremof-calculation-mof-module" title="Link to this heading"></a></h2>
+</section>
+<section id="coremof-calculation-mof-collection-module">
+<h2>CoREMOF.calculation.mof_collection module<a class="headerlink" href="#coremof-calculation-mof-collection-module" title="Link to this heading"></a></h2>
+</section>
+<section id="coremof-calculation-mof-features-module">
+<h2>CoREMOF.calculation.mof_features module<a class="headerlink" href="#coremof-calculation-mof-features-module" title="Link to this heading"></a></h2>
+</section>
+<section id="module-CoREMOF.calculation">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-CoREMOF.calculation" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="CoREMOF.html" class="btn btn-neutral float-left" title="CoREMOF package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="CoREMOF.models.html" class="btn btn-neutral float-right" title="CoREMOF.models package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, MTAP @ Pusan National University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

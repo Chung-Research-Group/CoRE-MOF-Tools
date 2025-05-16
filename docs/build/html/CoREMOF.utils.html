@@ -1,0 +1,198 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoREMOF.utils package &mdash; CoREMOF 0.1.3 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=360bc84d"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="setup module" href="setup.html" />
+    <link rel="prev" title="CoREMOF.models.cp_app package" href="CoREMOF.models.cp_app.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            CoREMOF
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="CoREMOF.html">CoREMOF package</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="CoREMOF.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="CoREMOF.calculation.html">CoREMOF.calculation package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="CoREMOF.models.html">CoREMOF.models package</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">CoREMOF.utils package</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#submodules">Submodules</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-CoREMOF.utils.atoms_definitions">CoREMOF.utils.atoms_definitions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-CoREMOF.utils.expensive_rare_metal">CoREMOF.utils.expensive_rare_metal module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-CoREMOF.utils.ions_list">CoREMOF.utils.ions_list module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-CoREMOF.utils.remove">CoREMOF.utils.remove module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-CoREMOF.utils">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-curate-module">CoREMOF.curate module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-get-mofid-module">CoREMOF.get_mofid module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-prediction-module">CoREMOF.prediction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-structure-module">CoREMOF.structure module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#module-CoREMOF">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">CoREMOF</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="CoREMOF.html">CoREMOF package</a></li>
+      <li class="breadcrumb-item active">CoREMOF.utils package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/CoREMOF.utils.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="coremof-utils-package">
+<h1>CoREMOF.utils package<a class="headerlink" href="#coremof-utils-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+</section>
+<section id="module-CoREMOF.utils.atoms_definitions">
+<span id="coremof-utils-atoms-definitions-module"></span><h2>CoREMOF.utils.atoms_definitions module<a class="headerlink" href="#module-CoREMOF.utils.atoms_definitions" title="Link to this heading"></a></h2>
+<p>Elemental Data and Radii</p>
+<p>The element table contains:</p>
+<p>element name
+element symbol
+periodic table period number [6Lan for Lanthanoids, 7Act for Actinoids]
+periodic table group number [19 for Lanthanoids, 20 for Actinoids)
+periodic table block (s, p, d, f)
+atomic weight [IUPAC, 1997, see Note (a)]
+covalent radius of the element as used in CSD software [Å, see Note (b)]
+van der Waals radius of the element as used in CSD software [Å, see Note (c)]</p>
+<p>Notes</p>
+<ol class="loweralpha simple">
+<li><p>data given as [nnn] indicate the mass number of the longest lived isotope</p></li>
+<li><p>CSD covalent radii (Rcov) are used to assign bonded connections in crystal structures. A bonded connection is established if the distance (d) between two elements A and B is in the range from Rcov(A) + Rcov(B) - t to Rcov(A) + Rcov(B) + t, where the tolerance (t) is usually set to 0.4 Å. The tolerance and Rcov values can be altered by CSD Editors to force bonds in certain situations. The Rcov values have been refined over the years to minimise the need for editorial changes for specific structures. Radii for metals are taken from S. Alvarez et al., Dalton Trans., 2008, 2832-2838 since the 2010 CSD release. Where there were radii defined for more than one metal oxidation state, the value for the most common of these has been chosen. Elements not yet encountered in the CSD have Rcov = 1.50 Å.</p></li>
+<li><p>van der Waals radii are taken from A. Bondi, J. Phys. Chem., 68, 441-452, 1964, except the value for H, which is taken from R. S. Rowland &amp; R. Taylor, J. Phys. Chem., 100, 7384 - 7391, 1996. Radii that are not available in either of these publications have RvdW = 2.00 Å.</p></li>
+</ol>
+<p>Links</p>
+<p>The Web contains many sites that provide data on the chemical elements. Links to many of these are provided at: <a class="reference external" href="http://www.chemistrycoach.com/periodic_tables.htm#PeriodicTables">http://www.chemistrycoach.com/periodic_tables.htm#PeriodicTables</a></p>
+<dl class="simple">
+<dt>Two excellent relevant sites are:</dt><dd><p><a class="reference external" href="http://www.webelements.com/">http://www.webelements.com/</a>
+<a class="reference external" href="http://www.rsc.org/periodic-table/">http://www.rsc.org/periodic-table/</a></p>
+</dd>
+</dl>
+</section>
+<section id="module-CoREMOF.utils.expensive_rare_metal">
+<span id="coremof-utils-expensive-rare-metal-module"></span><h2>CoREMOF.utils.expensive_rare_metal module<a class="headerlink" href="#module-CoREMOF.utils.expensive_rare_metal" title="Link to this heading"></a></h2>
+<p>rare-earth metal and abundance got from wiki (<a class="reference external" href="https://en.wikipedia.org/wiki/Rare-earth_element">https://en.wikipedia.org/wiki/Rare-earth_element</a>)</p>
+</section>
+<section id="module-CoREMOF.utils.ions_list">
+<span id="coremof-utils-ions-list-module"></span><h2>CoREMOF.utils.ions_list module<a class="headerlink" href="#module-CoREMOF.utils.ions_list" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>From CoRE MOF Database paper</dt><dd><ul class="simple">
+<li><p>Chem. Mater. 2014, 26, 21, 6185–6192 (<a class="reference external" href="https://doi.org/10.1021/cm502594j">https://doi.org/10.1021/cm502594j</a>)</p></li>
+<li><ol class="upperalpha simple" start="10">
+<li><p>Chem. Eng. Data 2019, 64, 12, 5985–5998 (<a class="reference external" href="https://pubs.acs.org/doi/full/10.1021/acs.jced.9b00835">https://pubs.acs.org/doi/full/10.1021/acs.jced.9b00835</a>)</p></li>
+</ol>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="module-CoREMOF.utils.remove">
+<span id="coremof-utils-remove-module"></span><h2>CoREMOF.utils.remove module<a class="headerlink" href="#module-CoREMOF.utils.remove" title="Link to this heading"></a></h2>
+<p>Remove files.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.utils.remove.remove_dir_with_permissions">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.utils.remove.</span></span><span class="sig-name descname"><span class="pre">remove_dir_with_permissions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dir_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/utils/remove.html#remove_dir_with_permissions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.utils.remove.remove_dir_with_permissions" title="Link to this definition"></a></dt>
+<dd><p>Remove temporary files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>dir_path</strong> (<em>str</em>) – path to your file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-CoREMOF.utils">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-CoREMOF.utils" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="CoREMOF.models.cp_app.html" class="btn btn-neutral float-left" title="CoREMOF.models.cp_app package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="setup.html" class="btn btn-neutral float-right" title="setup module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, MTAP @ Pusan National University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

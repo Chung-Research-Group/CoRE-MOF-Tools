@@ -1,4 +1,0 @@
-pymatgen
-ase
-scipy
-six

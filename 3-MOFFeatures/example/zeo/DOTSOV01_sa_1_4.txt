@@ -1,3 +1,0 @@
-@ ./example/zeo//DOTSOV01_sa_1_4.txt Unitcell_volume: 4528   Density: 0.887291   ASA_A^2: 1051.32 ASA_m^2/cm^3: 2321.81 ASA_m^2/g: 2616.74 NASA_A^2: 0 NASA_m^2/cm^3: 0 NASA_m^2/g: 0
-Number_of_channels: 1 Channel_surface_area_A^2: 1051.32  
-Number_of_pockets: 0 Pocket_surface_area_A^2: 

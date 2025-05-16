@@ -1,0 +1,367 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoREMOF.calculation.Zeopp &mdash; CoREMOF_tools 0.0.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=f7cdbf68"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CoREMOF_tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CoREMOF_tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">CoREMOF.calculation.Zeopp</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for CoREMOF.calculation.Zeopp</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Geometery properties calculation based on Zeo++ software</span>
+<span class="sd">You need install Zeo++ package independently from source (https://www.zeoplusplus.org/download.html) or conda (https://anaconda.org/conda-forge/zeopp-lsmo)</span>
+<span class="sd">Befor run this class please test &quot;network&quot; commond is works or not.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+
+<div class="viewcode-block" id="ChanDim">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.ChanDim">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ChanDim</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">probe_radius</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_chan&quot;</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis dimension of channel.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">        probe_radius (float): probe of radiu.</span>
+<span class="sd">        high_accuracy (bool): use high accuracy or not.</span>
+<span class="sd">        prefix (str): temporary file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always nan.</span>
+<span class="sd">            -   dimention by [&quot;Dimention&quot;].</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">results_chan</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">results_chan</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;nan&quot;</span>
+    
+    <span class="n">tmp_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">.txt&quot;</span>
+    
+    <span class="k">if</span> <span class="n">high_accuracy</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -ha -chan </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -chan </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                        <span class="n">cmd</span><span class="p">,</span>
+                        <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;dimensionality&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">results_chan</span><span class="p">[</span><span class="s2">&quot;Dimention&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dim</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results_chan</span></div>
+
+
+<div class="viewcode-block" id="FrameworkDim">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.FrameworkDim">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">FrameworkDim</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_strinfo&quot;</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis dimension of framework.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">        high_accuracy (bool): use high accuracy or not.</span>
+<span class="sd">        prefix (str): temporary file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always nan</span>
+<span class="sd">            -   dimention by [&quot;Dimention&quot;]</span>
+<span class="sd">            -   number of 2D framewor by [&quot;N_1D&quot;]</span>
+<span class="sd">            -   number of 1D framework by [&quot;N_2D&quot;]</span>
+<span class="sd">            -   number of 3D framewor by [&quot;N_3D&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">results_strinfo</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">results_strinfo</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;nan&quot;</span>
+
+    <span class="n">tmp_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">.txt&quot;</span>
+    
+    <span class="k">if</span> <span class="n">high_accuracy</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -ha -strinfo </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -strinfo </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                        <span class="n">cmd</span><span class="p">,</span>
+                        <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">one_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span>
+            <span class="n">two_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">8</span><span class="p">])</span>
+            <span class="n">three_dim</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">9</span><span class="p">])</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">one_dim</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">two_dim</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">three_dim</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">dim</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">results_strinfo</span><span class="p">[</span><span class="s2">&quot;Dimention&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dim</span>
+    <span class="n">results_strinfo</span><span class="p">[</span><span class="s2">&quot;N_1D&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">one_dim</span>
+    <span class="n">results_strinfo</span><span class="p">[</span><span class="s2">&quot;N_2D&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">two_dim</span>
+    <span class="n">results_strinfo</span><span class="p">[</span><span class="s2">&quot;N_3D&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">three_dim</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results_strinfo</span></div>
+
+
+<div class="viewcode-block" id="PoreDiameter">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.PoreDiameter">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">PoreDiameter</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_pd&quot;</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis pore diameter of structure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">        high_accuracy (bool): use high accuracy or not.</span>
+<span class="sd">        prefix (str): temporary file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always angstrom, Å</span>
+<span class="sd">            -   largest cavity diameter by [&quot;LCD&quot;]</span>
+<span class="sd">            -   pore-limiting diameter by [&quot;PLD&quot;]</span>
+<span class="sd">            -   largest free pore diameter by [&quot;LFPD&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">results_pd</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">results_pd</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;angstrom, Å&quot;</span>
+
+    <span class="n">tmp_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">.txt&quot;</span>
+    
+    <span class="k">if</span> <span class="n">high_accuracy</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -ha -res </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -res </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                        <span class="n">cmd</span><span class="p">,</span>
+                        <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="n">results_pd</span><span class="p">[</span><span class="s2">&quot;LCD&quot;</span><span class="p">],</span> <span class="n">results_pd</span><span class="p">[</span><span class="s2">&quot;PLD&quot;</span><span class="p">],</span> <span class="n">results_pd</span><span class="p">[</span><span class="s2">&quot;LFPD&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="n">line</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="mi">4</span><span class="p">])</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results_pd</span></div>
+
+
+<div class="viewcode-block" id="SurfaceArea">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.SurfaceArea">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">SurfaceArea</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">chan_radius</span> <span class="o">=</span> <span class="mf">1.655</span><span class="p">,</span> <span class="n">probe_radius</span> <span class="o">=</span> <span class="mf">1.655</span><span class="p">,</span> <span class="n">num_samples</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_sa&quot;</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis surface area of structure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">        chan_radius (float): probe of channel, it is advised to keep chan_radius=probe_radius.</span>
+<span class="sd">        probe_radius (float): probe of radiu.</span>
+<span class="sd">        num_samples (int): number of MC samples per atom.</span>
+<span class="sd">        high_accuracy (bool): use high accuracy or not.</span>
+<span class="sd">        prefix (str): temporary file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always Å^2, m^2/cm^3, m^2/g</span>
+<span class="sd">            -   accessible surface area by [&quot;ASA&quot;]</span>
+<span class="sd">            -   non-accessible surface area by [&quot;NASA&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">results_sa</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">results_sa</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;Å^2, m^2/cm^3, m^2/g&quot;</span>
+
+    <span class="n">tmp_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">.txt&quot;</span>
+    
+    <span class="k">if</span> <span class="n">high_accuracy</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -ha -sa </span><span class="si">{</span><span class="n">chan_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">num_samples</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -sa </span><span class="si">{</span><span class="n">chan_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">num_samples</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                        <span class="n">cmd</span><span class="p">,</span>
+                        <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ASA</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;ASA_A^2:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">VSA</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;ASA_m^2/cm^3:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">GSA</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;ASA_m^2/g:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">NASA</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;NASA_A^2:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">NVSA</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;NASA_m^2/cm^3:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">NGSA</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;NASA_m^2/g:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="n">results_sa</span><span class="p">[</span><span class="s2">&quot;ASA&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">ASA</span><span class="p">,</span> <span class="n">VSA</span><span class="p">,</span> <span class="n">GSA</span><span class="p">]</span>
+    <span class="n">results_sa</span><span class="p">[</span><span class="s2">&quot;NASA&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">NASA</span><span class="p">,</span> <span class="n">NVSA</span><span class="p">,</span> <span class="n">NGSA</span><span class="p">]</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results_sa</span></div>
+
+
+<div class="viewcode-block" id="PoreVolume">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.PoreVolume">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">PoreVolume</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">chan_radius</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">probe_radius</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">num_samples</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_pv&quot;</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis pore volume of structure.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">        chan_radius (float): probe of channel, it is advised to keep chan_radius=probe_radius.</span>
+<span class="sd">        probe_radius (float): probe of radiu.</span>
+<span class="sd">        num_samples (int): number of MC samples per atom.</span>
+<span class="sd">        high_accuracy (bool): use high accuracy or not.</span>
+<span class="sd">        prefix (str): temporary file.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary:</span>
+<span class="sd">            -   unit by [&quot;unit&quot;], always PV: Å^3, cm^3/g; VF: nan</span>
+<span class="sd">            -   accessible pore volume by [&quot;PV&quot;]</span>
+<span class="sd">            -   non-accessible pore volume by [&quot;NPV&quot;]</span>
+<span class="sd">            -   accessible void fraction by [&quot;VF&quot;]</span>
+<span class="sd">            -   non-accessible void fraction by [&quot;NVF&quot;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">results_pv</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;unit&quot;</span><span class="p">]</span><span class="o">=</span><span class="s2">&quot;PV: Å^3, cm^3/g; VF: nan&quot;</span>
+
+    <span class="n">tmp_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">.txt&quot;</span>
+    
+    <span class="k">if</span> <span class="n">high_accuracy</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -ha -volpo </span><span class="si">{</span><span class="n">chan_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">num_samples</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -volpo </span><span class="si">{</span><span class="n">chan_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">num_samples</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="n">_</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                        <span class="n">cmd</span><span class="p">,</span>
+                        <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                        <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">f</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">POAV</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;POAV_A^3:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">PONAV</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;PONAV_A^3:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">GPOAV</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;POAV_cm^3/g:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">GPONAV</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;PONAV_cm^3/g:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">POAV_volume_fraction</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;POAV_Volume_fraction:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">PONAV_volume_fraction</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;PONAV_Volume_fraction:&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;PV&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">POAV</span><span class="p">,</span> <span class="n">GPOAV</span><span class="p">]</span>
+    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NPV&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">PONAV</span><span class="p">,</span> <span class="n">GPONAV</span><span class="p">]</span>
+    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;VF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">POAV_volume_fraction</span>
+    <span class="n">results_pv</span><span class="p">[</span><span class="s2">&quot;NVF&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">PONAV_volume_fraction</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">results_pv</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, MTAP @ Pusan National University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

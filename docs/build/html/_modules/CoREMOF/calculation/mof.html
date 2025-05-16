@@ -1,0 +1,890 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoREMOF.calculation.mof &mdash; CoREMOF_tools 0.0.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=f7cdbf68"></script>
+      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            CoREMOF_tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">CoREMOF_tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">CoREMOF.calculation.mof</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for CoREMOF.calculation.mof</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Classes used for open metal site analysis.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.core.structure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Structure</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.calculation.atomic_parameters</span><span class="w"> </span><span class="kn">import</span> <span class="n">Atom</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+
+
+<div class="viewcode-block" id="MofStructure">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MofStructure</span><span class="p">(</span><span class="n">Structure</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extend the pymatgen Structure class to add MOF specific features. Create a MOf structure. The arguments are the same as in the pymatgen Structure class with the addition of the name argument.</span>
+<span class="sd">    The super constructor is called and additional MOF specific properties are initialized.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        Structure: MOF name, used to identify the structure.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                 <span class="n">validate_proximity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">to_unit_cell</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">coords_are_cartesian</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">site_properties</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;N/A&quot;</span><span class="p">):</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">lattice</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span>
+                         <span class="n">charge</span><span class="o">=</span><span class="n">charge</span><span class="p">,</span>
+                         <span class="n">validate_proximity</span><span class="o">=</span><span class="n">validate_proximity</span><span class="p">,</span>
+                         <span class="n">to_unit_cell</span><span class="o">=</span><span class="n">to_unit_cell</span><span class="p">,</span>
+                         <span class="n">coords_are_cartesian</span><span class="o">=</span><span class="n">coords_are_cartesian</span><span class="p">,</span>
+                         <span class="n">site_properties</span><span class="o">=</span><span class="n">site_properties</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_all_coord_spheres_indices</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_all_distances</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metal_coord_spheres</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metal</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metal_indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">organic</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">species_str</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">]</span>
+
+        <span class="n">metal_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">species_str</span> <span class="k">if</span> <span class="n">Atom</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">is_metal</span><span class="p">])</span>
+        <span class="n">non_metal_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">species_str</span>
+                             <span class="k">if</span> <span class="ow">not</span> <span class="n">Atom</span><span class="p">(</span><span class="n">s</span><span class="p">)</span><span class="o">.</span><span class="n">is_metal</span><span class="p">])</span>
+        <span class="n">todays_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cif_okay&#39;</span><span class="p">:</span> <span class="s1">&#39;N/A&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;problematic&#39;</span><span class="p">:</span> <span class="s1">&#39;N/A&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;has_oms&#39;</span><span class="p">:</span> <span class="s1">&#39;N/A&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;metal_sites&#39;</span><span class="p">:</span> <span class="p">[],</span>
+                        <span class="s1">&#39;oms_density&#39;</span><span class="p">:</span> <span class="s1">&#39;N/A&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;checksum&#39;</span><span class="p">:</span> <span class="s1">&#39;N/A&#39;</span><span class="p">,</span>
+                        <span class="s1">&#39;metal_species&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">metal_set</span><span class="p">),</span>
+                        <span class="s1">&#39;non_metal_species&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">non_metal_set</span><span class="p">),</span>
+                        <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                        <span class="s1">&#39;uc_volume&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span><span class="p">,</span>
+                        <span class="s1">&#39;density&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">density</span><span class="p">,</span>
+                        <span class="s1">&#39;date_created&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">todays_date</span><span class="p">)}</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tolerance</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_split_structure_to_organic_and_metal</span><span class="p">()</span>
+
+<div class="viewcode-block" id="MofStructure.from_file">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure.from_file">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">primitive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">merge_tol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a MofStructure from a CIF file. This makes use of the from_file function of the Structure class and catches the exception in case a CIF file cannot be read. If the CIF is read successfully then the MofStructure is marked as okay, and the file checksum is added to the summary. If the CIF file cannot be read then it is marked as not okay and all the other properties are set to None and because there cannot be an empty Structure a carbon atom is added as placeholder at 0,0,0.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            filename (str): The filename to read from.</span>
+<span class="sd">            primitive (bool): Whether to convert to a primitive cell Only available for cifs. Defaults to False.</span>
+<span class="sd">            sort (bool): Whether to sort sites. Default to False.</span>
+<span class="sd">            merge_tol (float): If this is some positive number, sites that are within merge_tol from each other will be merged. Usually 0.01 should be enough to deal with common numerical issues.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            -   The created MofStructure</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">mof_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">Structure</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">primitive</span><span class="o">=</span><span class="n">primitive</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="n">sort</span><span class="p">,</span>
+                                    <span class="n">merge_tol</span><span class="o">=</span><span class="n">merge_tol</span><span class="p">)</span>
+            <span class="n">s_mof</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">species</span><span class="p">,</span> <span class="n">s</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">mof_name</span><span class="p">)</span>
+            <span class="n">s_mof</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;cif_okay&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">s_mof</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;checksum&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Helper</span><span class="o">.</span><span class="n">get_checksum</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">An Exception occurred: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Cannot load </span><span class="si">{}</span><span class="se">\n</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+            <span class="c1"># Make a placeholder MOF object, set all its summary entries</span>
+            <span class="c1"># to None and set cif_okay to False</span>
+            <span class="n">s_mof</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">([[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">]],</span>
+                        <span class="p">[</span><span class="s2">&quot;C&quot;</span><span class="p">],</span> <span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">name</span><span class="o">=</span><span class="n">mof_name</span><span class="p">)</span>
+            <span class="n">s_mof</span><span class="o">.</span><span class="n">_mark_failed_to_read</span><span class="p">()</span>
+            <span class="n">s_mof</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;cif_okay&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="n">s_mof</span></div>
+
+
+<div class="viewcode-block" id="MofStructure.analyze_metals">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure.analyze_metals">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_metals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run analysis to detect all open metal sites in a MofStructure. In addition the metal sites are marked as unique.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            output_folder (str): Folder where OMS analysis results will be stored.</span>
+<span class="sd">            verbose: Verbosity level for the output of the analysis.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">Helper</span><span class="o">.</span><span class="n">make_folder</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span>
+        <span class="n">running_indicator</span> <span class="o">=</span> <span class="n">output_folder</span> <span class="o">+</span> <span class="s2">&quot;/analysis_running&quot;</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">running_indicator</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;problematic&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">ms_cs_list</span> <span class="o">=</span> <span class="p">{</span><span class="kc">True</span><span class="p">:</span> <span class="p">[],</span> <span class="kc">False</span><span class="p">:</span> <span class="p">[]}</span>
+        <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">omc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metal_coord_spheres</span><span class="p">):</span>
+            <span class="n">m_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_indices</span><span class="p">[</span><span class="n">m</span><span class="p">]</span>
+            <span class="n">omc</span><span class="o">.</span><span class="n">check_if_open</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;problematic&#39;</span><span class="p">]:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;problematic&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">omc</span><span class="o">.</span><span class="n">is_problematic</span>
+
+            <span class="n">cs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_coordination_sequence</span><span class="p">(</span><span class="n">m_index</span><span class="p">)</span>
+            <span class="n">cs</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">species_str</span><span class="p">[</span><span class="n">m_index</span><span class="p">]]</span> <span class="o">+</span> <span class="n">cs</span>
+            <span class="n">omc</span><span class="o">.</span><span class="n">is_unique</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_if_new_site</span><span class="p">(</span><span class="n">ms_cs_list</span><span class="p">[</span><span class="n">omc</span><span class="o">.</span><span class="n">is_open</span><span class="p">],</span> <span class="n">cs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">omc</span><span class="o">.</span><span class="n">is_unique</span><span class="p">:</span>
+                <span class="n">ms_cs_list</span><span class="p">[</span><span class="n">omc</span><span class="o">.</span><span class="n">is_open</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cs</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;metal_sites&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">omc</span><span class="o">.</span><span class="n">metal_summary</span><span class="p">)</span>
+
+        <span class="n">unique_sites</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;unique&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;metal_sites&#39;</span><span class="p">]]</span>
+        <span class="n">open_sites</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="s1">&#39;is_open&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;metal_sites&#39;</span><span class="p">]]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;oms_density&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">unique_sites</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">volume</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;has_oms&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">open_sites</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">write_results</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">running_indicator</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MofStructure.write_results">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure.write_results">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store summary dictionary holding all MOF and OMS information to a JSON file, store CIF files for the metal and non-metal parts of the MOF as well as all the identified coordination spheres.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            output_folder: Location to be used to store.</span>
+<span class="sd">            verbose: Verbosity level.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">Helper</span><span class="o">.</span><span class="n">make_folder</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">mcs</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">metal_coord_spheres</span><span class="p">):</span>
+            <span class="n">mcs</span><span class="o">.</span><span class="n">write_cif_file</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="n">index</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal</span><span class="p">:</span>
+            <span class="n">output_fname</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">_metal.cif&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span>
+                                                    <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metal</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">output_fname</span><span class="p">)</span>
+        <span class="n">output_fname</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">_organic.cif&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span>
+                                                  <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">organic</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">output_fname</span><span class="p">)</span>
+
+        <span class="n">json_file_out</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">/</span><span class="si">{}</span><span class="s2">.json&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">])</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">verbose</span> <span class="o">==</span> <span class="s1">&#39;normal&#39;</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ms</span> <span class="ow">in</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;metal_sites&quot;</span><span class="p">]:</span>
+                <span class="n">ms</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;all_dihedrals&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="n">ms</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;min_dihedral&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_file_out</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tolerance values for dihedral checks. If not set, defaults are given.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tolerance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tolerance</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;on_plane&#39;</span><span class="p">:</span> <span class="mi">15</span><span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tolerance</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the MofStructure.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+
+    <span class="nd">@name</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Setter for the name of the MofStructure.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">all_distances</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Distances between all atoms in the MofStructure&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_distances</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_all_distances</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">get_all_distances</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_distances</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">all_coord_spheres_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the indices of the atoms in the first coordination shell for all atoms in the MofStructure</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_coord_spheres_indices</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_coord_spheres_indices</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_all_coord_spheres_indices</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_find_cs_indices</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+                                           <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_coord_spheres_indices</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metal_coord_spheres</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;For all metal atoms in a MofStructure compute the first coordination sphere as a MetalSite object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metal_coord_spheres</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_metal_coord_spheres</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_find_metal_coord_sphere</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+                                         <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_indices</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metal_coord_spheres</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_mark_failed_to_read</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;If a CIF cannot be read set certain properties to None&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;metal_species&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;non_metal_species&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;uc_volume&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;density&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_split_structure_to_organic_and_metal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Split a MOF to two pymatgen Structures, one containing only metal atoms and one containing only non-metal atoms.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metal</span> <span class="o">=</span> <span class="n">Structure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="p">[],</span> <span class="p">[])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">organic</span> <span class="o">=</span> <span class="n">Structure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="p">[],</span> <span class="p">[])</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">s</span><span class="p">,</span> <span class="n">fc</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">Atom</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">s</span><span class="p">))</span><span class="o">.</span><span class="n">is_metal</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metal</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">fc</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">metal_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">organic</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">fc</span><span class="p">)</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_cs_indices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find the indices of the atoms in the coordination sphere.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            center: Central atom of coordination sphere.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            c_sphere_indices: Return in the coordination sphere of center.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dist</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_distances</span><span class="p">[</span><span class="n">center</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">dist</span><span class="p">[</span><span class="n">center</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.0000001</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s1">&#39;The self distance appears to be non-zero&#39;</span><span class="p">)</span>
+
+        <span class="n">a</span> <span class="o">=</span> <span class="n">Atom</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species_str</span><span class="p">[</span><span class="n">center</span><span class="p">])</span>
+        <span class="n">c_sphere_indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">dis</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dist</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">center</span>
+                            <span class="ow">and</span> <span class="n">a</span><span class="o">.</span><span class="n">check_bond</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species_str</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">dis</span><span class="p">)]</span>
+        <span class="n">c_sphere_indices</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">center</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">c_sphere_indices</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_metal_coord_sphere</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Identify the atoms in the first coordination sphere of a metal atom. Obtain all atoms connecting to the metal using the all_coord_spheres_indices values and keeping only valid bonds as well as center the atoms around the metal center for visualization purposes.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            center:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_distances</span><span class="p">[</span><span class="n">center</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">dist</span><span class="p">[</span><span class="n">center</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.0000001</span><span class="p">:</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s1">&#39;The self distance appears to be non-zero&#39;</span><span class="p">)</span>
+
+        <span class="n">c_sphere</span> <span class="o">=</span> <span class="n">MetalSite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="p">,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">center</span><span class="p">]],</span>
+                             <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">[</span><span class="n">center</span><span class="p">]],</span>
+                             <span class="n">tolerance</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="p">)</span>
+
+        <span class="n">cs_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_coord_spheres_indices</span><span class="p">[</span><span class="n">center</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cs_i</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">c_sphere</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species_str</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">c_sphere</span><span class="o">.</span><span class="n">keep_valid_bonds</span><span class="p">()</span>
+        <span class="n">c_sphere</span><span class="o">.</span><span class="n">center_around_metal</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">c_sphere</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_if_new_site</span><span class="p">(</span><span class="n">cs_list</span><span class="p">,</span> <span class="n">cs</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a given site is unique based on its coordination sequence&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">cs_i</span> <span class="ow">in</span> <span class="n">cs_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">Helper</span><span class="o">.</span><span class="n">compare_lists</span><span class="p">(</span><span class="n">cs_i</span><span class="p">,</span> <span class="n">cs</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">True</span>  <span class="c1"># len(cs_list),</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_coordination_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the coordination sequence up to the 6th coordination shell.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            center: Atom to compute coordination sequence</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            cs: Coordination sequence for center</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">shell_list</span> <span class="o">=</span> <span class="p">{(</span><span class="n">center</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))}</span>
+        <span class="n">shell_list_prev</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+        <span class="n">all_shells</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">shell_list</span><span class="p">)</span>
+        <span class="n">n_shells</span> <span class="o">=</span> <span class="mi">6</span>
+        <span class="n">cs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">count_total</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_shells</span><span class="p">):</span>
+            <span class="n">c_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([])</span>
+            <span class="k">for</span> <span class="n">a_uc</span> <span class="ow">in</span> <span class="n">shell_list</span><span class="p">:</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="n">a_uc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">lattice</span> <span class="o">=</span> <span class="n">a_uc</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                <span class="n">coord_sphere</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_coord_spheres_indices</span><span class="p">[</span><span class="n">a</span><span class="p">]</span>
+                <span class="n">count_total</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">coord_sphere_with_uc</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">coord_sphere</span><span class="p">:</span>
+                    <span class="n">diff</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">[</span><span class="n">a</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">[</span><span class="n">c</span><span class="p">]</span>
+                    <span class="n">new_lat_i</span> <span class="o">=</span> <span class="p">[</span><span class="nb">round</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">diff</span><span class="p">]</span>
+                    <span class="n">uc</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">l</span><span class="o">-</span><span class="n">nl</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">nl</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">lattice</span><span class="p">,</span> <span class="n">new_lat_i</span><span class="p">))</span>
+                    <span class="n">coord_sphere_with_uc</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">c</span><span class="p">,</span> <span class="n">uc</span><span class="p">))</span>
+                <span class="n">coord_sphere_with_uc</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">coord_sphere_with_uc</span><span class="p">)</span>
+                <span class="n">c_set</span> <span class="o">=</span> <span class="n">c_set</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">coord_sphere_with_uc</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">shell_list_prev</span><span class="p">:</span>
+                <span class="n">c_set</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">shell_list</span><span class="p">:</span>
+                <span class="n">c_set</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+
+            <span class="n">cs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">c_set</span><span class="p">))</span>
+            <span class="n">all_shells</span> <span class="o">=</span> <span class="n">all_shells</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">c_set</span><span class="p">)</span>
+            <span class="n">shell_list_prev</span> <span class="o">=</span> <span class="n">shell_list</span>
+            <span class="n">shell_list</span> <span class="o">=</span> <span class="n">c_set</span>
+
+        <span class="k">return</span> <span class="n">cs</span></div>
+
+
+
+<div class="viewcode-block" id="MetalSite">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MetalSite</span><span class="p">(</span><span class="n">MofStructure</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">validate_proximity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">to_unit_cell</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coords_are_cartesian</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">site_properties</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">tolerance</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;N/A&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">lattice</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span>
+                         <span class="n">validate_proximity</span><span class="o">=</span><span class="n">validate_proximity</span><span class="p">,</span>
+                         <span class="n">to_unit_cell</span><span class="o">=</span><span class="n">to_unit_cell</span><span class="p">,</span>
+                         <span class="n">coords_are_cartesian</span><span class="o">=</span><span class="n">coords_are_cartesian</span><span class="p">,</span>
+                         <span class="n">site_properties</span><span class="o">=</span><span class="n">site_properties</span><span class="p">,</span>
+                         <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metal_type</span> <span class="o">=</span> <span class="s2">&quot;unknown&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tolerance</span> <span class="o">=</span> <span class="n">tolerance</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_open</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_unique</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_problematic</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_t_factor</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_min_dihedral</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_all_dihedrals</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Tolerance values for dihedral checks. If not set, defaults are given.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tolerance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tolerance</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;on_plane&#39;</span><span class="p">:</span> <span class="mi">15</span><span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tolerance</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_linkers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Number of linkers in coordination sphere of MetalSite.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span> <span class="o">-</span> <span class="mi">1</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the MetalSite is open or not.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_open</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_problematic</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the MetalSite is problematic or not.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_problematic</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_unique</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the MetalSite is unique or not.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_unique</span>
+
+    <span class="nd">@is_unique</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_unique</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="s1">&#39;is_unique can only be boolean.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_unique</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metal_type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The type of the metal center.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metal_type</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metal_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the MetalSite is problematic or not.&quot;&quot;&quot;</span>
+
+        <span class="n">_summary</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;metal&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_type</span><span class="p">,</span>
+                    <span class="s2">&quot;is_open&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_open</span><span class="p">,</span>
+                    <span class="s2">&quot;unique&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_unique</span><span class="p">,</span>
+                    <span class="s2">&quot;problematic&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_problematic</span><span class="p">,</span>
+                    <span class="s2">&quot;number_of_linkers&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_linkers</span><span class="p">,</span>
+                    <span class="s2">&quot;min_dihedral&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                    <span class="s2">&quot;all_dihedrals&quot;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+                    <span class="s1">&#39;t_factor&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_t_factor</span><span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">_summary</span>
+
+<div class="viewcode-block" id="MetalSite.keep_valid_bonds">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.keep_valid_bonds">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">keep_valid_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loop over atoms in the coordination sphere and remove any extraneous sites.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">all_dists</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">get_all_distances</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">,</span>
+                                                   <span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)),</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="k">assert</span> <span class="n">all_dists</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="n">all_dists</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">dis</span> <span class="o">=</span> <span class="n">all_dists</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_valid_pair</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">dis</span><span class="p">):</span>
+                <span class="n">dist_ij_c</span> <span class="o">=</span> <span class="p">[</span><span class="n">all_dists</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">all_dists</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">dist_ij_c</span><span class="p">))</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">index_to_remove</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">index_to_remove</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">][</span><span class="n">dist_ij_c</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="n">dist_ij_c</span><span class="p">))]</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">remove_sites</span><span class="p">([</span><span class="n">index_to_remove</span><span class="p">])</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_valid_bonds</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MetalSite.center_around_metal">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.center_around_metal">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">center_around_metal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shift atoms across periodic boundary conditions to have the coordination appear centered around the metal atom for visualisation purposes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">gc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">get_cartesian_coords</span>
+        <span class="n">center</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">center_cart_coords</span> <span class="o">=</span> <span class="n">gc</span><span class="p">(</span><span class="n">center</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span><span class="p">):</span>
+            <span class="n">c_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">frac_coords</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">dist_vector</span> <span class="o">=</span> <span class="n">center</span> <span class="o">-</span> <span class="n">c_i</span>
+            <span class="n">dist_vector_r</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+                <span class="n">dist_vector_r</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">dist_vector</span><span class="p">[</span><span class="n">j</span><span class="p">]))</span>
+            <span class="n">dist_before</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">center_cart_coords</span> <span class="o">-</span> <span class="n">gc</span><span class="p">(</span><span class="n">c_i</span><span class="p">))</span>
+            <span class="n">c_i_centered</span> <span class="o">=</span> <span class="n">c_i</span> <span class="o">+</span> <span class="n">dist_vector_r</span>
+            <span class="n">dist_after</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">center_cart_coords</span> <span class="o">-</span> <span class="n">gc</span><span class="p">(</span><span class="n">c_i_centered</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">dist_after</span> <span class="o">&gt;</span> <span class="n">dist_before</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+                    <span class="n">dist_vector_r</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">rint</span><span class="p">(</span><span class="n">dist_vector</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+                <span class="n">c_i_centered</span> <span class="o">=</span> <span class="n">c_i</span> <span class="o">+</span> <span class="n">dist_vector_r</span>
+                <span class="k">if</span> <span class="n">dist_after</span> <span class="o">&gt;</span> <span class="n">dist_before</span><span class="p">:</span>
+                    <span class="n">c_i_centered</span> <span class="o">=</span> <span class="n">c_i</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">c_i_centered</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MetalSite.check_if_open">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.check_if_open">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_if_open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get t-factor, check if problematic based on number of linkers and if necessary call to check the dihedrals to determine if the metal site is open.</span>
+<span class="sd">         &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_t_factor</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">Atom</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span><span class="o">.</span><span class="n">is_lanthanide_or_actinide</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_is_problematic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_linkers</span> <span class="o">&lt;</span> <span class="mi">5</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_is_problematic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_linkers</span> <span class="o">&lt;</span> <span class="mi">3</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_open</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metal_type</span> <span class="o">=</span> <span class="s2">&quot;Closed&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_linkers</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_mark_oms</span><span class="p">(</span><span class="n">oms_type</span><span class="o">=</span><span class="s1">&#39;3_or_less&#39;</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># 0 should always correspond to the</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_planes</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_mark_oms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">oms_type</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metal_type</span> <span class="o">=</span> <span class="n">oms_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_open</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="MetalSite.get_t_factor">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t_factor">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_t_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute t-factors, only meaningful for 4-,5-, and 6-coordinated metals, if not the value of -1 is assigned.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">nl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">index_range</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span><span class="p">)</span>
+        <span class="n">all_angles</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">index_range</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="n">angle</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_angle</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">all_angles</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">angle</span><span class="p">,</span> <span class="n">i</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">i</span><span class="p">[</span><span class="mi">1</span><span class="p">]])</span>
+
+        <span class="n">all_angles</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">nl</span> <span class="o">==</span> <span class="mi">5</span> <span class="ow">or</span> <span class="n">nl</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+            <span class="c1"># beta is the largest angle and alpha is the second largest angle</span>
+            <span class="c1"># in the coordination sphere; using the same convention</span>
+            <span class="c1"># as Yang et al. DOI: 10.1039/b617136b</span>
+            <span class="n">beta</span> <span class="o">=</span> <span class="n">all_angles</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">alpha</span> <span class="o">=</span> <span class="n">all_angles</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">nl</span> <span class="o">==</span> <span class="mi">4</span><span class="p">:</span>
+                <span class="n">tau</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_t4_factor</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tau</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_t5_factor</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">nl</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+            <span class="n">max_indices_all</span> <span class="o">=</span> <span class="n">all_angles</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">l3_l4_angles</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">all_angles</span> <span class="k">if</span>
+                            <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">max_indices_all</span> <span class="ow">and</span>
+                            <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">max_indices_all</span><span class="p">]</span>
+            <span class="n">max_indices_all_3_4</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">l3_l4_angles</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+            <span class="n">l5_l6_angles</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">l3_l4_angles</span>
+                            <span class="k">if</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">max_indices_all_3_4</span> <span class="ow">and</span>
+                            <span class="n">x</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">max_indices_all_3_4</span><span class="p">]</span>
+            <span class="n">gamma</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">l5_l6_angles</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">tau</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_t6_factor</span><span class="p">(</span><span class="n">gamma</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tau</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_t_factor</span> <span class="o">=</span> <span class="n">tau</span></div>
+
+
+<div class="viewcode-block" id="MetalSite.get_t4_factor">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t4_factor">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_t4_factor</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">360</span> <span class="o">-</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">))</span> <span class="o">/</span> <span class="mf">141.0</span></div>
+
+
+<div class="viewcode-block" id="MetalSite.get_t5_factor">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t5_factor">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_t5_factor</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">/</span> <span class="mf">60.0</span></div>
+
+
+<div class="viewcode-block" id="MetalSite.get_t6_factor">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t6_factor">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_t6_factor</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">c</span> <span class="o">/</span> <span class="mf">180.0</span></div>
+
+
+<div class="viewcode-block" id="MetalSite.write_cif_file">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.write_cif_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_cif_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write MofSite to specified output_folder as a CIF file and use index to name it.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Helper</span><span class="o">.</span><span class="n">make_folder</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span>
+        <span class="n">output_fname</span> <span class="o">=</span> <span class="n">output_folder</span>
+        <span class="n">output_fname</span> <span class="o">+=</span> <span class="s1">&#39;/first_coordination_sphere&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;.cif&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">output_fname</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_valid_pair</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">dis</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine whether two atoms in the coordination sphere form a valid pair. A pair is not valid if it forms a bond unless both atoms are metals of the same kind as the center or both atoms are carbon atoms (e.g. in the case of a ferocene type coordination sphere).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            i:</span>
+<span class="sd">            j:</span>
+<span class="sd">            dis:</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">s_one</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">s_two</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">j</span><span class="p">])</span>
+        <span class="n">a_one</span> <span class="o">=</span> <span class="n">Atom</span><span class="p">(</span><span class="n">s_one</span><span class="p">)</span>
+        <span class="n">a_two</span> <span class="o">=</span> <span class="n">Atom</span><span class="p">(</span><span class="n">s_two</span><span class="p">)</span>
+
+        <span class="n">bond</span> <span class="o">=</span> <span class="n">a_one</span><span class="o">.</span><span class="n">check_bond</span><span class="p">(</span><span class="n">s_two</span><span class="p">,</span> <span class="n">dis</span><span class="p">,</span> <span class="n">a_one</span><span class="o">.</span><span class="n">bond_tolerance</span><span class="p">(</span><span class="n">s_two</span><span class="p">))</span>
+
+        <span class="n">same_atoms</span> <span class="o">=</span> <span class="n">s_one</span> <span class="o">==</span> <span class="n">s_two</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">two_same_metals</span> <span class="o">=</span> <span class="n">same_atoms</span> <span class="ow">and</span> <span class="n">a_one</span><span class="o">.</span><span class="n">is_metal</span> <span class="ow">and</span> <span class="n">a_two</span><span class="o">.</span><span class="n">is_metal</span>
+
+        <span class="n">carbon_atoms</span> <span class="o">=</span> <span class="n">s_one</span> <span class="o">==</span> <span class="n">s_two</span> <span class="o">==</span> <span class="s1">&#39;C&#39;</span>
+
+        <span class="k">return</span> <span class="p">(</span><span class="ow">not</span> <span class="n">bond</span><span class="p">)</span> <span class="ow">or</span> <span class="n">two_same_metals</span> <span class="ow">or</span> <span class="n">carbon_atoms</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_planes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Determine whether a site is open using the dihedral angles between the atoms in the coordination sphere.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            site: Index of site to be checked.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span><span class="p">),</span> <span class="mi">3</span><span class="p">):</span>
+            <span class="n">plane</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_plane</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">all</span><span class="p">([</span><span class="nb">abs</span><span class="p">(</span><span class="n">p</span><span class="o">-</span><span class="mf">0.0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-5</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">plane</span><span class="p">]):</span>
+                <span class="k">continue</span>
+            <span class="n">sides</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sides</span><span class="p">([</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">],</span> <span class="n">plane</span><span class="p">)</span>
+            <span class="c1"># Side of the site in question.</span>
+            <span class="n">s_site</span> <span class="o">=</span> <span class="n">sides</span><span class="p">[</span><span class="n">site</span><span class="p">]</span>
+            <span class="c1"># All sites that are not on the plane and are not the site in</span>
+            <span class="c1"># question.</span>
+            <span class="n">s_o</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sides</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">site</span> <span class="ow">and</span> <span class="n">s</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]</span>
+            <span class="c1"># Keep only the unique sides</span>
+            <span class="n">s_o_unique</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">s_o</span><span class="p">))</span>
+            <span class="c1"># Number of unique sides for other sites (sites not on plane and</span>
+            <span class="c1"># not the site in question)</span>
+            <span class="n">ls</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">s_o_unique</span><span class="p">)</span>
+            <span class="c1"># ls = 0 : all other sites are on the plane</span>
+            <span class="c1"># ls = 1 : all other sites on one side of plane</span>
+            <span class="c1"># ls = 2 : other sites are on both sides of plane</span>
+            <span class="k">if</span> <span class="n">ls</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="p">(</span><span class="n">ls</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">s_site</span> <span class="o">!=</span> <span class="n">s_o_unique</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+                <span class="c1"># Site is open if:</span>
+                <span class="c1"># a) If all other sites fall on the plane. (ls == 0)</span>
+                <span class="c1"># b) The metal site falls on the plane and all other sites</span>
+                <span class="c1"># fall on one side of the plane. (ls == 1, s_site == 0 and</span>
+                <span class="c1"># s_site != s_o_unique[0])</span>
+                <span class="c1"># c) The metal site falls on one side of the plane and all</span>
+                <span class="c1"># other sites fall on the oposite side of the plane.  (ls == 1,</span>
+                <span class="c1"># s_site == 1,-1 and s_site != s_o_unique[0])</span>
+                <span class="n">place</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s2">&quot;over&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="s2">&quot;on&quot;</span><span class="p">}[</span><span class="nb">abs</span><span class="p">(</span><span class="n">s_site</span><span class="p">)]</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">_</span><span class="si">{}</span><span class="s2">L_</span><span class="si">{}</span><span class="s2">_open_plane&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">site</span><span class="p">]</span><span class="o">.</span><span class="n">specie</span><span class="p">,</span>
+                                                    <span class="bp">self</span><span class="o">.</span><span class="n">num_linkers</span><span class="p">,</span> <span class="n">place</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_mark_oms</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">break</span>
+            <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_open</span> <span class="ow">is</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sides</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">p_i</span><span class="p">,</span> <span class="n">plane</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a plane p defined by 3 of the atoms in the MetalSite determine on which side of the plane all the atoms in the MetalSite fall (-1 or 1) or if it falls on the plane (0).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            p_i: Indices of the 3 atoms that define the plane</span>
+<span class="sd">            plane: Plane constants</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of side value for all atoms in the MetalSite, possible values can -1, 0, and 1.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">atoms_on_plane</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span> <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">p_i</span>
+                          <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_point_on_plane</span><span class="p">(</span><span class="bp">self</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">p_i</span><span class="p">,</span>
+                                                       <span class="n">plane</span><span class="p">)</span>
+                          <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">))]</span>
+
+        <span class="n">dists</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_distance_from_plane</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">plane</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">]</span>
+        <span class="n">sides</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span> <span class="k">if</span> <span class="n">a</span> <span class="ow">or</span> <span class="n">d</span> <span class="o">==</span> <span class="mf">0.0</span>
+                 <span class="k">else</span> <span class="nb">int</span><span class="p">(</span><span class="n">d</span><span class="o">/</span><span class="nb">abs</span><span class="p">(</span><span class="n">d</span><span class="p">))</span>
+                 <span class="k">for</span> <span class="n">d</span><span class="p">,</span> <span class="n">a</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">dists</span><span class="p">,</span> <span class="n">atoms_on_plane</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">sides</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_point_on_plane</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">,</span> <span class="n">p_i</span><span class="p">,</span> <span class="n">p</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a point and plane determine if the point falls on the plane, using the angle between the projection of the point, each atom on the plane and the actual position of the point with a specified tolerance value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            point: Cartesian coordinates of point to check.</span>
+<span class="sd">            p: plane in the form of a list with the 4 constants defining a plane.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if the point falls on plane and False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">tol</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tolerance</span><span class="p">[</span><span class="s1">&#39;on_plane&#39;</span><span class="p">]</span>
+        <span class="n">point_on_plane</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_project_point_onto_plane</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
+        <span class="n">angles</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_angle_c</span><span class="p">(</span><span class="n">point_on_plane</span><span class="p">,</span> <span class="bp">self</span><span class="p">[</span><span class="n">ii</span><span class="p">]</span><span class="o">.</span><span class="n">coords</span><span class="p">,</span> <span class="n">point</span><span class="p">)</span>
+                  <span class="k">for</span> <span class="n">ii</span> <span class="ow">in</span> <span class="n">p_i</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="n">a</span> <span class="o">&lt;</span> <span class="n">tol</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">angles</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_angle_c</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">c3</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the angle between three points in degrees.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            c1: Coordinates of first point.</span>
+<span class="sd">            c2: Coordinates of second point.</span>
+<span class="sd">            c3: Coordinates of third point.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Angle between them in degrees.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">v1</span> <span class="o">=</span> <span class="n">c1</span> <span class="o">-</span> <span class="n">c2</span>
+        <span class="n">v2</span> <span class="o">=</span> <span class="n">c3</span> <span class="o">-</span> <span class="n">c2</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_angle_v</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_angle_v</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">):</span>
+
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculates the angle between two vectors in degrees.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            v1: First vector.</span>
+<span class="sd">            v2: Second vector.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Angle between them in degrees.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">v1</span><span class="p">,</span> <span class="n">v2</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v1</span><span class="p">)</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">v2</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="o">-</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">angle</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">acos</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">angle</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_distance_from_plane</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">plane</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a point and a plane compute the distance between the point and the projection of the point on the plane.&quot;&quot;&quot;</span>
+        <span class="n">plane_xyz</span> <span class="o">=</span> <span class="n">plane</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inner</span><span class="p">(</span><span class="n">plane_xyz</span><span class="p">,</span> <span class="n">point</span><span class="p">)</span> <span class="o">-</span> <span class="n">plane</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">distance</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">plane_xyz</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_plane</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given three atom indices, compute the plane that passes through them.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">c1</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">coords</span>
+        <span class="n">c2</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">coords</span>
+        <span class="n">c3</span> <span class="o">=</span> <span class="bp">self</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">coords</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_plane_c</span><span class="p">(</span><span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">c3</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_plane_c</span><span class="p">(</span><span class="n">c1</span><span class="p">,</span> <span class="n">c2</span><span class="p">,</span> <span class="n">c3</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given three atom coordinates, compute the plane that passes through them.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ij</span> <span class="o">=</span> <span class="n">c1</span> <span class="o">-</span> <span class="n">c2</span>
+        <span class="n">kj</span> <span class="o">=</span> <span class="n">c3</span> <span class="o">-</span> <span class="n">c2</span>
+        <span class="n">p_vector</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">ij</span><span class="p">,</span> <span class="n">kj</span><span class="p">)</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">c1</span><span class="p">,</span> <span class="n">p_vector</span><span class="p">)</span>
+        <span class="n">plane</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p_vector</span><span class="p">)</span> <span class="o">+</span> <span class="p">[</span><span class="n">c</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">plane</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_project_point_onto_plane</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">plane</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Given a point and plane compute the projection of the point onto the plane.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">vector</span> <span class="o">=</span> <span class="n">plane</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">constant</span> <span class="o">=</span> <span class="n">plane</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+        <span class="n">nom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inner</span><span class="p">(</span><span class="n">vector</span><span class="p">,</span> <span class="n">point</span><span class="p">)</span> <span class="o">-</span> <span class="n">constant</span>
+        <span class="n">denom</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">inner</span><span class="p">(</span><span class="n">vector</span><span class="p">,</span> <span class="n">vector</span><span class="p">)</span>
+        <span class="n">const</span> <span class="o">=</span> <span class="n">nom</span> <span class="o">/</span> <span class="n">denom</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">po</span> <span class="o">-</span> <span class="n">v</span> <span class="o">*</span> <span class="n">const</span> <span class="k">for</span> <span class="n">po</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">vector</span><span class="p">)])</span></div>
+
+
+
+<div class="viewcode-block" id="Helper">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Helper</span><span class="p">:</span>
+
+<div class="viewcode-block" id="Helper.make_folder">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.make_folder">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">make_folder</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_folder</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Helper.compare_lists">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.compare_lists">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compare_lists</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l1</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">l2</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="n">i</span> <span class="o">==</span> <span class="n">j</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">)])</span></div>
+
+
+<div class="viewcode-block" id="Helper.copy_folder">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.copy_folder">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy_folder</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="n">src</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dest</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dest</span><span class="p">,</span> <span class="n">s</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
+            <span class="n">shutil</span><span class="o">.</span><span class="n">copytree</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Helper.get_checksum">
+<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.get_checksum">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_checksum</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">file</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, MTAP @ Pusan National University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

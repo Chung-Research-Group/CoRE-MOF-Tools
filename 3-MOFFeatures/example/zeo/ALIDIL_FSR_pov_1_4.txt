@@ -1,3 +1,0 @@
-@ ./example/zeo//ALIDIL_FSR_pov_1_4.txt Unitcell_volume: 1432.51   Density: 1.73934   POAV_A^3: 0 POAV_Volume_fraction: 0 POAV_cm^3/g: 0 PONAV_A^3: 19.4821 PONAV_Volume_fraction: 0.0136 PONAV_cm^3/g: 0.00781905
-PROBE_OCCUPIABLE_VOL_CALC: filename| density(g/cm3)| probe rad| N points| probe ctr A fract| probe ctr NA fract| A fract| NA fract| narrow fract |ovlp fract.
-PROBE_OCCUPIABLE___RESULT: ./example/zeo//ALIDIL_FSR_pov_1_4.txt	1.73934	1.4	10000	0	0.0002	0	0.0136	0.3352	0.6512
