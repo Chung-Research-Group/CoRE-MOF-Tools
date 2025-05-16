@@ -23,7 +23,7 @@ Available at [Github](https://github.com/mtap-research/CoRE-MOF-Tools/tree/main/
                             
 
 #### Citation                                          
-- [CoRE MOF](https://chemrxiv.org/engage/chemrxiv/article-details/6757ca12f9980725cf91c7e0): Zhao G, Brabson L, Chheda S, Huang J, Kim H, Liu K, et al. CoRE MOF DB: a curated experimental metal-organic framework database with machine-learned properties for integrated material-process screening. ChemRxiv. 2024; doi:10.26434/chemrxiv-2024-nvmnr.                        
+- [CoRE MOF](https://doi.org/10.1016/j.matt.2025.102140): Zhao G, Brabson L, Chheda S, Huang J, Kim H, Liu K, et al. CoRE MOF DB: a curated experimental metal-organic framework database with machine-learned properties for integrated material-process screening. Matter. 2025; doi: 10.1016/j.matt.2025.102140.                        
 - [Zeo++](https://www.sciencedirect.com/science/article/pii/S1387181111003738): T.F. Willems, C.H. Rycroft, M. Kazi, J.C. Meza, and M. Haranczyk, Algorithms and tools for high-throughput geometry- based analysis of crystalline porous materials, Microporous and Mesoporous Materials, 149 (2012) 134-141.                            
 - [Heat capacity](https://doi.org/10.1038/s41563-022-01374-3): Models from Moosavi, S.M., Novotny, B.A., Ongari, D. et al.A data-science approach to predict the heat capacity of nanoporous materials. Nat. Mater. 21 (2022), 1419-1425.
 - [Water stability](https://pubs.acs.org/doi/full/10.1021/jacs.4c05879): Terrones G G, Huang S P, Rivera M P, et al. Metal-organic framework stability in water and harsh environments from data-driven models trained on the diverse WS24 data set. Journal of the American Chemical Society, 146 (2024), 20333-20348.
