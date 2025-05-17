@@ -7,10 +7,11 @@ long_description = readme_path.read_text(encoding="utf-8") if readme_path.exists
 
 setup(
     name='CoREMOF_tools',
-    version='0.1.6',
+    version='0.1.7',
     author='Guobin Zhao',
     author_email='sxmzhaogb@gmail.com',
     description='Python API for CoRE MOF DB',
+    license="CC-BY-4.0",
     long_description=long_description,
     long_description_content_type='text/markdown',
     packages=find_packages(),
@@ -40,9 +41,9 @@ setup(
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'Topic :: Scientific/Engineering :: Chemistry',
-        'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.9',
     ],
+    license_files = ("LICENSE",),
     python_requires='>=3.9, <4',
     project_urls={
         "Homepage": "https://coremof-tools.readthedocs.io/",
