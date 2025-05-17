@@ -1,20 +1,20 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../">
+<html class="writer-html5" lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.prediction &mdash; CoREMOF_tools 0.0.9 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+  <title>CoREMOF.prediction &mdash; CoREMOF 0.1.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
 
   
-      <script src="../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=f7cdbf68"></script>
-      <script src="../../_static/doctools.js?v=9a2dae69"></script>
-      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/jquery.js"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+      <script src="../../_static/doctools.js"></script>
+      <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -29,7 +29,7 @@
           
           
           <a href="../../index.html" class="icon icon-home">
-            CoREMOF_tools
+            CoREMOF
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -39,15 +39,20 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../CoREMOF.html">CoREMOF package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../index.html">CoREMOF_tools</a>
+          <a href="../../index.html">CoREMOF</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -86,9 +91,7 @@
 
 <span class="n">package_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;prediction.py&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
-<div class="viewcode-block" id="get_files_from_github">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.get_files_from_github">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_files_from_github</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
+<div class="viewcode-block" id="get_files_from_github"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.get_files_from_github">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">get_files_from_github</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">path</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;query files from github due to limit of uploading size by PyPi.</span>
 
@@ -107,10 +110,7 @@
     <span class="n">response</span><span class="o">.</span><span class="n">raise_for_status</span><span class="p">()</span> 
     <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span></div>
 
-
-<div class="viewcode-block" id="download_file">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.download_file">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">download_file</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">save_path</span><span class="p">):</span>
+<div class="viewcode-block" id="download_file"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.download_file">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">download_file</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">save_path</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;download models from github due to limit of uploading size by PyPi.</span>
 
@@ -130,40 +130,37 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">pass</span></div>
 
+<span class="c1"># repo = &#39;sxm13/CoREMOF_tools&#39;</span>
+<span class="c1"># github_paths = [</span>
+<span class="c1">#     &#39;models/cp_app/ensemble_models_smallML_120_100/300&#39;,</span>
+<span class="c1">#     &#39;models/cp_app/ensemble_models_smallML_120_100/350&#39;,</span>
+<span class="c1">#     &#39;models/cp_app/ensemble_models_smallML_120_100/400&#39;,</span>
+<span class="c1">#     &#39;models/stability&#39;</span>
+<span class="c1"># ]</span>
+<span class="c1"># local_directories = [</span>
+<span class="c1">#     &#39;/models/cp_app/ensemble_models_smallML_120_100/300&#39;,</span>
+<span class="c1">#     &#39;/models/cp_app/ensemble_models_smallML_120_100/350&#39;,</span>
+<span class="c1">#     &#39;/models/cp_app/ensemble_models_smallML_120_100/400&#39;,</span>
+<span class="c1">#     &#39;/models/stability&#39;</span>
+<span class="c1"># ]</span>
 
-<span class="n">repo</span> <span class="o">=</span> <span class="s1">&#39;sxm13/CoREMOF_tools&#39;</span>
-<span class="n">github_paths</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s1">&#39;models/cp_app/ensemble_models_smallML_120_100/300&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;models/cp_app/ensemble_models_smallML_120_100/350&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;models/cp_app/ensemble_models_smallML_120_100/400&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;models/stability&#39;</span>
-<span class="p">]</span>
-<span class="n">local_directories</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s1">&#39;/models/cp_app/ensemble_models_smallML_120_100/300&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;/models/cp_app/ensemble_models_smallML_120_100/350&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;/models/cp_app/ensemble_models_smallML_120_100/400&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;/models/stability&#39;</span>
-<span class="p">]</span>
+<span class="c1"># path_map = dict(zip(github_paths, local_directories))</span>
 
-<span class="n">path_map</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">github_paths</span><span class="p">,</span> <span class="n">local_directories</span><span class="p">))</span>
-
-<span class="k">for</span> <span class="n">github_path</span> <span class="ow">in</span> <span class="n">github_paths</span><span class="p">:</span>
-    <span class="n">files_info</span> <span class="o">=</span> <span class="n">get_files_from_github</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">github_path</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">file_info</span> <span class="ow">in</span> <span class="n">files_info</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">file_info</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;file&#39;</span><span class="p">:</span>
-            <span class="n">raw_url</span> <span class="o">=</span> <span class="n">file_info</span><span class="p">[</span><span class="s1">&#39;download_url&#39;</span><span class="p">]</span>
-            <span class="n">local_path_suffix</span> <span class="o">=</span> <span class="n">path_map</span><span class="p">[</span><span class="n">github_path</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
-            <span class="n">local_file_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">package_directory</span><span class="p">,</span> <span class="n">local_path_suffix</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_info</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]))</span>
-            <span class="n">download_file</span><span class="p">(</span><span class="n">raw_url</span><span class="p">,</span> <span class="n">local_file_path</span><span class="p">)</span>
+<span class="c1"># for github_path in github_paths:</span>
+<span class="c1">#     files_info = get_files_from_github(repo, github_path)</span>
+<span class="c1">#     for file_info in files_info:</span>
+<span class="c1">#         if file_info[&#39;type&#39;] == &#39;file&#39;:</span>
+<span class="c1">#             raw_url = file_info[&#39;download_url&#39;]</span>
+<span class="c1">#             local_path_suffix = path_map[github_path].lstrip(&#39;/&#39;)</span>
+<span class="c1">#             local_file_path = os.path.join(package_directory, local_path_suffix, os.path.basename(file_info[&#39;path&#39;]))</span>
+<span class="c1">#             download_file(raw_url, local_file_path)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.models.cp_app.descriptors</span><span class="w"> </span><span class="kn">import</span> <span class="n">cv_features</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.models.cp_app.featurizer</span><span class="w"> </span><span class="kn">import</span> <span class="n">featurize_structure</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.models.cp_app.predictions</span><span class="w"> </span><span class="kn">import</span> <span class="n">predict_Cv_ensemble_structure_multitemperatures</span>
 
 
-<div class="viewcode-block" id="pacman">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.pacman">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">pacman</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">output_folder</span><span class="o">=</span><span class="s2">&quot;result_pacman&quot;</span><span class="p">,</span> <span class="n">charge_type</span><span class="o">=</span><span class="s2">&quot;DDEC6&quot;</span><span class="p">,</span> <span class="n">digits</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">atom_type</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keep_connect</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<div class="viewcode-block" id="pacman"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.pacman">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">pacman</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">output_folder</span><span class="o">=</span><span class="s2">&quot;result_pacman&quot;</span><span class="p">,</span> <span class="n">charge_type</span><span class="o">=</span><span class="s2">&quot;DDEC6&quot;</span><span class="p">,</span> <span class="n">digits</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">atom_type</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">neutral</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keep_connect</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;predict partial atom charge by PACMAN Charge: https://doi.org/10.1021/acs.jctc.4c00434.</span>
 
@@ -214,10 +211,7 @@
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="cp">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.cp">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">cp</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="p">[</span><span class="mi">300</span><span class="p">,</span> <span class="mi">350</span><span class="p">,</span> <span class="mi">400</span><span class="p">]):</span>
+<div class="viewcode-block" id="cp"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.cp">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">cp</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">T</span><span class="o">=</span><span class="p">[</span><span class="mi">300</span><span class="p">,</span> <span class="mi">350</span><span class="p">,</span> <span class="mi">400</span><span class="p">]):</span>
 <span class="w">    </span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;predict heat capacity by GBR models at different temperatures: https://doi.org/10.1038/s41563-022-01374-3.</span>
 
@@ -258,10 +252,7 @@
     <span class="k">return</span> <span class="n">result_cp</span></div>
 
 
-
-<div class="viewcode-block" id="precision">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.precision">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">precision</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+<div class="viewcode-block" id="precision"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.precision">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">precision</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Computes the precision metric for binary classification.</span>
@@ -289,10 +280,7 @@
     <span class="k">return</span> <span class="n">precision</span></div>
 
 
-
-<div class="viewcode-block" id="recall">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.recall">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">recall</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+<div class="viewcode-block" id="recall"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.recall">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">recall</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Computes the recall metric for binary classification.</span>
@@ -320,10 +308,7 @@
     <span class="k">return</span> <span class="n">recall</span></div>
 
 
-
-<div class="viewcode-block" id="f1">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.f1">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">f1</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+<div class="viewcode-block" id="f1"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.f1">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">f1</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Computes the F1-score for binary classification.</span>
@@ -350,14 +335,11 @@
     <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">((</span><span class="n">p</span> <span class="o">*</span> <span class="n">r</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">p</span> <span class="o">+</span> <span class="n">r</span> <span class="o">+</span> <span class="n">K</span><span class="o">.</span><span class="n">epsilon</span><span class="p">()))</span></div>
 
 
-
 <span class="kn">import</span><span class="w"> </span><span class="nn">tensorflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tf</span>
 <span class="c1"># tf.config.set_visible_devices([], &#39;GPU&#39;)</span>
 
 <span class="c1"># os.environ[&#39;CUDA_VISIBLE_DEVICES&#39;] = &#39;-1&#39;</span>
-<div class="viewcode-block" id="stability">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.stability">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">stability</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+<div class="viewcode-block" id="stability"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.prediction.stability">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">stability</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
 <span class="w">    </span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;predict stability of MOFs: https://doi.org/10.1021/jacs.1c07217, https://doi.org/10.1021/jacs.4c05879.</span>
 
@@ -587,6 +569,38 @@
 
     <span class="k">return</span> <span class="n">result_stability</span></div>
 
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="s1">&#39;sxm13/CoREMOF_tools&#39;</span>
+    <span class="n">github_paths</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;models/cp_app/ensemble_models_smallML_120_100/300&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;models/cp_app/ensemble_models_smallML_120_100/350&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;models/cp_app/ensemble_models_smallML_120_100/400&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;models/stability&#39;</span>
+    <span class="p">]</span>
+    <span class="n">local_dirs</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s1">&#39;/models/cp_app/ensemble_models_smallML_120_100/300&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;/models/cp_app/ensemble_models_smallML_120_100/350&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;/models/cp_app/ensemble_models_smallML_120_100/400&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;/models/stability&#39;</span>
+    <span class="p">]</span>
+    <span class="n">path_map</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">github_paths</span><span class="p">,</span> <span class="n">local_dirs</span><span class="p">))</span>
+
+    <span class="k">for</span> <span class="n">github_path</span> <span class="ow">in</span> <span class="n">github_paths</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">files_info</span> <span class="o">=</span> <span class="n">get_files_from_github</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">github_path</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">requests</span><span class="o">.</span><span class="n">HTTPError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: could not list `</span><span class="si">{</span><span class="n">github_path</span><span class="si">}</span><span class="s2">` → </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="k">for</span> <span class="n">file_info</span> <span class="ow">in</span> <span class="n">files_info</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">file_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;file&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">raw_url</span> <span class="o">=</span> <span class="n">file_info</span><span class="p">[</span><span class="s1">&#39;download_url&#39;</span><span class="p">]</span>
+            <span class="n">local_suffix</span> <span class="o">=</span> <span class="n">path_map</span><span class="p">[</span><span class="n">github_path</span><span class="p">]</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+            <span class="n">local_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">package_directory</span><span class="p">,</span>
+                                      <span class="n">local_suffix</span><span class="p">,</span>
+                                      <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">file_info</span><span class="p">[</span><span class="s1">&#39;path&#39;</span><span class="p">]))</span>
+            <span class="n">download_file</span><span class="p">(</span><span class="n">raw_url</span><span class="p">,</span> <span class="n">local_file</span><span class="p">)</span>
 </pre></div>
 
            </div>

@@ -1,21 +1,22 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
+<html class="writer-html5" lang="en">
 <head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.models.cp_app package &mdash; CoREMOF 0.1.3 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+  <title>CoREMOF.models.cp_app package &mdash; CoREMOF 0.1.6 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
 
   
-      <script src="_static/jquery.js?v=5d32c60e"></script>
-      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=360bc84d"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/jquery.js"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+      <script src="_static/doctools.js"></script>
+      <script src="_static/sphinx_highlight.js"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -56,10 +57,10 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#submodules">Submodules</a></li>
-<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-curate-module">CoREMOF.curate module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-get-mofid-module">CoREMOF.get_mofid module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-prediction-module">CoREMOF.prediction module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#coremof-structure-module">CoREMOF.structure module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#module-CoREMOF.curate">CoREMOF.curate module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#module-CoREMOF.get_mofid">CoREMOF.get_mofid module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#module-CoREMOF.prediction">CoREMOF.prediction module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#module-CoREMOF.structure">CoREMOF.structure module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="CoREMOF.html#module-CoREMOF">Module contents</a></li>
 </ul>
 </li>
@@ -94,88 +95,330 @@
            <div itemprop="articleBody">
              
   <section id="coremof-models-cp-app-package">
-<h1>CoREMOF.models.cp_app package<a class="headerlink" href="#coremof-models-cp-app-package" title="Link to this heading"></a></h1>
+<h1>CoREMOF.models.cp_app package<a class="headerlink" href="#coremof-models-cp-app-package" title="Permalink to this heading"></a></h1>
 <section id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
 </section>
 <section id="module-CoREMOF.models.cp_app.descriptors">
-<span id="coremof-models-cp-app-descriptors-module"></span><h2>CoREMOF.models.cp_app.descriptors module<a class="headerlink" href="#module-CoREMOF.models.cp_app.descriptors" title="Link to this heading"></a></h2>
+<span id="coremof-models-cp-app-descriptors-module"></span><h2>CoREMOF.models.cp_app.descriptors module<a class="headerlink" href="#module-CoREMOF.models.cp_app.descriptors" title="Permalink to this heading"></a></h2>
 <p>Feature list used in heat capacity models.</p>
 </section>
-<section id="coremof-models-cp-app-featurizer-module">
-<h2>CoREMOF.models.cp_app.featurizer module<a class="headerlink" href="#coremof-models-cp-app-featurizer-module" title="Link to this heading"></a></h2>
+<section id="module-CoREMOF.models.cp_app.featurizer">
+<span id="coremof-models-cp-app-featurizer-module"></span><h2>CoREMOF.models.cp_app.featurizer module<a class="headerlink" href="#module-CoREMOF.models.cp_app.featurizer" title="Permalink to this heading"></a></h2>
+<p>The methods to featurize a dataset of porous materials for heat capacity.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.featurizer.</span></span><span class="sig-name descname"><span class="pre">LocalPropertyStatsNew</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_source=&lt;matminer.utils.data.MagpieData</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight='area'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">properties=('Electronegativity'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff=5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/featurizer.html#LocalPropertyStatsNew"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseFeaturizer</span></code></p>
+<p>Differences, minima and maxima in elemental properties between site and its neighboring sites.
+Uses the Voronoi tessellation of the structure to determine the
+neighbors of the site, and assigns each neighbor (<span class="math notranslate nohighlight">\(n\)</span>) a
+weight (<span class="math notranslate nohighlight">\(A_n\)</span>) that corresponds to the area of the facet
+on the tessellation corresponding to that neighbor.
+The local property difference is then computed by
+<span class="math notranslate nohighlight">\(\frac{\sum_n {A_n |p_n - p_0|}}{\sum_n {A_n}}\)</span>
+where <span class="math notranslate nohighlight">\(p_n\)</span> is the property (e.g., atomic number) of a neighbor
+and <span class="math notranslate nohighlight">\(p_0\)</span> is the property of a site. If signed parameter is assigned
+True, signed difference of the properties is returned instead of absolute
+difference. Taken from oximachine featurizer: <a class="reference external" href="https://github.com/kjappelbaum/oximachine_featurizer">https://github.com/kjappelbaum/oximachine_featurizer</a></p>
+<dl class="simple">
+<dt>Features:</dt><dd><ul class="simple">
+<li><p>“local property stat in [property]”</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p><a class="reference external" href="http://link.aps.org/doi/10.1103/PhysRevB.96.024104">Ward et al. _PRB_ 2017</a></p></li>
+</ul>
+<dl class="py method">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.citations">
+<span class="sig-name descname"><span class="pre">citations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/featurizer.html#LocalPropertyStatsNew.citations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.citations" title="Permalink to this definition"></a></dt>
+<dd><p>Citation(s) and reference(s) for this feature.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>(list) each element should be a string citation,</dt><dd><p>ideally in BibTeX format.</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.feature_labels">
+<span class="sig-name descname"><span class="pre">feature_labels</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/featurizer.html#LocalPropertyStatsNew.feature_labels"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.feature_labels" title="Permalink to this definition"></a></dt>
+<dd><p>Generate attribute names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>([str]) attribute labels.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.featurize">
+<span class="sig-name descname"><span class="pre">featurize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">strc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/featurizer.html#LocalPropertyStatsNew.featurize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.featurize" title="Permalink to this definition"></a></dt>
+<dd><p>Main featurizer function, which has to be implemented
+in any derived featurizer subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>x</strong> – input data to featurize (type depends on featurizer).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(list) one or more features.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.from_preset">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_preset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">13</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/featurizer.html#LocalPropertyStatsNew.from_preset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.from_preset" title="Permalink to this definition"></a></dt>
+<dd><p>Create a new LocalPropertyStats class according to a preset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>preset</strong> (<em>str</em>) – Name of preset</p></li>
+<li><p><strong>cutoff</strong> (<em>float</em>) – Cutoff for the nearest neighbor search</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.implementors">
+<span class="sig-name descname"><span class="pre">implementors</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/featurizer.html#LocalPropertyStatsNew.implementors"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.implementors" title="Permalink to this definition"></a></dt>
+<dd><p>List of implementors of the feature.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>(list) each element should either be a string with author name (e.g.,</dt><dd><p>”Anubhav Jain”) or a dictionary  with required key “name” and other
+keys like “email” or “institution” (e.g., {“name”: “Anubhav
+Jain”, “email”: “<a class="reference external" href="mailto:ajain&#37;&#52;&#48;lbl&#46;gov">ajain<span>&#64;</span>lbl<span>&#46;</span>gov</a>”, “institution”: “LBNL”}).</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.featurizer.add_type_feature">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.featurizer.</span></span><span class="sig-name descname"><span class="pre">add_type_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mydict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atomtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">feat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/featurizer.html#add_type_feature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.featurizer.add_type_feature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.featurizer.featurize_dataset">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.featurizer.</span></span><span class="sig-name descname"><span class="pre">featurize_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cifs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveto</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'features.csv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/featurizer.html#featurize_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.featurizer.featurize_dataset" title="Permalink to this definition"></a></dt>
+<dd><p>Featurize crystal structures using elemetal, geometric, and chemical descriptors for local environments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cifs</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></span>) – list of paths to crystal structure in cif format.</p></li>
+<li><p><strong>verbos</strong> – printing the steps.</p></li>
+<li><p><strong>saveto</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – filename to save the generated features.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.featurizer.featurize_structure">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.featurizer.</span></span><span class="sig-name descname"><span class="pre">featurize_structure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cif</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveto</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'features.csv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/featurizer.html#featurize_structure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.featurizer.featurize_structure" title="Permalink to this definition"></a></dt>
+<dd><p>Featurize a crystal structure using elemetal, geometric, and chemical descriptors for local environments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cifs</strong> – list of paths to crystal structure in cif format.</p></li>
+<li><p><strong>verbos</strong> – printing the steps.</p></li>
+<li><p><strong>saveto</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – filename to save the generated features.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
-<section id="coremof-models-cp-app-generate-labels-module">
-<h2>CoREMOF.models.cp_app.generate_labels module<a class="headerlink" href="#coremof-models-cp-app-generate-labels-module" title="Link to this heading"></a></h2>
+<section id="module-CoREMOF.models.cp_app.generate_labels">
+<span id="coremof-models-cp-app-generate-labels-module"></span><h2>CoREMOF.models.cp_app.generate_labels module<a class="headerlink" href="#module-CoREMOF.models.cp_app.generate_labels" title="Permalink to this heading"></a></h2>
+<p>The methods to compute labels for machine learning the heat capacity.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.generate_labels.compute_atomic_cv_dataset">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.generate_labels.</span></span><span class="sig-name descname"><span class="pre">compute_atomic_cv_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phonopy_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cifs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperatures</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbos</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveto</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'labels.csv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/generate_labels.html#compute_atomic_cv_dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.generate_labels.compute_atomic_cv_dataset" title="Permalink to this definition"></a></dt>
+<dd><p>Compute atomic contribution to total cv from phonopy parameter file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>phonopy_params</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – <p>list of phonopy parameter files (output of DFT).</p>
+<p>cifs: list of crystal structure in cif format.
+temperatures: the target temperature .</p>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.generate_labels.compute_projected_dos_structure">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.generate_labels.</span></span><span class="sig-name descname"><span class="pre">compute_projected_dos_structure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phonopy_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unitfactor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">phonopy.units.CP2KToTHz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq_pitch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveto</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/generate_labels.html#compute_projected_dos_structure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.generate_labels.compute_projected_dos_structure" title="Permalink to this definition"></a></dt>
+<dd><p>Compute projected dos from phonopy parameter file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>phonopy_params</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – list of phonopy parameter files (output of DFT).</p></li>
+<li><p><strong>cif</strong> – list of crystal structure in cif format.</p></li>
+<li><p><strong>temperatures</strong> – the target temperature.</p></li>
+<li><p><strong>factor</strong> – the unit conversion factor.</p></li>
+<li><p><strong>dx</strong> – spacing to compute dos.</p></li>
+<li><p><strong>fmax</strong> – max frequency in dos calculations.</p></li>
+<li><p><strong>freq_pitch</strong> – pitch frequency in dos calculations.</p></li>
+<li><p><strong>saveto</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – save the projected dos to a file.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.generate_labels.compute_total_dos_structure">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.generate_labels.</span></span><span class="sig-name descname"><span class="pre">compute_total_dos_structure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">phonopy_params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unitfactor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">phonopy.units.CP2KToTHz</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq_pitch</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveto</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/generate_labels.html#compute_total_dos_structure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.generate_labels.compute_total_dos_structure" title="Permalink to this definition"></a></dt>
+<dd><p>Compute projected dos from phonopy parameter file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>phonopy_params</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – list of phonopy parameter files (output of DFT).</p></li>
+<li><p><strong>cif</strong> – list of crystal structure in cif format.</p></li>
+<li><p><strong>temperatures</strong> – the target temperature .</p></li>
+<li><p><strong>factor</strong> – the unit conversion factor.</p></li>
+<li><p><strong>dx</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – spacing to compute dos.</p></li>
+<li><p><strong>fmax</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – max frequency in dos calculations.</p></li>
+<li><p><strong>freq_pitch</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – pitch frequency in dos calculations.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
-<section id="coremof-models-cp-app-predictions-module">
-<h2>CoREMOF.models.cp_app.predictions module<a class="headerlink" href="#coremof-models-cp-app-predictions-module" title="Link to this heading"></a></h2>
+<section id="module-CoREMOF.models.cp_app.predictions">
+<span id="coremof-models-cp-app-predictions-module"></span><h2>CoREMOF.models.cp_app.predictions module<a class="headerlink" href="#module-CoREMOF.models.cp_app.predictions" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.predictions.predict_Cv_ensemble_structure">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.predictions.</span></span><span class="sig-name descname"><span class="pre">predict_Cv_ensemble_structure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">FEATURES</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df_features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperature</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/predictions.html#predict_Cv_ensemble_structure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.predictions.predict_Cv_ensemble_structure" title="Permalink to this definition"></a></dt>
+<dd><p>Predict heat capacity using an ensemble of ML models for one structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>models</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></span>) – list (ensemble) of ML models.</p></li>
+<li><p><strong>FEATURES</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></span>) – features for ML model.</p></li>
+<li><p><strong>df_features</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span>) – pandas dataframe containing the features.</p></li>
+<li><p><strong>temperature</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – target temperature.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a list containing the gravimetric and molar heat capacity together with the uncertainty of the models.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.models.cp_app.predictions.predict_Cv_ensemble_structure_multitemperatures">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.predictions.</span></span><span class="sig-name descname"><span class="pre">predict_Cv_ensemble_structure_multitemperatures</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path_to_models</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">structure_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">features_file</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'features.csv'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">FEATURES</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">['site</span> <span class="pre">Number',</span> <span class="pre">'site</span> <span class="pre">AtomicWeight',</span> <span class="pre">'site</span> <span class="pre">Row',</span> <span class="pre">'site</span> <span class="pre">Column',</span> <span class="pre">'site</span> <span class="pre">Electronegativity',</span> <span class="pre">'site</span> <span class="pre">CovalentRadius',</span> <span class="pre">'AGNI</span> <span class="pre">eta=8.00e-01',</span> <span class="pre">'AGNI</span> <span class="pre">eta=1.23e+00',</span> <span class="pre">'AGNI</span> <span class="pre">eta=1.88e+00',</span> <span class="pre">'AGNI</span> <span class="pre">eta=2.89e+00',</span> <span class="pre">'AGNI</span> <span class="pre">eta=4.43e+00',</span> <span class="pre">'AGNI</span> <span class="pre">eta=6.80e+00',</span> <span class="pre">'AGNI</span> <span class="pre">eta=1.04e+01',</span> <span class="pre">'AGNI</span> <span class="pre">eta=1.60e+01',</span> <span class="pre">'G2_0.05',</span> <span class="pre">'G2_4.0',</span> <span class="pre">'G2_20.0',</span> <span class="pre">'G2_80.0',</span> <span class="pre">'G4_0.005_1.0_1.0',</span> <span class="pre">'G4_0.005_1.0_-1.0',</span> <span class="pre">'G4_0.005_4.0_1.0',</span> <span class="pre">'G4_0.005_4.0_-1.0',</span> <span class="pre">'local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Number',</span> <span class="pre">'local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">AtomicWeight',</span> <span class="pre">'local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Row',</span> <span class="pre">'local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Column',</span> <span class="pre">'local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Electronegativity',</span> <span class="pre">'local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">CovalentRadius',</span> <span class="pre">'local</span> <span class="pre">signed</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Number',</span> <span class="pre">'local</span> <span class="pre">signed</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">AtomicWeight',</span> <span class="pre">'local</span> <span class="pre">signed</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Row',</span> <span class="pre">'local</span> <span class="pre">signed</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Column',</span> <span class="pre">'local</span> <span class="pre">signed</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Electronegativity',</span> <span class="pre">'local</span> <span class="pre">signed</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">CovalentRadius',</span> <span class="pre">'maximum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Number',</span> <span class="pre">'maximum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">AtomicWeight',</span> <span class="pre">'maximum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Row',</span> <span class="pre">'maximum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Column',</span> <span class="pre">'maximum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Electronegativity',</span> <span class="pre">'maximum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">CovalentRadius',</span> <span class="pre">'minimum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Number',</span> <span class="pre">'minimum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">AtomicWeight',</span> <span class="pre">'minimum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Row',</span> <span class="pre">'minimum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Column',</span> <span class="pre">'minimum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">Electronegativity',</span> <span class="pre">'minimum</span> <span class="pre">local</span> <span class="pre">difference</span> <span class="pre">in</span> <span class="pre">CovalentRadius']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temperatures</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[300.0]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_to</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cv_predicted.csv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/predictions.html#predict_Cv_ensemble_structure_multitemperatures"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.predictions.predict_Cv_ensemble_structure_multitemperatures" title="Permalink to this definition"></a></dt>
+<dd><p>Predict heat capacity using an ensemble of ML models for a dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>models</strong> – ensemble of ML models.</p></li>
+<li><p><strong>FEATURES</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></span>) – features for ML model.</p></li>
+<li><p><strong>df_features</strong> – pandas dataframe containing the features.</p></li>
+<li><p><strong>temperature</strong> – target temperature.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a list containing the gravimetric and molar heat capacity together with the uncertainty of the models.</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="module-CoREMOF.models.cp_app.utils">
-<span id="coremof-models-cp-app-utils-module"></span><h2>CoREMOF.models.cp_app.utils module<a class="headerlink" href="#module-CoREMOF.models.cp_app.utils" title="Link to this heading"></a></h2>
+<span id="coremof-models-cp-app-utils-module"></span><h2>CoREMOF.models.cp_app.utils module<a class="headerlink" href="#module-CoREMOF.models.cp_app.utils" title="Permalink to this heading"></a></h2>
 <p>The utilities for <code class="docutils literal notranslate"><span class="pre">cp_app</span></code>.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.add_type_label">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">add_type_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mydict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atomtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#add_type_label"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.add_type_label" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">add_type_label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mydict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atomtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#add_type_label"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.add_type_label" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.cv_from_dos">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">cv_from_dos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">totaldos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#cv_from_dos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.cv_from_dos" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">cv_from_dos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">totaldos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#cv_from_dos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.cv_from_dos" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.cv_from_frequencies">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">cv_from_frequencies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freqs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#cv_from_frequencies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.cv_from_frequencies" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">cv_from_frequencies</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freqs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#cv_from_frequencies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.cv_from_frequencies" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.cv_from_pdos">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">cv_from_pdos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#cv_from_pdos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.cv_from_pdos" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">cv_from_pdos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdos</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#cv_from_pdos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.cv_from_pdos" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.cv_from_pdos_site">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">cv_from_pdos_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">site</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#cv_from_pdos_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.cv_from_pdos_site" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">cv_from_pdos_site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pdos</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">site</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#cv_from_pdos_site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.cv_from_pdos_site" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.read_atoms_from_mesh">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">read_atoms_from_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#read_atoms_from_mesh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.read_atoms_from_mesh" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">read_atoms_from_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#read_atoms_from_mesh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.read_atoms_from_mesh" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.read_frequencies_from_mesh">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">read_frequencies_from_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#read_frequencies_from_mesh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.read_frequencies_from_mesh" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">read_frequencies_from_mesh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#read_frequencies_from_mesh"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.read_frequencies_from_mesh" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.read_pdos">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">read_pdos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#read_pdos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.read_pdos" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">read_pdos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#read_pdos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.read_pdos" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.read_totaldos">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">read_totaldos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#read_totaldos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.read_totaldos" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">read_totaldos</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#read_totaldos"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.read_totaldos" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.read_vibspectrum">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">read_vibspectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#read_vibspectrum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.read_vibspectrum" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">read_vibspectrum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#read_vibspectrum"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.read_vibspectrum" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.models.cp_app.utils.select_structures">
-<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">select_structures</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nsamples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#select_structures"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.select_structures" title="Link to this definition"></a></dt>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.models.cp_app.utils.</span></span><span class="sig-name descname"><span class="pre">select_structures</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nsamples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">df</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/models/cp_app/utils.html#select_structures"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.models.cp_app.utils.select_structures" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 </section>
 <section id="module-CoREMOF.models.cp_app.versions">
-<span id="coremof-models-cp-app-versions-module"></span><h2>CoREMOF.models.cp_app.versions module<a class="headerlink" href="#module-CoREMOF.models.cp_app.versions" title="Link to this heading"></a></h2>
+<span id="coremof-models-cp-app-versions-module"></span><h2>CoREMOF.models.cp_app.versions module<a class="headerlink" href="#module-CoREMOF.models.cp_app.versions" title="Permalink to this heading"></a></h2>
 <p>Version information.</p>
 </section>
 <section id="module-CoREMOF.models.cp_app">
-<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-CoREMOF.models.cp_app" title="Link to this heading"></a></h2>
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-CoREMOF.models.cp_app" title="Permalink to this heading"></a></h2>
 <p>General functions and methods for heat capacity.</p>
 </section>
 </section>

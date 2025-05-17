@@ -1,0 +1,460 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoREMOF.get_mofid &mdash; CoREMOF 0.1.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+
+  
+      <script src="../../_static/jquery.js"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+      <script src="../../_static/doctools.js"></script>
+      <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            CoREMOF
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../CoREMOF.html">CoREMOF package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">CoREMOF</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">CoREMOF.get_mofid</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for CoREMOF.get_mofid</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Process your CIF to get mofid v1 and v2.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">ase.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">read</span> <span class="k">as</span> <span class="n">ase_read</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ase.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">write</span> <span class="k">as</span> <span class="n">ase_write</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ase</span><span class="w"> </span><span class="kn">import</span> <span class="n">neighborlist</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ase.build</span><span class="w"> </span><span class="kn">import</span> <span class="n">sort</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ase</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">glob</span><span class="o">,</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.core.structure</span><span class="w"> </span><span class="kn">import</span> <span class="n">Structure</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.core.lattice</span><span class="w"> </span><span class="kn">import</span> <span class="n">Lattice</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">mofid.id_constructor</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_fragments</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mofid.run_mofid</span><span class="w"> </span><span class="kn">import</span> <span class="n">cif2mofid</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.analysis.structure_matcher</span><span class="w"> </span><span class="kn">import</span> <span class="n">ElementComparator</span><span class="p">,</span> <span class="n">StructureMatcher</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">selfies</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sf</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">openbabel</span><span class="w"> </span><span class="kn">import</span> <span class="n">openbabel</span> <span class="k">as</span> <span class="n">ob</span>
+
+
+<span class="n">metals</span>  <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Li&#39;</span><span class="p">,</span> <span class="s1">&#39;Na&#39;</span><span class="p">,</span> <span class="s1">&#39;K&#39;</span><span class="p">,</span> <span class="s1">&#39;Rb&#39;</span><span class="p">,</span> <span class="s1">&#39;Cs&#39;</span><span class="p">,</span> <span class="s1">&#39;Fr&#39;</span><span class="p">,</span> <span class="s1">&#39;Be&#39;</span><span class="p">,</span> <span class="s1">&#39;Mg&#39;</span><span class="p">,</span> <span class="s1">&#39;Ca&#39;</span><span class="p">,</span> <span class="s1">&#39;Sr&#39;</span><span class="p">,</span> <span class="s1">&#39;Ba&#39;</span><span class="p">,</span> <span class="s1">&#39;Ra&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;Al&#39;</span><span class="p">,</span> <span class="s1">&#39;Ga&#39;</span><span class="p">,</span> <span class="s1">&#39;Ge&#39;</span><span class="p">,</span> <span class="s1">&#39;In&#39;</span><span class="p">,</span> <span class="s1">&#39;Sn&#39;</span><span class="p">,</span> <span class="s1">&#39;Sb&#39;</span><span class="p">,</span> <span class="s1">&#39;Tl&#39;</span><span class="p">,</span> <span class="s1">&#39;Pb&#39;</span><span class="p">,</span> <span class="s1">&#39;Bi&#39;</span><span class="p">,</span> <span class="s1">&#39;Po&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;Sc&#39;</span><span class="p">,</span> <span class="s1">&#39;Ti&#39;</span><span class="p">,</span> <span class="s1">&#39;V&#39;</span> <span class="p">,</span> <span class="s1">&#39;Cr&#39;</span><span class="p">,</span> <span class="s1">&#39;Mn&#39;</span><span class="p">,</span> <span class="s1">&#39;Fe&#39;</span><span class="p">,</span> <span class="s1">&#39;Co&#39;</span><span class="p">,</span> <span class="s1">&#39;Ni&#39;</span><span class="p">,</span> <span class="s1">&#39;Cu&#39;</span><span class="p">,</span> <span class="s1">&#39;Zn&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;Y&#39;</span> <span class="p">,</span> <span class="s1">&#39;Zr&#39;</span><span class="p">,</span> <span class="s1">&#39;Nb&#39;</span><span class="p">,</span> <span class="s1">&#39;Mo&#39;</span><span class="p">,</span> <span class="s1">&#39;Tc&#39;</span><span class="p">,</span> <span class="s1">&#39;Ru&#39;</span><span class="p">,</span> <span class="s1">&#39;Rh&#39;</span><span class="p">,</span> <span class="s1">&#39;Pd&#39;</span><span class="p">,</span> <span class="s1">&#39;Ag&#39;</span><span class="p">,</span> <span class="s1">&#39;Cd&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;Hf&#39;</span><span class="p">,</span> <span class="s1">&#39;Ta&#39;</span><span class="p">,</span> <span class="s1">&#39;W&#39;</span> <span class="p">,</span> <span class="s1">&#39;Re&#39;</span><span class="p">,</span> <span class="s1">&#39;Os&#39;</span><span class="p">,</span> <span class="s1">&#39;Ir&#39;</span><span class="p">,</span> <span class="s1">&#39;Pt&#39;</span><span class="p">,</span> <span class="s1">&#39;Au&#39;</span><span class="p">,</span> <span class="s1">&#39;Hg&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;La&#39;</span><span class="p">,</span> <span class="s1">&#39;Ce&#39;</span><span class="p">,</span> <span class="s1">&#39;Pr&#39;</span><span class="p">,</span> <span class="s1">&#39;Nd&#39;</span><span class="p">,</span> <span class="s1">&#39;Pm&#39;</span><span class="p">,</span> <span class="s1">&#39;Sm&#39;</span><span class="p">,</span> <span class="s1">&#39;Eu&#39;</span><span class="p">,</span> <span class="s1">&#39;Gd&#39;</span><span class="p">,</span> <span class="s1">&#39;Tb&#39;</span><span class="p">,</span> <span class="s1">&#39;Dy&#39;</span><span class="p">,</span> <span class="s1">&#39;Ho&#39;</span><span class="p">,</span> <span class="s1">&#39;Er&#39;</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;Tm&#39;</span><span class="p">,</span> <span class="s1">&#39;Yb&#39;</span><span class="p">,</span> <span class="s1">&#39;Lu&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;Ac&#39;</span><span class="p">,</span> <span class="s1">&#39;Th&#39;</span><span class="p">,</span> <span class="s1">&#39;Pa&#39;</span><span class="p">,</span> <span class="s1">&#39;U&#39;</span><span class="p">,</span> <span class="s1">&#39;Np&#39;</span><span class="p">,</span> <span class="s1">&#39;Pu&#39;</span><span class="p">,</span> <span class="s1">&#39;Am&#39;</span><span class="p">,</span> <span class="s1">&#39;Cm&#39;</span><span class="p">,</span> <span class="s1">&#39;Bk&#39;</span><span class="p">,</span> <span class="s1">&#39;Cf&#39;</span><span class="p">,</span> <span class="s1">&#39;Es&#39;</span><span class="p">,</span> <span class="s1">&#39;Fm&#39;</span><span class="p">,</span> <span class="s1">&#39;Md&#39;</span><span class="p">,</span> <span class="s1">&#39;No&#39;</span><span class="p">,</span> <span class="s1">&#39;Lr&#39;</span>
+         <span class="p">]</span>
+
+<div class="viewcode-block" id="run_v1"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.get_mofid.run_v1">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">run_v1</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converting CIF to mofid-v1, see https://snurr-group.github.io/mofid/ for additional installation. Tip: Please check CMAKE, JAVA, etc. before installing.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        String:</span>
+<span class="sd">            -   mofid-v1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mofid_v1</span> <span class="o">=</span> <span class="n">cif2mofid</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">mofid_v1</span> <span class="c1"># mofid_v1[&#39;mofid&#39;], mofid_v1[&#39;smiles_nodes&#39;], mofid_v1[&#39;smiles_linkers&#39;], mofid_v1[&#39;topology&#39;], mofid_v1[&#39;cat&#39;]</span></div>
+
+<div class="viewcode-block" id="dict2str"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.get_mofid.dict2str">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">dict2str</span><span class="p">(</span><span class="n">dct</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert symbol-to-number dict to str.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">symb</span> <span class="o">+</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">n</span><span class="p">))</span> <span class="k">for</span> <span class="n">symb</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">dct</span><span class="o">.</span><span class="n">items</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="split_nodes_from_cif"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.get_mofid.split_nodes_from_cif">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">split_nodes_from_cif</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;Output&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Split nodes (CIF) to single XYZ.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">        prefix (str): the path to save processed XYZ.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        int:</span>
+<span class="sd">            -   0: sucess; 1: fail.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">atoms</span> <span class="o">=</span> <span class="n">ase_read</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error with reading CIF in </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">structure</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="n">cutOff</span> <span class="o">=</span> <span class="n">neighborlist</span><span class="o">.</span><span class="n">natural_cutoffs</span><span class="p">(</span><span class="n">atoms</span><span class="p">)</span>
+    <span class="n">neighborList</span> <span class="o">=</span> <span class="n">neighborlist</span><span class="o">.</span><span class="n">NeighborList</span><span class="p">(</span><span class="n">cutOff</span><span class="p">,</span> <span class="n">self_interaction</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">bothways</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">skin</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+    <span class="n">neighborList</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">atoms</span><span class="p">)</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+        <span class="n">tup</span> <span class="o">=</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;element&quot;</span><span class="p">:</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">get_chemical_symbols</span><span class="p">()[</span><span class="n">k</span><span class="p">]),</span> <span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="n">atoms</span><span class="o">.</span><span class="n">get_positions</span><span class="p">()[</span><span class="n">k</span><span class="p">]})</span>
+        <span class="n">G</span><span class="o">.</span><span class="n">add_nodes_from</span><span class="p">([</span><span class="n">tup</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">neighborList</span><span class="o">.</span><span class="n">get_neighbors</span><span class="p">(</span><span class="n">k</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+    <span class="n">Gcc</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">G</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">form_dicts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">Gcc</span><span class="p">):</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+        <span class="n">fragment</span> <span class="o">=</span> <span class="n">atoms</span><span class="p">[</span><span class="n">g</span><span class="p">]</span>
+        <span class="n">fragment</span> <span class="o">=</span> <span class="n">sort</span><span class="p">(</span><span class="n">fragment</span><span class="p">)</span>
+        <span class="n">form_dict</span> <span class="o">=</span> <span class="n">fragment</span><span class="o">.</span><span class="n">symbols</span><span class="o">.</span><span class="n">formula</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+        <span class="n">form_dicts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dict2str</span><span class="p">(</span><span class="n">form_dict</span><span class="p">))</span>
+    <span class="c1">#nodes = [atoms[list(Gcc[0])]]</span>
+    <span class="c1">#unique_formdicts = [form_dicts[0]]</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">unique_formdicts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">form_dicts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">form_dict</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">form_dicts</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">form_dict</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">unique_formdicts</span><span class="p">:</span>
+                <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">Gcc</span><span class="p">[</span><span class="n">index</span><span class="p">])])</span>
+                <span class="n">unique_formdicts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">form_dict</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">form_dicts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">Gcc</span><span class="p">[</span><span class="mi">0</span><span class="p">])])</span>
+        <span class="n">unique_formdicts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">form_dicts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">nodes</span><span class="p">):</span>
+        <span class="n">ase_write</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">/node</span><span class="si">{}</span><span class="s1">.xyz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">index</span><span class="p">),</span> <span class="n">nodes</span><span class="p">[</span><span class="n">index</span><span class="p">])</span> <span class="c1"># /AllNode/nodes.cif</span>
+    <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="split_linkers_from_cif"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.get_mofid.split_linkers_from_cif">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">split_linkers_from_cif</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;Output&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Split linkers (CIF) to single XYZ.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">        prefix (str): the path to save processed XYZ.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        int:</span>
+<span class="sd">            -   0: sucess; 1: fail.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">atoms</span> <span class="o">=</span> <span class="n">ase_read</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Error with reading CIF in </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">structure</span><span class="p">))</span>
+        <span class="k">return</span> <span class="mi">1</span>
+    <span class="n">cutOff</span> <span class="o">=</span> <span class="n">neighborlist</span><span class="o">.</span><span class="n">natural_cutoffs</span><span class="p">(</span><span class="n">atoms</span><span class="p">)</span>
+    <span class="n">neighborList</span> <span class="o">=</span> <span class="n">neighborlist</span><span class="o">.</span><span class="n">NeighborList</span><span class="p">(</span><span class="n">cutOff</span><span class="p">,</span> <span class="n">self_interaction</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">bothways</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">skin</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+    <span class="n">neighborList</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">atoms</span><span class="p">)</span>
+    <span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+        <span class="n">tup</span> <span class="o">=</span> <span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;element&quot;</span><span class="p">:</span><span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">get_chemical_symbols</span><span class="p">()[</span><span class="n">k</span><span class="p">]),</span> <span class="s2">&quot;pos&quot;</span><span class="p">:</span> <span class="n">atoms</span><span class="o">.</span><span class="n">get_positions</span><span class="p">()[</span><span class="n">k</span><span class="p">]})</span>
+        <span class="n">G</span><span class="o">.</span><span class="n">add_nodes_from</span><span class="p">([</span><span class="n">tup</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">neighborList</span><span class="o">.</span><span class="n">get_neighbors</span><span class="p">(</span><span class="n">k</span><span class="p">)[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="n">G</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+    <span class="n">Gcc</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">G</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">form_dicts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">Gcc</span><span class="p">):</span>
+        <span class="n">g</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+        <span class="n">fragment</span> <span class="o">=</span> <span class="n">atoms</span><span class="p">[</span><span class="n">g</span><span class="p">]</span>
+        <span class="n">fragment</span> <span class="o">=</span> <span class="n">sort</span><span class="p">(</span><span class="n">fragment</span><span class="p">)</span>
+        <span class="n">form_dict</span> <span class="o">=</span> <span class="n">fragment</span><span class="o">.</span><span class="n">symbols</span><span class="o">.</span><span class="n">formula</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+        <span class="n">form_dicts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">dict2str</span><span class="p">(</span><span class="n">form_dict</span><span class="p">))</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">unique_formdicts</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">form_dicts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">form_dict</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">form_dicts</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">form_dict</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">unique_formdicts</span><span class="p">:</span>
+                <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">Gcc</span><span class="p">[</span><span class="n">index</span><span class="p">])])</span>
+                <span class="n">unique_formdicts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">form_dict</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">form_dicts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">atoms</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">Gcc</span><span class="p">[</span><span class="mi">0</span><span class="p">])])</span>
+        <span class="n">unique_formdicts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">form_dicts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">nodes</span><span class="p">):</span>
+        <span class="n">ase_write</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">_MetalOxolinker</span><span class="si">{}</span><span class="s1">.xyz&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">index</span><span class="p">),</span> <span class="n">nodes</span><span class="p">[</span><span class="n">index</span><span class="p">])</span> <span class="c1"># /MetalOxo/linkers.cif</span>
+    <span class="k">return</span> <span class="mi">0</span></div>
+
+<div class="viewcode-block" id="get_node_linker_files"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.get_mofid.get_node_linker_files">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">get_node_linker_files</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;Output&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Split MOF to sbu + linker.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+<span class="sd">        prefix (str): the path to save processed XYZ.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        files:</span>
+<span class="sd">            -   structure, node, linker, ...</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">extract_fragments</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">prefix</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="xyz2fomula"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.get_mofid.xyz2fomula">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">xyz2fomula</span><span class="p">(</span><span class="n">xyzpath</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;from XYZ to chemical fomula based on A-Z.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xyzpath (str): path to your XYZ.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str:</span>
+<span class="sd">            -   fomula.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">atoms</span> <span class="o">=</span> <span class="n">ase_read</span><span class="p">(</span><span class="n">xyzpath</span><span class="p">)</span>
+    <span class="n">symbols</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">get_chemical_symbols</span><span class="p">()</span>
+    <span class="n">counts</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">symbols</span><span class="p">)</span>
+    <span class="n">sorted_items</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">counts</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="c1"># formula = &#39;&#39;.join(f&quot;{el}{n if n &gt; 1 else &#39;&#39;}&quot; for el, n in sorted_items)</span>
+    <span class="n">formula</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">el</span><span class="si">}{</span><span class="n">n</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">el</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">sorted_items</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">formula</span></div>
+
+<div class="viewcode-block" id="convert_ase_pymat"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.get_mofid.convert_ase_pymat">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">convert_ase_pymat</span><span class="p">(</span><span class="n">ase_objects</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;convert to ase to pymatgen atoms.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ase_objects (ase.Atoms): ase-type atoms.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ase.Atoms:</span>
+<span class="sd">            -   pymatgen-type atoms.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">structure_lattice</span> <span class="o">=</span> <span class="n">Lattice</span><span class="p">(</span><span class="n">ase_objects</span><span class="o">.</span><span class="n">cell</span><span class="p">)</span>
+    <span class="n">structure_species</span> <span class="o">=</span> <span class="n">ase_objects</span><span class="o">.</span><span class="n">get_chemical_symbols</span><span class="p">()</span>
+    <span class="n">structure_positions</span> <span class="o">=</span> <span class="n">ase_objects</span><span class="o">.</span><span class="n">get_positions</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">Structure</span><span class="p">(</span><span class="n">structure_lattice</span><span class="p">,</span><span class="n">structure_species</span><span class="p">,</span><span class="n">structure_positions</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="remove_pbc_cuts"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.get_mofid.remove_pbc_cuts">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">remove_pbc_cuts</span><span class="p">(</span><span class="n">atoms</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove building block cuts due to periodic boundary conditions. After the</span>
+<span class="sd">    removal, the atoms object is centered at the center of the unit cell.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        atoms (ase.Atoms): aase.Atoms.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        ase.Atoms:</span>
+<span class="sd">            -   The processed atoms object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># setting cuttoff parameter</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="mf">1.4</span>
+        <span class="n">cutoffs</span> <span class="o">=</span> <span class="n">ase</span><span class="o">.</span><span class="n">neighborlist</span><span class="o">.</span><span class="n">natural_cutoffs</span><span class="p">(</span><span class="n">atoms</span><span class="p">)</span>
+        <span class="n">cutoffs</span> <span class="o">=</span> <span class="p">[</span><span class="n">scale</span> <span class="o">*</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cutoffs</span><span class="p">]</span>
+        <span class="c1">#making neighbor_list</span>
+        <span class="c1">#graphs of single metal is not constructed because there is no neighbor.</span>
+        <span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">D</span> <span class="o">=</span> <span class="n">ase</span><span class="o">.</span><span class="n">neighborlist</span><span class="o">.</span><span class="n">neighbor_list</span><span class="p">(</span><span class="s2">&quot;ijD&quot;</span><span class="p">,</span><span class="n">atoms</span><span class="p">,</span><span class="n">cutoff</span><span class="o">=</span><span class="n">cutoffs</span><span class="p">)</span>
+        <span class="n">nl</span> <span class="o">=</span> <span class="p">[[]</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">atoms</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">I</span><span class="p">,</span> <span class="n">J</span><span class="p">,</span> <span class="n">D</span><span class="p">):</span>
+            <span class="n">nl</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">j</span><span class="p">,</span> <span class="n">d</span><span class="p">))</span>
+        <span class="n">visited</span> <span class="o">=</span> <span class="p">[</span><span class="kc">False</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">atoms</span><span class="p">]</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">deque</span><span class="p">()</span>
+        <span class="c1"># Center of the unit cell.</span>
+        <span class="n">abc_half</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">get_cell</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.5</span>
+        <span class="n">positions</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">q</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])))</span>
+        <span class="k">while</span> <span class="n">q</span><span class="p">:</span>
+            <span class="n">i</span><span class="p">,</span> <span class="n">pos</span> <span class="o">=</span> <span class="n">q</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="n">visited</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">pos</span>
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">nl</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">visited</span><span class="p">[</span><span class="n">j</span><span class="p">]:</span>
+                    <span class="n">q</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">j</span><span class="p">,</span> <span class="n">pos</span> <span class="o">+</span> <span class="n">d</span><span class="p">))</span>
+                    <span class="n">visited</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">centroid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+        <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">positions</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">centroid</span> <span class="o">+=</span> <span class="n">v</span>
+        <span class="n">centroid</span> <span class="o">/=</span> <span class="nb">len</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+        <span class="n">syms</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">atoms</span><span class="p">]</span>
+        <span class="n">poss</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">atoms</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">atoms</span><span class="p">)):</span>
+            <span class="n">syms</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">poss</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">positions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">centroid</span> <span class="o">+</span> <span class="n">abc_half</span>
+        <span class="n">atoms</span> <span class="o">=</span> <span class="n">ase</span><span class="o">.</span><span class="n">Atoms</span><span class="p">(</span>
+            <span class="n">symbols</span><span class="o">=</span><span class="n">syms</span><span class="p">,</span> <span class="n">positions</span><span class="o">=</span><span class="n">poss</span><span class="p">,</span> <span class="n">pbc</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cell</span><span class="o">=</span><span class="n">atoms</span><span class="o">.</span><span class="n">get_cell</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="c1"># resize of cell</span>
+        <span class="n">cell_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">cell_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">cell_z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">atoms</span><span class="o">.</span><span class="n">positions</span><span class="p">[:,</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">cell</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">cell_x</span><span class="p">,</span><span class="n">cell_y</span><span class="p">,</span><span class="n">cell_z</span><span class="p">])</span>
+        <span class="n">atoms</span><span class="o">.</span><span class="n">set_cell</span><span class="p">([</span><span class="n">cell</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span><span class="n">cell</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span><span class="n">cell</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="mi">90</span><span class="p">,</span><span class="mi">90</span><span class="p">,</span><span class="mi">90</span><span class="p">])</span>
+        <span class="n">center_mass</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">get_center_of_mass</span><span class="p">()</span>
+        <span class="n">cell_half</span>  <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">cell</span><span class="o">.</span><span class="n">cellpar</span><span class="p">()[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="o">/</span><span class="mi">2</span>
+        <span class="n">atoms</span><span class="o">.</span><span class="n">positions</span> <span class="o">=</span> <span class="n">atoms</span><span class="o">.</span><span class="n">positions</span> <span class="o">-</span> <span class="n">center_mass</span> <span class="o">+</span> <span class="n">cell_half</span>    
+        <span class="k">return</span> <span class="n">atoms</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">atoms</span></div>
+
+<div class="viewcode-block" id="run_v2"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.get_mofid.run_v2">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">run_v2</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">nodes_dataset</span><span class="p">,</span> <span class="n">refname</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;run mofidv2 from CIF.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your MOF.</span>
+<span class="sd">        nodes_dataset (str): path to your node dataset (download from https://github.com/sxm13/CoREMOF_tools/tree/main/CoREMOF/data/mofid/nodes.zip).</span>
+<span class="sd">        refname (str): file name of your structure or define by yourself.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str:</span>
+<span class="sd">            -   mofid-v2.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># get list of nodes</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="s2">&quot;Output&quot;</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="c1"># get list of nodes</span>
+    <span class="n">nodes_type</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">nodes_dataset</span><span class="o">+</span><span class="s2">&quot;/*xyz&quot;</span><span class="p">)</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">node_file</span> <span class="ow">in</span> <span class="n">nodes_type</span><span class="p">:</span>
+        <span class="n">nodes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_file</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">nodes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">nodes</span><span class="p">))</span>
+    <span class="c1"># get information of mofid-v1</span>
+    <span class="n">mofidv1</span> <span class="o">=</span> <span class="n">run_v1</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+    <span class="n">linkers</span> <span class="o">=</span> <span class="n">mofidv1</span><span class="p">[</span><span class="s2">&quot;smiles_linkers&quot;</span><span class="p">]</span>
+    <span class="n">all_linkers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">linker</span> <span class="ow">in</span> <span class="n">linkers</span><span class="p">:</span>
+        <span class="n">all_linkers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sf</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">linker</span><span class="p">))</span>
+    <span class="n">topology</span> <span class="o">=</span> <span class="n">mofidv1</span><span class="p">[</span><span class="s2">&quot;topology&quot;</span><span class="p">]</span>
+    <span class="n">cat</span> <span class="o">=</span> <span class="n">mofidv1</span><span class="p">[</span><span class="s2">&quot;cat&quot;</span><span class="p">]</span>
+    <span class="c1"># get_node_linker_files(cifpath)</span>
+    <span class="n">check</span> <span class="o">=</span> <span class="n">split_nodes_from_cif</span><span class="p">(</span><span class="s2">&quot;Output/AllNode/nodes.cif&quot;</span><span class="p">,</span> <span class="s2">&quot;Output&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">check</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="s2">&quot;nan&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">all_nodes_xyz</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;./Output/node*xyz&quot;</span><span class="p">)</span>
+        <span class="n">all_nodes_part</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">node_xyz</span> <span class="ow">in</span> <span class="n">all_nodes_xyz</span><span class="p">:</span>
+            <span class="n">node_formula</span> <span class="o">=</span> <span class="n">xyz2fomula</span><span class="p">(</span><span class="n">node_xyz</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">node_formula</span> <span class="ow">in</span> <span class="n">nodes</span><span class="p">:</span>
+                <span class="n">matcher</span> <span class="o">=</span> <span class="n">StructureMatcher</span><span class="p">(</span><span class="n">ltol</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">,</span>
+                                           <span class="n">stol</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+                                           <span class="n">angle_tol</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+                                           <span class="n">primitive_cell</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                                           <span class="n">scale</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                                           <span class="n">comparator</span><span class="o">=</span><span class="n">ElementComparator</span><span class="p">())</span> 
+                <span class="n">matched</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">known_nodes</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">nodes_dataset</span><span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">node_formula</span> <span class="o">+</span> <span class="s2">&quot;*xyz&quot;</span><span class="p">)</span>
+                
+                <span class="n">mof</span> <span class="o">=</span> <span class="n">remove_pbc_cuts</span><span class="p">(</span><span class="n">ase_read</span><span class="p">(</span><span class="n">node_xyz</span><span class="p">))</span>
+                <span class="n">a</span> <span class="o">=</span> <span class="n">convert_ase_pymat</span><span class="p">(</span><span class="n">mof</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">known_nodes</span><span class="p">)):</span>
+                    <span class="n">b</span> <span class="o">=</span> <span class="n">convert_ase_pymat</span><span class="p">(</span><span class="n">remove_pbc_cuts</span><span class="p">(</span><span class="n">ase_read</span><span class="p">(</span><span class="n">known_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">])))</span>
+                    <span class="k">if</span> <span class="n">matcher</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+                        <span class="n">node_part</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">known_nodes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.xyz&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+                        <span class="n">all_nodes_part</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_part</span><span class="p">)</span>
+                        <span class="n">matched</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">node_formula</span><span class="p">,</span> <span class="s2">&quot;the node can be found in nodes dataset&quot;</span><span class="p">)</span>
+                        <span class="k">break</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">matched</span><span class="p">:</span>
+                    <span class="n">node_part</span> <span class="o">=</span> <span class="n">node_formula</span> <span class="o">+</span> <span class="s2">&quot;_Type-&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">known_nodes</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+                    <span class="n">all_nodes_part</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_part</span><span class="p">)</span>
+                    <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">node_xyz</span><span class="p">,</span> <span class="n">nodes_dataset</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">node_part</span> <span class="o">+</span> <span class="s2">&quot;.xyz&quot;</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;new node found, has moved the nodes dataset&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">node_part</span> <span class="o">=</span> <span class="n">node_formula</span> <span class="o">+</span> <span class="s2">&quot;_Type-1&quot;</span>
+                <span class="n">all_nodes_part</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">node_part</span><span class="p">)</span>
+                <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">node_xyz</span><span class="p">,</span> <span class="n">nodes_dataset</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">node_part</span> <span class="o">+</span> <span class="s2">&quot;.xyz&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;new node found, has moved the nodes dataset&quot;</span><span class="p">)</span>
+
+    <span class="n">linkers_part</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">all_linkers</span><span class="p">)</span>
+    <span class="n">nodes_part</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">node</span><span class="si">}</span><span class="s2">]&quot;</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">all_nodes_part</span><span class="p">)</span>
+    <span class="n">mofidv2</span> <span class="o">=</span> <span class="n">nodes_part</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">linkers_part</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="s2">&quot;MOFid-v2.&quot;</span> <span class="o">+</span> <span class="n">topology</span> <span class="o">+</span> <span class="s2">&quot;.cat&quot;</span> <span class="o">+</span> <span class="n">cat</span> <span class="o">+</span> <span class="s2">&quot;;&quot;</span> <span class="o">+</span> <span class="n">refname</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">shutil</span><span class="o">.</span><span class="n">rmtree</span><span class="p">(</span><span class="s2">&quot;Output&quot;</span><span class="p">)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">return</span> <span class="n">mofidv2</span></div>
+
+<div class="viewcode-block" id="are_identical_smiles"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.get_mofid.are_identical_smiles">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">are_identical_smiles</span><span class="p">(</span><span class="n">smiles1</span><span class="p">,</span> <span class="n">smiles2</span><span class="p">):</span>
+    <span class="n">obConversion</span> <span class="o">=</span> <span class="n">ob</span><span class="o">.</span><span class="n">OBConversion</span><span class="p">()</span>
+    <span class="n">obConversion</span><span class="o">.</span><span class="n">SetInFormat</span><span class="p">(</span><span class="s2">&quot;smi&quot;</span><span class="p">)</span>
+    <span class="n">obConversion</span><span class="o">.</span><span class="n">SetOutFormat</span><span class="p">(</span><span class="s2">&quot;can&quot;</span><span class="p">)</span>  <span class="c1"># Set output to canonical SMILES</span>
+    <span class="n">mol1</span> <span class="o">=</span> <span class="n">ob</span><span class="o">.</span><span class="n">OBMol</span><span class="p">()</span>
+    <span class="n">mol2</span> <span class="o">=</span> <span class="n">ob</span><span class="o">.</span><span class="n">OBMol</span><span class="p">()</span>
+    <span class="c1"># Read the SMILES strings into molecules</span>
+    <span class="n">obConversion</span><span class="o">.</span><span class="n">ReadString</span><span class="p">(</span><span class="n">mol1</span><span class="p">,</span> <span class="n">smiles1</span><span class="p">)</span>
+    <span class="n">obConversion</span><span class="o">.</span><span class="n">ReadString</span><span class="p">(</span><span class="n">mol2</span><span class="p">,</span> <span class="n">smiles2</span><span class="p">)</span>
+    <span class="c1"># Convert molecules to canonical SMILES</span>
+    <span class="n">can_smiles1</span> <span class="o">=</span> <span class="n">obConversion</span><span class="o">.</span><span class="n">WriteString</span><span class="p">(</span><span class="n">mol1</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">can_smiles2</span> <span class="o">=</span> <span class="n">obConversion</span><span class="o">.</span><span class="n">WriteString</span><span class="p">(</span><span class="n">mol2</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="c1"># Compare canonical SMILES</span>
+    <span class="k">return</span> <span class="n">can_smiles1</span> <span class="o">==</span> <span class="n">can_smiles2</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, MTAP @ Pusan National University.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

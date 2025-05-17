@@ -23,8 +23,8 @@ For more details on CoREMOF_tools, please refer to the following paper:
 
 1. **Zhao G, Brabson L, Chheda S, Huang J, Kim H, Liu K, et al.**  
    *CoRE MOF DB: A curated experimental metal-organic framework database with machine-learned properties for integrated material-process screening.*  
-   **ChemRxiv, 2024**  
-   DOI: [10.26434/chemrxiv-2024-nvmnr](https://doi.org/10.26434/chemrxiv-2024-nvmnr)  
+   **Matter, 8 (2025), 102140**  
+   DOI: [10.26434/chemrxiv-2024-nvmnr](10.1016/j.matt.2025.102140)  
 
    > This content is a preprint and has not been peer-reviewed.
 

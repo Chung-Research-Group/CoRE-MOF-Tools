@@ -1,20 +1,20 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../../">
+<html class="writer-html5" lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.calculation.Zeopp &mdash; CoREMOF_tools 0.0.9 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+  <title>CoREMOF.calculation.Zeopp &mdash; CoREMOF 0.1.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
 
   
-      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=f7cdbf68"></script>
-      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/jquery.js"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+      <script src="../../../_static/doctools.js"></script>
+      <script src="../../../_static/sphinx_highlight.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -29,7 +29,7 @@
           
           
           <a href="../../../index.html" class="icon icon-home">
-            CoREMOF_tools
+            CoREMOF
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -39,15 +39,20 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../CoREMOF.html">CoREMOF package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../../index.html">CoREMOF_tools</a>
+          <a href="../../../index.html">CoREMOF</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -74,9 +79,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 
-<div class="viewcode-block" id="ChanDim">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.ChanDim">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">ChanDim</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">probe_radius</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_chan&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="ChanDim"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.ChanDim">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">ChanDim</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">probe_radius</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_chan&quot;</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis dimension of channel.</span>
 
@@ -99,6 +102,7 @@
     
     <span class="k">if</span> <span class="n">high_accuracy</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -ha -chan </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="c1"># cmd = f&#39;network -ha S50 -chan {probe_radius} {tmp_file} {structure}&#39;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -chan </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
     <span class="n">_</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -120,10 +124,7 @@
 
     <span class="k">return</span> <span class="n">results_chan</span></div>
 
-
-<div class="viewcode-block" id="FrameworkDim">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.FrameworkDim">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">FrameworkDim</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_strinfo&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="FrameworkDim"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.FrameworkDim">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">FrameworkDim</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_strinfo&quot;</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis dimension of framework.</span>
 
@@ -148,6 +149,7 @@
     
     <span class="k">if</span> <span class="n">high_accuracy</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -ha -strinfo </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="c1"># cmd = f&#39;network -ha S50 -strinfo {tmp_file} {structure}&#39;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -strinfo </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
     <span class="n">_</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -179,10 +181,7 @@
 
     <span class="k">return</span> <span class="n">results_strinfo</span></div>
 
-
-<div class="viewcode-block" id="PoreDiameter">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.PoreDiameter">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">PoreDiameter</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_pd&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="PoreDiameter"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.PoreDiameter">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">PoreDiameter</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_pd&quot;</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis pore diameter of structure.</span>
 
@@ -206,6 +205,7 @@
     
     <span class="k">if</span> <span class="n">high_accuracy</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -ha -res </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="c1"># cmd = f&#39;network -ha S50 -res {tmp_file} {structure}&#39;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -res </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
     <span class="n">_</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -222,10 +222,7 @@
 
     <span class="k">return</span> <span class="n">results_pd</span></div>
 
-
-<div class="viewcode-block" id="SurfaceArea">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.SurfaceArea">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">SurfaceArea</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">chan_radius</span> <span class="o">=</span> <span class="mf">1.655</span><span class="p">,</span> <span class="n">probe_radius</span> <span class="o">=</span> <span class="mf">1.655</span><span class="p">,</span> <span class="n">num_samples</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_sa&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="SurfaceArea"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.SurfaceArea">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">SurfaceArea</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">chan_radius</span> <span class="o">=</span> <span class="mf">1.655</span><span class="p">,</span> <span class="n">probe_radius</span> <span class="o">=</span> <span class="mf">1.655</span><span class="p">,</span> <span class="n">num_samples</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_sa&quot;</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis surface area of structure.</span>
 
@@ -251,6 +248,7 @@
     
     <span class="k">if</span> <span class="n">high_accuracy</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -ha -sa </span><span class="si">{</span><span class="n">chan_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">num_samples</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="c1"># cmd = f&#39;network -ha S50 -sa {chan_radius} {probe_radius} {num_samples} {tmp_file} {structure}&#39;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -sa </span><span class="si">{</span><span class="n">chan_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">num_samples</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
     <span class="n">_</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -277,10 +275,7 @@
 
     <span class="k">return</span> <span class="n">results_sa</span></div>
 
-
-<div class="viewcode-block" id="PoreVolume">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.PoreVolume">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">PoreVolume</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">chan_radius</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">probe_radius</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">num_samples</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_pv&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="PoreVolume"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.Zeopp.PoreVolume">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">PoreVolume</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">chan_radius</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">probe_radius</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">num_samples</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">,</span> <span class="n">high_accuracy</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;tmp_pv&quot;</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Analysis pore volume of structure.</span>
 
@@ -308,6 +303,7 @@
     
     <span class="k">if</span> <span class="n">high_accuracy</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -ha -volpo </span><span class="si">{</span><span class="n">chan_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">num_samples</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="c1"># cmd = f&#39;network -ha S50 -volpo {chan_radius} {probe_radius} {num_samples} {tmp_file} {structure}&#39;</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">cmd</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;network -volpo </span><span class="si">{</span><span class="n">chan_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">probe_radius</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">num_samples</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">tmp_file</span><span class="si">}</span><span class="s1"> </span><span class="si">{</span><span class="n">structure</span><span class="si">}</span><span class="s1">&#39;</span>
     <span class="n">_</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
@@ -334,7 +330,6 @@
     <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">tmp_file</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">results_pv</span></div>
-
 </pre></div>
 
            </div>

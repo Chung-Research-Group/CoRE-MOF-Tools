@@ -1,20 +1,20 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../">
+<html class="writer-html5" lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.structure &mdash; CoREMOF_tools 0.0.9 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+  <title>CoREMOF.structure &mdash; CoREMOF 0.1.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
 
   
-      <script src="../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=f7cdbf68"></script>
-      <script src="../../_static/doctools.js?v=9a2dae69"></script>
-      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/jquery.js"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+      <script src="../../_static/doctools.js"></script>
+      <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -29,7 +29,7 @@
           
           
           <a href="../../index.html" class="icon icon-home">
-            CoREMOF_tools
+            CoREMOF
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -39,15 +39,20 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../CoREMOF.html">CoREMOF package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../index.html">CoREMOF_tools</a>
+          <a href="../../index.html">CoREMOF</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -76,21 +81,14 @@
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;You need to install CSD software with the license if you want to download all structures&quot;</span><span class="p">)</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">requests</span><span class="o">,</span><span class="w"> </span><span class="nn">zipfile</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">ase.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">read</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.io.ase</span><span class="w"> </span><span class="kn">import</span> <span class="n">AseAtomsAdaptor</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.symmetry.analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpacegroupAnalyzer</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gemmi</span><span class="w"> </span><span class="kn">import</span> <span class="n">cif</span>
 
 <span class="n">package_directory</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;structure.py&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
 
 <span class="n">files_to_download</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="s1">&#39;data/CSD/list_coremof_csd_unmodified_20250227.json&#39;</span><span class="p">:</span> <span class="s1">&#39;https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/data/CSD/list_coremof_csd_unmodified_20250227.json&#39;</span><span class="p">,</span>
-                    <span class="s1">&#39;data/detail_of_CR.json&#39;</span><span class="p">:</span> <span class="s1">&#39;https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/data/detail_of_CR.json&#39;</span><span class="p">,</span>
-                    <span class="s1">&#39;data/detail_of_NCR.json&#39;</span><span class="p">:</span> <span class="s1">&#39;https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/data/detail_of_NCR.json&#39;</span><span class="p">,</span>
-                    <span class="s1">&#39;data/CSD/CR_CSD_REFCODE.json&#39;</span><span class="p">:</span> <span class="s1">&#39;https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/data/CSD/CR_CSD_REFCODE.json&#39;</span><span class="p">,</span>
-                    <span class="s1">&#39;data/CSD/NCR_CSD_REFCODE.json&#39;</span><span class="p">:</span> <span class="s1">&#39;https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/data/CSD/NCR_CSD_REFCODE.json&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;data/CR.json&#39;</span><span class="p">:</span> <span class="s1">&#39;https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/CoREMOF/data/info/CR.json&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;data/NCR.json&#39;</span><span class="p">:</span> <span class="s1">&#39;https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/CoREMOF/data/info/NCR.json&#39;</span><span class="p">,</span>
                     <span class="s1">&#39;data/SI/CR.zip&#39;</span><span class="p">:</span> <span class="s1">&#39;https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/data/SI/CR.zip&#39;</span><span class="p">,</span>
                     <span class="s1">&#39;data/SI/NCR.zip&#39;</span><span class="p">:</span> <span class="s1">&#39;https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/data/SI/NCR.zip&#39;</span>
                     <span class="p">}</span>
@@ -114,33 +112,7 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="k">pass</span>
 
-
-<div class="viewcode-block" id="make_primitive_p1">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.make_primitive_p1">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">make_primitive_p1</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;make primitive and make P1.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        filename (str): path to your structure.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        cif:</span>
-<span class="sd">           CIF after making primitive and make P1.   </span>
-<span class="sd">    &quot;&quot;&quot;</span>     
-
-    <span class="n">atoms</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-    <span class="n">structure_</span><span class="o">=</span> <span class="n">AseAtomsAdaptor</span><span class="o">.</span><span class="n">get_structure</span><span class="p">(</span><span class="n">atoms</span><span class="p">)</span>
-    
-    <span class="n">sga</span> <span class="o">=</span> <span class="n">SpacegroupAnalyzer</span><span class="p">(</span><span class="n">structure_</span><span class="p">)</span>
-    <span class="n">structure_prep</span> <span class="o">=</span> <span class="n">sga</span><span class="o">.</span><span class="n">get_primitive_standard_structure</span><span class="p">(</span><span class="n">international_monoclinic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">keep_site_properties</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="n">structure_prep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">filename</span><span class="p">)</span></div>
-
-    
-
-<div class="viewcode-block" id="download_from_SI">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.download_from_SI">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">download_from_SI</span><span class="p">():</span>
+<div class="viewcode-block" id="download_from_SI"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.download_from_SI">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">download_from_SI</span><span class="p">():</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;download structures that we got from supporting information.</span>
 
@@ -158,9 +130,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="n">output_folder</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
-<div class="viewcode-block" id="download_from_SI.run">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.download_from_SI.run">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="download_from_SI.run"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.download_from_SI.run">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;start to run. </span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -176,10 +146,7 @@
         <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">NCR_files</span><span class="p">[:]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">get_from_SI</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SI_path</span><span class="o">+</span><span class="s2">&quot;NCR.zip&quot;</span><span class="p">,</span> <span class="n">file</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="download_from_SI.list_zip">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.download_from_SI.list_zip">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">list_zip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zip_path</span><span class="p">):</span>
+<div class="viewcode-block" id="download_from_SI.list_zip"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.download_from_SI.list_zip">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">list_zip</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zip_path</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;list of files from a ZIP.</span>
 
@@ -194,11 +161,8 @@
         <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">zip_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">zip_ref</span><span class="p">:</span>
             <span class="n">file_list</span> <span class="o">=</span> <span class="n">zip_ref</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
             <span class="k">return</span> <span class="n">file_list</span></div>
-
     
-<div class="viewcode-block" id="download_from_SI.get_from_SI">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.download_from_SI.get_from_SI">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_from_SI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zip_path</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">):</span>
+<div class="viewcode-block" id="download_from_SI.get_from_SI"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.download_from_SI.get_from_SI">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_from_SI</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zip_path</span><span class="p">,</span> <span class="n">entry</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;unzip files from a ZIP.</span>
 
@@ -211,13 +175,9 @@
         <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">zip_path</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">zip_ref</span><span class="p">:</span>
             <span class="n">file_list</span> <span class="o">=</span> <span class="n">zip_ref</span><span class="o">.</span><span class="n">namelist</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">file_list</span><span class="p">:</span>
-                <span class="n">zip_ref</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">)</span></div>
-</div>
-
+                <span class="n">zip_ref</span><span class="o">.</span><span class="n">extract</span><span class="p">(</span><span class="n">entry</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">)</span></div></div>
             
-<div class="viewcode-block" id="download_from_CSD">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.download_from_CSD">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">download_from_CSD</span><span class="p">(</span><span class="n">refcode</span><span class="p">,</span> <span class="n">output_folder</span><span class="o">=</span><span class="s2">&quot;./CoREMOF2024DB&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="download_from_CSD"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.download_from_CSD">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">download_from_CSD</span><span class="p">(</span><span class="n">refcode</span><span class="p">,</span> <span class="n">output_folder</span><span class="o">=</span><span class="s2">&quot;./CoREMOF2024DB&quot;</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;download structures from CSD, you need to install [CSD python API](https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html) with licence.</span>
 
@@ -237,40 +197,7 @@
     <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
 
 
-<div class="viewcode-block" id="get_list_CSD">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.get_list_CSD">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_list_CSD</span><span class="p">():</span>
-
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;get the name list of structures from CSD.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        List:</span>
-<span class="sd">            -   CR dataset from CSD.</span>
-<span class="sd">            -   NCR dataset from CSD.</span>
-<span class="sd">            -   unmodified dataset from CSD.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-            
-    <span class="n">CSD_path</span> <span class="o">=</span> <span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/data/CSD/&#39;</span>
-    <span class="n">CR_json</span> <span class="o">=</span> <span class="n">CSD_path</span> <span class="o">+</span> <span class="s2">&quot;/CR_CSD_REFCODE.json&quot;</span>
-    <span class="n">NCR_json</span>  <span class="o">=</span> <span class="n">CSD_path</span> <span class="o">+</span> <span class="s2">&quot;/NCR_CSD_REFCODE.json&quot;</span>
-    <span class="n">CSD_unmodified_json</span>  <span class="o">=</span> <span class="n">CSD_path</span> <span class="o">+</span> <span class="s2">&quot;/list_coremof_csd_unmodified_20250227.json&quot;</span>
-
-    <span class="k">with</span> <span class="nb">open</span> <span class="p">(</span><span class="n">CR_json</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">CR_f</span><span class="p">:</span>
-        <span class="n">CSD_CR</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">CR_f</span><span class="p">)</span>
-        
-    <span class="k">with</span> <span class="nb">open</span> <span class="p">(</span><span class="n">NCR_json</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">NCR_f</span><span class="p">:</span>
-        <span class="n">CSD_NCR</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">NCR_f</span><span class="p">)</span>
-
-    <span class="k">with</span> <span class="nb">open</span> <span class="p">(</span><span class="n">CSD_unmodified_json</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">CSD_unmodified_f</span><span class="p">:</span>
-        <span class="n">CSD_unmodified</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">CSD_unmodified_f</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">CSD_CR</span><span class="p">,</span> <span class="n">CSD_NCR</span><span class="p">,</span> <span class="n">CSD_unmodified</span></div>
-
-
-
-<div class="viewcode-block" id="information">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.information">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">information</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">entry</span><span class="p">):</span>
+<div class="viewcode-block" id="information"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.information">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">information</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">entry</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;get information of CoRE MOF database.</span>
 
@@ -283,8 +210,8 @@
 <span class="sd">            properties, DOI, issues and so on. </span>
 <span class="sd">    &quot;&quot;&quot;</span>     
 
-    <span class="n">CR_data_path</span> <span class="o">=</span> <span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/data/detail_of_CR.json&#39;</span>
-    <span class="n">NCR_data_path</span> <span class="o">=</span> <span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/data/detail_of_NCR.json&#39;</span>
+    <span class="n">CR_data_path</span> <span class="o">=</span> <span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/data/CR.json&#39;</span>
+    <span class="n">NCR_data_path</span> <span class="o">=</span> <span class="n">package_directory</span><span class="o">+</span><span class="s1">&#39;/data/NCR.json&#39;</span>
 
     <span class="k">with</span> <span class="nb">open</span> <span class="p">(</span><span class="n">CR_data_path</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">CR_f</span><span class="p">:</span>
         <span class="n">CR_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">CR_f</span><span class="p">)</span>
@@ -306,10 +233,7 @@
 
     <span class="k">return</span> <span class="n">query_data</span><span class="p">[</span><span class="n">entry</span><span class="p">]</span></div>
 
-
-<div class="viewcode-block" id="read_aif">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.read_aif">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">read_aif</span><span class="p">(</span><span class="n">GEMC_data</span><span class="p">):</span>
+<div class="viewcode-block" id="read_aif"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.structure.read_aif">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">read_aif</span><span class="p">(</span><span class="n">GEMC_data</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;get adsorption amount of water from GEMC.</span>
 
@@ -337,7 +261,6 @@
     <span class="n">adsorption_data</span><span class="p">[</span><span class="s2">&quot;uptake&quot;</span><span class="p">]</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">find_loop</span><span class="p">(</span><span class="s1">&#39;_adsorp_amount&#39;</span><span class="p">))</span>
 
     <span class="k">return</span> <span class="n">adsorption_data</span></div>
-
 </pre></div>
 
            </div>

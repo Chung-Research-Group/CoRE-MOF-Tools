@@ -57,30 +57,30 @@ def download_file(url, save_path):
     else:
         pass
 
-repo = 'sxm13/CoREMOF_tools'
-github_paths = [
-    'models/cp_app/ensemble_models_smallML_120_100/300',
-    'models/cp_app/ensemble_models_smallML_120_100/350',
-    'models/cp_app/ensemble_models_smallML_120_100/400',
-    'models/stability'
-]
-local_directories = [
-    '/models/cp_app/ensemble_models_smallML_120_100/300',
-    '/models/cp_app/ensemble_models_smallML_120_100/350',
-    '/models/cp_app/ensemble_models_smallML_120_100/400',
-    '/models/stability'
-]
+# repo = 'sxm13/CoREMOF_tools'
+# github_paths = [
+#     'models/cp_app/ensemble_models_smallML_120_100/300',
+#     'models/cp_app/ensemble_models_smallML_120_100/350',
+#     'models/cp_app/ensemble_models_smallML_120_100/400',
+#     'models/stability'
+# ]
+# local_directories = [
+#     '/models/cp_app/ensemble_models_smallML_120_100/300',
+#     '/models/cp_app/ensemble_models_smallML_120_100/350',
+#     '/models/cp_app/ensemble_models_smallML_120_100/400',
+#     '/models/stability'
+# ]
 
-path_map = dict(zip(github_paths, local_directories))
+# path_map = dict(zip(github_paths, local_directories))
 
-for github_path in github_paths:
-    files_info = get_files_from_github(repo, github_path)
-    for file_info in files_info:
-        if file_info['type'] == 'file':
-            raw_url = file_info['download_url']
-            local_path_suffix = path_map[github_path].lstrip('/')
-            local_file_path = os.path.join(package_directory, local_path_suffix, os.path.basename(file_info['path']))
-            download_file(raw_url, local_file_path)
+# for github_path in github_paths:
+#     files_info = get_files_from_github(repo, github_path)
+#     for file_info in files_info:
+#         if file_info['type'] == 'file':
+#             raw_url = file_info['download_url']
+#             local_path_suffix = path_map[github_path].lstrip('/')
+#             local_file_path = os.path.join(package_directory, local_path_suffix, os.path.basename(file_info['path']))
+#             download_file(raw_url, local_file_path)
 
 from CoREMOF.models.cp_app.descriptors import cv_features
 from CoREMOF.models.cp_app.featurizer import featurize_structure
@@ -495,3 +495,36 @@ def stability(structure):
     result_stability["water probability"] = float(water_model_prob[0])
 
     return result_stability
+
+
+if __name__ == "__main__":
+    repo = 'sxm13/CoREMOF_tools'
+    github_paths = [
+        'models/cp_app/ensemble_models_smallML_120_100/300',
+        'models/cp_app/ensemble_models_smallML_120_100/350',
+        'models/cp_app/ensemble_models_smallML_120_100/400',
+        'models/stability'
+    ]
+    local_dirs = [
+        '/models/cp_app/ensemble_models_smallML_120_100/300',
+        '/models/cp_app/ensemble_models_smallML_120_100/350',
+        '/models/cp_app/ensemble_models_smallML_120_100/400',
+        '/models/stability'
+    ]
+    path_map = dict(zip(github_paths, local_dirs))
+
+    for github_path in github_paths:
+        try:
+            files_info = get_files_from_github(repo, github_path)
+        except requests.HTTPError as e:
+            print(f"Warning: could not list `{github_path}` → {e}")
+            continue
+        for file_info in files_info:
+            if file_info.get('type') != 'file':
+                continue
+            raw_url = file_info['download_url']
+            local_suffix = path_map[github_path].lstrip('/')
+            local_file = os.path.join(package_directory,
+                                      local_suffix,
+                                      os.path.basename(file_info['path']))
+            download_file(raw_url, local_file)

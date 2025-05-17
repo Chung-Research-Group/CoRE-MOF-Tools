@@ -119,6 +119,7 @@ def topology(structure, node_type="single"):
         Dictionary:
             -   dimension by ["dimension"]
             -   topology by ["topology"]
+            -   catenation by ["catenation"]
     """
 
     package_directory = os.path.abspath(__file__).replace("mof_features.py","")
@@ -129,24 +130,25 @@ def topology(structure, node_type="single"):
     jl = juliacall.newmodule("topo")
     jl.seval("using CrystalNets")
 
-    options = jl.CrystalNets.Options(structure=jl.StructureType.MOF)
+    if node_type == "single":
+        clustering = jl.Clustering.SingleNodes
+    elif node_type == "all":
+        clustering = jl.Clustering.AllNodes
+    else:
+        raise ValueError("node_type should be single or all")
+    options = jl.CrystalNets.Options(structure=jl.StructureType.MOF, clusterings=[clustering])
     result = jl.determine_topology(structure, options)
+    
     result_tp = {}
-    result_save = []
-    for x in result:
-        if node_type=="single":
-            result_ = x[0][jl.Clustering.SingleNodes]
-            result_save.append(result_)
-        elif node_type=="all":
-            result_ = x[0][jl.Clustering.AllNodes]
-            result_save.append(result_)
-
-    result_tp["dimension"]=[]
+    result_tp["dimension"] = []
     result_tp["topology"] = []
-    for info in result_save:
-        
+    result_tp["catenation"] = []
+    interpenetration = jl.CrystalNets.total_interpenetration(result, clustering)
+    for x in result:
+        info = x[0][clustering]
         result_tp["dimension"].append(jl.ndims(info.genome))
         result_tp["topology"].append(str(info))
+        result_tp["catenation"].append(interpenetration[info])
 
     return result_tp
 

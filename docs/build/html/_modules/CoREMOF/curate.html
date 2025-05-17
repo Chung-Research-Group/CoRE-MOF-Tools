@@ -1,20 +1,20 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../">
+<html class="writer-html5" lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.curate &mdash; CoREMOF_tools 0.0.9 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+  <title>CoREMOF.curate &mdash; CoREMOF 0.1.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
 
   
-      <script src="../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../_static/documentation_options.js?v=f7cdbf68"></script>
-      <script src="../../_static/doctools.js?v=9a2dae69"></script>
-      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../_static/jquery.js"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+      <script src="../../_static/doctools.js"></script>
+      <script src="../../_static/sphinx_highlight.js"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" /> 
@@ -29,7 +29,7 @@
           
           
           <a href="../../index.html" class="icon icon-home">
-            CoREMOF_tools
+            CoREMOF
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -39,15 +39,20 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../CoREMOF.html">CoREMOF package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../index.html">CoREMOF_tools</a>
+          <a href="../../index.html">CoREMOF</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -69,7 +74,7 @@
 <span></span><span class="sd">&quot;&quot;&quot;Process your CIF to &quot;CoRE MOF&quot; CIF.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">re</span><span class="o">,</span><span class="w"> </span><span class="nn">csv</span><span class="o">,</span><span class="w"> </span><span class="nn">functools</span><span class="o">,</span><span class="w"> </span><span class="nn">warnings</span><span class="o">,</span><span class="w"> </span><span class="nn">itertools</span><span class="o">,</span><span class="w"> </span><span class="nn">collections</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span><span class="o">,</span><span class="w"> </span><span class="nn">re</span><span class="o">,</span><span class="w"> </span><span class="nn">csv</span><span class="o">,</span><span class="w"> </span><span class="nn">json</span><span class="o">,</span><span class="w"> </span><span class="nn">requests</span><span class="o">,</span><span class="w"> </span><span class="nn">functools</span><span class="o">,</span><span class="w"> </span><span class="nn">warnings</span><span class="o">,</span><span class="w"> </span><span class="nn">itertools</span><span class="o">,</span><span class="w"> </span><span class="nn">collections</span><span class="o">,</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">ase.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">read</span><span class="p">,</span> <span class="n">write</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.symmetry.analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">SpacegroupAnalyzer</span>
@@ -83,7 +88,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.sparse.csgraph</span><span class="w"> </span><span class="kn">import</span> <span class="n">connected_components</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.io.ase</span><span class="w"> </span><span class="kn">import</span> <span class="n">AseAtomsAdaptor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">mofchecker</span><span class="w"> </span><span class="kn">import</span> <span class="n">MOFChecker</span>
@@ -93,9 +97,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">PACMANCharge</span><span class="w"> </span><span class="kn">import</span> <span class="n">pmcharge</span>
 
 
-<div class="viewcode-block" id="preprocess">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.preprocess">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">preprocess</span><span class="p">():</span>
+<div class="viewcode-block" id="preprocess"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.preprocess">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">preprocess</span><span class="p">():</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Precheck your CIF.</span>
 
@@ -115,18 +117,13 @@
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">result_check</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
                 
-<div class="viewcode-block" id="preprocess.process">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.preprocess.process">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="preprocess.process"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.preprocess.process">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">result_check</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">split_pri_p1</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_precheck.json&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">result_check</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
 
 
-
-<div class="viewcode-block" id="preprocess.split_pri_p1">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.preprocess.split_pri_p1">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">split_pri_p1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">):</span>
+<div class="viewcode-block" id="preprocess.split_pri_p1"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.preprocess.split_pri_p1">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">split_pri_p1</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">):</span>
         <span class="n">result_check</span> <span class="o">=</span> <span class="p">{}</span>
         
         <span class="n">structures</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
@@ -182,14 +179,10 @@
             <span class="n">temp_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">struct_name</span><span class="si">}</span><span class="s2">.cif&quot;</span><span class="p">)</span>
             <span class="n">structure_prep</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">temp_path</span><span class="p">)</span>
             
-        <span class="k">return</span> <span class="n">result_check</span></div>
-</div>
-
+        <span class="k">return</span> <span class="n">result_check</span></div></div>
     
 
-<div class="viewcode-block" id="clean">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">clean</span><span class="p">():</span>
+<div class="viewcode-block" id="clean"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">clean</span><span class="p">():</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Removing free solvent and coordinated solvent but keep ions based on a list.         </span>
 <span class="sd">    </span>
@@ -220,9 +213,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">csv_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">saveto</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
 
-<div class="viewcode-block" id="clean.process">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.process">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.process"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.process">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;start to run curation.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -252,10 +243,7 @@
             <span class="n">asr_skin</span><span class="p">,</span> <span class="n">asr_results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_asr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_skin</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metal_list</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ions_list</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ASR results for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">asr_results</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="clean.run_fsr">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.run_fsr">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run_fsr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mof</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">initial_skin</span><span class="p">,</span> <span class="n">metal_list</span><span class="p">,</span> <span class="n">ions_list</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.run_fsr"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.run_fsr">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_fsr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mof</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">initial_skin</span><span class="p">,</span> <span class="n">metal_list</span><span class="p">,</span> <span class="n">ions_list</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;free solvent function.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -279,10 +267,7 @@
             <span class="nb">print</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
 
 
-
-<div class="viewcode-block" id="clean.run_asr">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.run_asr">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run_asr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mof</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">initial_skin</span><span class="p">,</span> <span class="n">metal_list</span><span class="p">,</span> <span class="n">ions_list</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.run_asr"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.run_asr">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_asr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mof</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">initial_skin</span><span class="p">,</span> <span class="n">metal_list</span><span class="p">,</span> <span class="n">ions_list</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;all solvent function.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -305,10 +290,7 @@
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2"> Fail: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="clean.build_ASE_neighborlist">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.build_ASE_neighborlist">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">build_ASE_neighborlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cif</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.build_ASE_neighborlist"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.build_ASE_neighborlist">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">build_ASE_neighborlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cif</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;get list of neighbor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -318,10 +300,7 @@
         <span class="n">ASE_neighborlist</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cif</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">ASE_neighborlist</span></div>
 
-
-<div class="viewcode-block" id="clean.find_clusters">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.find_clusters">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">find_clusters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.find_clusters"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.find_clusters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">find_clusters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;define cluster by the connected components of a sparse graph.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -332,10 +311,7 @@
             <span class="n">clusters</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">atom_count</span><span class="p">)</span> <span class="k">if</span> <span class="n">clusterIDs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">n</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">clusters</span></div>
 
-
-<div class="viewcode-block" id="clean.find_metal_connected_atoms">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.find_metal_connected_atoms">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">find_metal_connected_atoms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">neighborlist</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.find_metal_connected_atoms"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.find_metal_connected_atoms">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">find_metal_connected_atoms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">neighborlist</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;get the atom connected with metal atom.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -349,10 +325,7 @@
                 <span class="n">metal_atoms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">metal_connected_atoms</span><span class="p">,</span> <span class="n">metal_atoms</span><span class="p">,</span> <span class="n">structure</span></div>
 
-
-<div class="viewcode-block" id="clean.CustomMatrix">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.CustomMatrix">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">CustomMatrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">neighborlist</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.CustomMatrix"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.CustomMatrix">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">CustomMatrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">neighborlist</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;convert to matrix.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -364,10 +337,7 @@
                 <span class="n">matrix</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="n">matrix</span></div>
 
-
-<div class="viewcode-block" id="clean.mod_adjacency_matrix">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.mod_adjacency_matrix">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">mod_adjacency_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adj_matrix</span><span class="p">,</span> <span class="n">MetalConAtoms</span><span class="p">,</span> <span class="n">MetalAtoms</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">,</span> <span class="n">struct</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.mod_adjacency_matrix"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.mod_adjacency_matrix">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">mod_adjacency_matrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adj_matrix</span><span class="p">,</span> <span class="n">MetalConAtoms</span><span class="p">,</span> <span class="n">MetalAtoms</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">,</span> <span class="n">struct</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;modify matrix by breakdown the bond that atom connect with metal atom.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -391,16 +361,10 @@
                                 <span class="n">adj_matrix</span><span class="p">[</span><span class="n">element_1</span><span class="p">][</span><span class="n">element_2</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="n">adj_matrix</span></div>
 
-
-<div class="viewcode-block" id="clean.cmp">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.cmp">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">cmp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.cmp"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.cmp">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">cmp</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">x</span> <span class="o">&gt;</span> <span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">y</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="clean.cluster_to_formula">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.cluster_to_formula">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">cluster_to_formula</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">cif</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.cluster_to_formula"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.cluster_to_formula">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">cluster_to_formula</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">cif</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;convert to chemical formula.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -410,10 +374,7 @@
         <span class="n">formula</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">atom</span> <span class="o">+</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">count</span><span class="p">[</span><span class="n">atom</span><span class="p">])</span> <span class="k">if</span> <span class="n">count</span><span class="p">[</span><span class="n">atom</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">atom</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">count</span><span class="p">)])</span>
         <span class="k">return</span> <span class="n">formula</span></div>
 
-
-<div class="viewcode-block" id="clean.free_clean">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.free_clean">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">free_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">ions_list</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.free_clean"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.free_clean">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">free_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">ions_list</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;workflow of removing free solvent.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -474,10 +435,7 @@
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">input_file</span><span class="si">}</span><span class="s2"> Fail: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="clean.all_clean">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.all_clean">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">all_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">ions_list</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
+<div class="viewcode-block" id="clean.all_clean"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean.all_clean">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">all_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">ions_list</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;workflow of removing all solvent.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -583,13 +541,9 @@
             <span class="k">return</span> <span class="n">skin</span><span class="p">,</span> <span class="n">printed_formulas</span>
     
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">input_file</span><span class="si">}</span><span class="s2"> Fail: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
-</div>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">input_file</span><span class="si">}</span><span class="s2"> Fail: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div></div>
 
-
-<div class="viewcode-block" id="mof_check">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.mof_check">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">mof_check</span><span class="p">():</span>
+<div class="viewcode-block" id="mof_check"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.mof_check">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">mof_check</span><span class="p">():</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Not Computation-Ready (NCR) MOFs classification.</span>
 
@@ -608,9 +562,7 @@
         <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">check</span><span class="p">()</span>
 
-<div class="viewcode-block" id="mof_check.check">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.mof_check.check">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="mof_check.check"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.mof_check.check">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;run checking.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -626,10 +578,7 @@
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span><span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_Chen_Manz_mofchecker.json&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">result_check</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="mof_check.Chen_Manz">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.mof_check.Chen_Manz">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">Chen_Manz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">):</span>
+<div class="viewcode-block" id="mof_check.Chen_Manz"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.mof_check.Chen_Manz">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">Chen_Manz</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;checking MOF by Chen and Manz method: RSC Adv., 2019,9, 36492-36507. https://doi.org/10.1039/C9RA07327B.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -683,12 +632,9 @@
                 <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;no issues&quot;</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;unknown&quot;</span><span class="p">]</span></div>
-
         
 
-<div class="viewcode-block" id="mof_check.mof_checker">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.mof_check.mof_checker">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">mof_checker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">):</span>
+<div class="viewcode-block" id="mof_check.mof_checker"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.mof_check.mof_checker">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">mof_checker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">):</span>
 <span class="w">        </span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;checking MOF by mofchecker 1.0: https://github.com/lamalab-org/mofchecker.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -723,15 +669,11 @@
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;no issues&quot;</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;unknown&quot;</span><span class="p">]</span></div>
-</div>
+            <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;unknown&quot;</span><span class="p">]</span></div></div>
 
 
 
-
-<div class="viewcode-block" id="clean_pacman">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">clean_pacman</span><span class="p">():</span>
+<div class="viewcode-block" id="clean_pacman"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">clean_pacman</span><span class="p">():</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Removing free solvent and coordinated solvent but keep ions based on PACMAN-charge.         </span>
 <span class="sd">    </span>
@@ -761,9 +703,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">run_pacman</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
         
-<div class="viewcode-block" id="clean_pacman.run_pacman">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.run_pacman">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run_pacman</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.run_pacman"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.run_pacman">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_pacman</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">pmcharge</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
             <span class="n">cif_file</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="p">,</span>
             <span class="n">charge_type</span><span class="o">=</span><span class="s2">&quot;DDEC6&quot;</span><span class="p">,</span>
@@ -777,10 +717,7 @@
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">src</span><span class="p">):</span>
             <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="clean_pacman.process">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.process">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.process"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.process">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">fsr_skin</span><span class="p">,</span> <span class="n">fsr_solvent</span><span class="p">,</span> <span class="n">fsr_ion</span><span class="p">,</span> <span class="n">fsr_ion_charge</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_fsr</span><span class="p">()</span>
             <span class="n">asr_skin</span><span class="p">,</span> <span class="n">asr_solvent</span><span class="p">,</span> <span class="n">asr_ion</span><span class="p">,</span> <span class="n">asr_ion_charge</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_asr</span><span class="p">()</span>
@@ -799,22 +736,13 @@
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[clean_pacman.process] Error:&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="clean_pacman.run_fsr">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.run_fsr">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run_fsr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.run_fsr"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.run_fsr">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_fsr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_clean</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;FSR&quot;</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="clean_pacman.run_asr">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.run_asr">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run_asr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.run_asr"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.run_asr">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_asr</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_clean</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;ASR&quot;</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="clean_pacman.run_clean">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.run_clean">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">run_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;FSR&quot;</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.run_clean"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.run_clean">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;FSR&quot;</span><span class="p">):</span>
         <span class="n">file_prefix</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">structure</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.cif&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
         <span class="n">skin</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">initial_skin</span>
         <span class="n">clean_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">free_clean</span> <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;FSR&quot;</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_clean</span>
@@ -834,26 +762,17 @@
                 <span class="k">break</span>
         <span class="k">return</span> <span class="n">skin</span><span class="p">,</span> <span class="n">solvents</span><span class="p">,</span> <span class="n">ions</span><span class="p">,</span> <span class="n">ion_charges</span></div>
 
-
-<div class="viewcode-block" id="clean_pacman.build_ASE_neighborlist">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.build_ASE_neighborlist">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">build_ASE_neighborlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cif</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.build_ASE_neighborlist"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.build_ASE_neighborlist">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">build_ASE_neighborlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cif</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
         <span class="n">radii</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">cambridge_radii</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cif</span><span class="o">.</span><span class="n">get_chemical_symbols</span><span class="p">()]</span>
         <span class="n">neighborlist</span> <span class="o">=</span> <span class="n">NeighborList</span><span class="p">(</span><span class="n">radii</span><span class="p">,</span> <span class="n">self_interaction</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">bothways</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">skin</span><span class="o">=</span><span class="n">skin</span><span class="p">)</span>
         <span class="n">neighborlist</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">cif</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">neighborlist</span></div>
 
-
-<div class="viewcode-block" id="clean_pacman.find_clusters">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.find_clusters">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">find_clusters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.find_clusters"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.find_clusters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">find_clusters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">):</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">connected_components</span><span class="p">(</span><span class="n">adjacency_matrix</span><span class="p">,</span> <span class="n">directed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">atom_count</span><span class="p">)</span> <span class="k">if</span> <span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">n</span><span class="p">]</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">labels</span><span class="p">)]</span></div>
 
-
-<div class="viewcode-block" id="clean_pacman.CustomMatrix">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.CustomMatrix">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">CustomMatrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">neighborlist</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.CustomMatrix"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.CustomMatrix">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">CustomMatrix</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">neighborlist</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">):</span>
         <span class="n">mat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">atom_count</span><span class="p">,</span> <span class="n">atom_count</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">atom_count</span><span class="p">):</span>
             <span class="n">neighbors</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">neighborlist</span><span class="o">.</span><span class="n">get_neighbors</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
@@ -861,18 +780,12 @@
                 <span class="n">mat</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
         <span class="k">return</span> <span class="n">mat</span></div>
 
-
-<div class="viewcode-block" id="clean_pacman.cluster_to_formula">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.cluster_to_formula">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">cluster_to_formula</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">atoms</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.cluster_to_formula"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.cluster_to_formula">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">cluster_to_formula</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">atoms</span><span class="p">):</span>
         <span class="n">symbols</span> <span class="o">=</span> <span class="p">[</span><span class="n">atoms</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">symbol</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">cluster</span><span class="p">]</span>
         <span class="n">count</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">Counter</span><span class="p">(</span><span class="n">symbols</span><span class="p">)</span>
         <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">el</span> <span class="o">+</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">count</span><span class="p">[</span><span class="n">el</span><span class="p">])</span> <span class="k">if</span> <span class="n">count</span><span class="p">[</span><span class="n">el</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">count</span><span class="p">)])</span></div>
 
-
-<div class="viewcode-block" id="clean_pacman.free_clean">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.free_clean">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">free_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.free_clean"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.free_clean">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">free_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">cif</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">input_file</span> <span class="o">+</span> <span class="s2">&quot;.cif&quot;</span><span class="p">)</span>
             <span class="n">charges</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">CIF</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_folder</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_pacman.cif&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">sole_block</span><span class="p">()</span><span class="o">.</span><span class="n">find_loop</span><span class="p">(</span><span class="s1">&#39;_atom_site_charge&#39;</span><span class="p">))</span>
@@ -906,10 +819,7 @@
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[free_clean]&quot;</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="s2">&quot;failed:&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="clean_pacman.all_clean">
-<a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.all_clean">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">all_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
+<div class="viewcode-block" id="clean_pacman.all_clean"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.clean_pacman.all_clean">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">all_clean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="n">save_folder</span><span class="p">,</span> <span class="n">skin</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">cif</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">input_file</span> <span class="o">+</span> <span class="s2">&quot;.cif&quot;</span><span class="p">)</span>
             <span class="n">charges</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">CIF</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_folder</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_pacman.cif&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">sole_block</span><span class="p">()</span><span class="o">.</span><span class="n">find_loop</span><span class="p">(</span><span class="s1">&#39;_atom_site_charge&#39;</span><span class="p">))</span>
@@ -941,9 +851,90 @@
             <span class="n">write</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">save_folder</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">input_file</span><span class="p">)</span> <span class="o">+</span> <span class="n">suffix</span><span class="p">),</span> <span class="n">cif</span><span class="p">[</span><span class="n">final_atoms</span><span class="p">])</span>
             <span class="k">return</span> <span class="n">skin</span><span class="p">,</span> <span class="n">solvents</span><span class="p">,</span> <span class="n">ion_formulas</span><span class="p">,</span> <span class="n">ion_charges</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[all_clean]&quot;</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="s2">&quot;failed:&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span></div>
-</div>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;[all_clean]&quot;</span><span class="p">,</span> <span class="n">input_file</span><span class="p">,</span> <span class="s2">&quot;failed:&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span></div></div>
 
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">ccdc</span><span class="w"> </span><span class="kn">import</span> <span class="n">io</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Before using MOSAEC to check your structure, please install CSD Python API with license&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="MOSAEC"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.MOSAEC">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">MOSAEC</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check MOF by Metal Oxidation State Automated Error Checker [MOSAEC](https://github.com/uowoolab/MOSAEC).         </span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        folder (str): path to your folder contain MOFs.</span>
+<span class="sd">        saveto (bool or str): the name of csv file with clean result.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        CSV:</span>
+<span class="sd">            -   result of MOSAEC.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">FILES_TO_DOWNLOAD</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;Ionization_Energies.csv&quot;</span><span class="p">:</span> <span class="s2">&quot;https://raw.githubusercontent.com/uowoolab/MOSAEC/main/Ionization_Energies.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;KnownON.csv&quot;</span><span class="p">:</span> <span class="s2">&quot;https://raw.githubusercontent.com/uowoolab/MOSAEC/main/KnownON.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Oxidation_Probabilities.csv&quot;</span><span class="p">:</span> <span class="s2">&quot;https://raw.githubusercontent.com/uowoolab/MOSAEC/main/Oxidation_Probabilities.csv&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;mosaec.py&quot;</span><span class="p">:</span> <span class="s2">&quot;https://raw.githubusercontent.com/uowoolab/MOSAEC/main/mosaec.py&quot;</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">saveto</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mosaec.csv&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="o">=</span> <span class="n">folder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">saveto</span> <span class="o">=</span> <span class="n">saveto</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">filename</span><span class="p">,</span> <span class="n">url</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">FILES_TO_DOWNLOAD</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Downloaded: </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to download </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipped (already exists): </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run_mosaec</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">saveto</span><span class="p">:</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="o">+</span> <span class="s2">&quot;/OxStatesOutput.csv&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">saveto</span><span class="p">)</span>
+<div class="viewcode-block" id="MOSAEC.run_mosaec"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.MOSAEC.run_mosaec">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_mosaec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">script_path</span> <span class="o">=</span> <span class="s2">&quot;mosaec.py&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running </span><span class="si">{</span><span class="n">script_path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="p">[</span><span class="s2">&quot;python&quot;</span><span class="p">,</span> <span class="n">script_path</span><span class="p">],</span>
+            <span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span>
+            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MOSAEC.check_result"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.MOSAEC.check_result">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveto</span><span class="p">):</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">saveto</span><span class="p">)</span>
+        <span class="n">status_cols</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="p">:]</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">merge_group</span><span class="p">(</span><span class="n">group</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">status_cols</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;GOOD&#39;</span><span class="p">):</span>
+                    <span class="n">result</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;GOOD&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;NOT_GOOD&#39;</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+
+        <span class="n">merged_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;CIF&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">merge_group</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
+
+        <span class="n">binary_df</span> <span class="o">=</span> <span class="n">merged_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">status_cols</span><span class="p">:</span>
+            <span class="n">binary_df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">binary_df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="s1">&#39;GOOD&#39;</span> <span class="k">else</span> <span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">binary_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">saveto</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>
