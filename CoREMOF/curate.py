@@ -556,32 +556,34 @@ class mof_check():
             if len(has_problem) > 0:
                 return list(set(has_problem))
             else:
-                return ["no issues"]
+                return ["good"]
         except Exception as e:
             return ["unknown"]
         
 
     def mof_checker(self, structure):
         
-        """checking MOF by mofchecker 1.0: https://github.com/lamalab-org/mofchecker.
+        """checking MOF by mofchecker 2.0: https://github.com/Au-4/mofchecker_2.0. Ref: https://doi.org/10.1039/D5DD00109A
         """
 
         try:
-            atoms = read(structure)
-            structure_ = AseAtomsAdaptor.get_structure(atoms)
-            checker = MOFChecker(structure_)
+            checker = MOFChecker.from_cif(structure)
             check_result = checker.get_mof_descriptors()
 
             has_problem = []
             problem_keys_true = [
-                "has_atomic_overlaps", "has_overcoordinated_c", "has_overcoordinated_n",
-                "has_overcoordinated_h", "has_suspicious_terminal_oxo",
-                "has_undercoordinated_c", "has_undercoordinated_n",
-                "has_undercoordinated_rare_earth", "has_undercoordinated_alkali_alkaline",
-                "has_geometrically_exposed_metal", 
-                "has_lone_molecule"
-            ]
-            problem_keys_false = ["has_metal", "has_carbon"]
+                                    "has_atomic_overlaps", "has_overcoordinated_c", "has_overcoordinated_n",
+                                    "has_overcoordinated_h", "has_suspicious_terminal_oxo",
+                                    "has_undercoordinated_c", "has_undercoordinated_n",
+                                    # "has_undercoordinated_rare_earth", "has_undercoordinated_alkali_alkaline",
+                                    # "has_geometrically_exposed_metal", 
+                                    "has_lone_molecule", "has_high_charges"
+                                ]
+            problem_keys_false = ["has_metal",
+                                "has_carbon",
+                                "is_porous",
+                                #  "has_hydrogen"
+                                ]
 
             for key in problem_keys_true:
                 if check_result.get(key, False):
@@ -594,7 +596,7 @@ class mof_check():
             if len(has_problem) > 0:
                 return list(set(has_problem))
             else:
-                return ["no issues"]
+                return ["good"]
         except Exception as e:
             return ["unknown"]
 
@@ -782,83 +784,22 @@ class clean_pacman():
 
 try:
     from ccdc import io
+    from CoREMOF.mosaec import check
 except:
     print("Before using MOSAEC to check your structure, please install CSD Python API with license")
 
 
-class MOSAEC():
+def MOSAEC(structure):
     """Check MOF by Metal Oxidation State Automated Error Checker [MOSAEC](https://github.com/uowoolab/MOSAEC).         
     
     Args:
-        folder (str): path to your folder contain MOFs.
-        saveto (bool or str): the name of csv file with clean result.
+        structure (str): path to your CIF.
 
     Returns:
-        CSV:
+        dict:
             -   result of MOSAEC.
     """
 
-    FILES_TO_DOWNLOAD = {
-        "Ionization_Energies.csv": "https://raw.githubusercontent.com/uowoolab/MOSAEC/main/Ionization_Energies.csv",
-        "KnownON.csv": "https://raw.githubusercontent.com/uowoolab/MOSAEC/main/KnownON.csv",
-        "Oxidation_Probabilities.csv": "https://raw.githubusercontent.com/uowoolab/MOSAEC/main/Oxidation_Probabilities.csv",
-        "mosaec.py": "https://raw.githubusercontent.com/uowoolab/MOSAEC/main/mosaec.py"
-    }
+    result = check(structure)
 
-    def __init__(self, folder: str, saveto: str = "mosaec.csv"):
-        self.folder = folder
-        self.saveto = saveto
-        os.makedirs(self.folder, exist_ok=True)
-
-        for filename, url in self.FILES_TO_DOWNLOAD.items():
-            path = os.path.join(self.folder, filename)
-            if not os.path.exists(path):
-                response = requests.get(url)
-                if response.status_code == 200:
-                    with open(path, "wb") as f:
-                        f.write(response.content)
-                    print(f"Downloaded: {filename}")
-                else:
-                    print(f"Failed to download {filename}: {response.status_code}")
-            else:
-                print(f"Skipped (already exists): {filename}")
-        self.run_mosaec()
-        if saveto:
-            os.rename(self.folder + "/OxStatesOutput.csv", self.folder + "/" + saveto)
-    def run_mosaec(self):
-        script_path = "mosaec.py"
-        print(f"Running {script_path}...")
-
-        result = subprocess.run(
-            ["python", script_path],
-            cwd=self.folder,
-            capture_output=True,
-            text=True
-        )
-
-        if result.returncode == 0:
-            print(result.stdout)
-        else:
-            print(result.stderr)
-
-    def check_result(self, saveto):
-        df = pd.read_csv(saveto)
-        status_cols = df.columns[-10:]
-
-        def merge_group(group):
-            result = {}
-            for col in status_cols:
-                if all(group[col] == 'GOOD'):
-                    result[col] = 'GOOD'
-                else:
-                    result[col] = 'NOT_GOOD'
-            return pd.Series(result)
-
-
-        merged_df = df.groupby('CIF').apply(merge_group).reset_index()
-
-        binary_df = merged_df.copy()
-        for col in status_cols:
-            binary_df[col] = binary_df[col].apply(lambda x: True if x == 'GOOD' else False)
-
-        binary_df.to_csv(saveto, index=False)
+    return result

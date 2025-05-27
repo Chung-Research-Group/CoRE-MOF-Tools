@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.curate &mdash; CoREMOF 0.1.4 documentation</title>
+  <title>CoREMOF.curate &mdash; CoREMOF 0.1.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
 
@@ -629,32 +629,34 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">has_problem</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">has_problem</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;no issues&quot;</span><span class="p">]</span>
+                <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;good&quot;</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;unknown&quot;</span><span class="p">]</span></div>
         
 
 <div class="viewcode-block" id="mof_check.mof_checker"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.mof_check.mof_checker">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">mof_checker</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">structure</span><span class="p">):</span>
 <span class="w">        </span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;checking MOF by mofchecker 1.0: https://github.com/lamalab-org/mofchecker.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;checking MOF by mofchecker 2.0: https://github.com/Au-4/mofchecker_2.0. Ref: https://doi.org/10.1039/D5DD00109A</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">atoms</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
-            <span class="n">structure_</span> <span class="o">=</span> <span class="n">AseAtomsAdaptor</span><span class="o">.</span><span class="n">get_structure</span><span class="p">(</span><span class="n">atoms</span><span class="p">)</span>
-            <span class="n">checker</span> <span class="o">=</span> <span class="n">MOFChecker</span><span class="p">(</span><span class="n">structure_</span><span class="p">)</span>
+            <span class="n">checker</span> <span class="o">=</span> <span class="n">MOFChecker</span><span class="o">.</span><span class="n">from_cif</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
             <span class="n">check_result</span> <span class="o">=</span> <span class="n">checker</span><span class="o">.</span><span class="n">get_mof_descriptors</span><span class="p">()</span>
 
             <span class="n">has_problem</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="n">problem_keys_true</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="s2">&quot;has_atomic_overlaps&quot;</span><span class="p">,</span> <span class="s2">&quot;has_overcoordinated_c&quot;</span><span class="p">,</span> <span class="s2">&quot;has_overcoordinated_n&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;has_overcoordinated_h&quot;</span><span class="p">,</span> <span class="s2">&quot;has_suspicious_terminal_oxo&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;has_undercoordinated_c&quot;</span><span class="p">,</span> <span class="s2">&quot;has_undercoordinated_n&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;has_undercoordinated_rare_earth&quot;</span><span class="p">,</span> <span class="s2">&quot;has_undercoordinated_alkali_alkaline&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;has_geometrically_exposed_metal&quot;</span><span class="p">,</span> 
-                <span class="s2">&quot;has_lone_molecule&quot;</span>
-            <span class="p">]</span>
-            <span class="n">problem_keys_false</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;has_metal&quot;</span><span class="p">,</span> <span class="s2">&quot;has_carbon&quot;</span><span class="p">]</span>
+                                    <span class="s2">&quot;has_atomic_overlaps&quot;</span><span class="p">,</span> <span class="s2">&quot;has_overcoordinated_c&quot;</span><span class="p">,</span> <span class="s2">&quot;has_overcoordinated_n&quot;</span><span class="p">,</span>
+                                    <span class="s2">&quot;has_overcoordinated_h&quot;</span><span class="p">,</span> <span class="s2">&quot;has_suspicious_terminal_oxo&quot;</span><span class="p">,</span>
+                                    <span class="s2">&quot;has_undercoordinated_c&quot;</span><span class="p">,</span> <span class="s2">&quot;has_undercoordinated_n&quot;</span><span class="p">,</span>
+                                    <span class="c1"># &quot;has_undercoordinated_rare_earth&quot;, &quot;has_undercoordinated_alkali_alkaline&quot;,</span>
+                                    <span class="c1"># &quot;has_geometrically_exposed_metal&quot;, </span>
+                                    <span class="s2">&quot;has_lone_molecule&quot;</span><span class="p">,</span> <span class="s2">&quot;has_high_charges&quot;</span>
+                                <span class="p">]</span>
+            <span class="n">problem_keys_false</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;has_metal&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;has_carbon&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;is_porous&quot;</span><span class="p">,</span>
+                                <span class="c1">#  &quot;has_hydrogen&quot;</span>
+                                <span class="p">]</span>
 
             <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">problem_keys_true</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">check_result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
@@ -667,7 +669,7 @@
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">has_problem</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">has_problem</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;no issues&quot;</span><span class="p">]</span>
+                <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;good&quot;</span><span class="p">]</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;unknown&quot;</span><span class="p">]</span></div></div>
 
@@ -855,86 +857,25 @@
 
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">ccdc</span><span class="w"> </span><span class="kn">import</span> <span class="n">io</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.mosaec</span><span class="w"> </span><span class="kn">import</span> <span class="n">check</span>
 <span class="k">except</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Before using MOSAEC to check your structure, please install CSD Python API with license&quot;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="MOSAEC"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.MOSAEC">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">MOSAEC</span><span class="p">():</span>
+<div class="viewcode-block" id="MOSAEC"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.MOSAEC">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">MOSAEC</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check MOF by Metal Oxidation State Automated Error Checker [MOSAEC](https://github.com/uowoolab/MOSAEC).         </span>
 <span class="sd">    </span>
 <span class="sd">    Args:</span>
-<span class="sd">        folder (str): path to your folder contain MOFs.</span>
-<span class="sd">        saveto (bool or str): the name of csv file with clean result.</span>
+<span class="sd">        structure (str): path to your CIF.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        CSV:</span>
+<span class="sd">        dict:</span>
 <span class="sd">            -   result of MOSAEC.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">FILES_TO_DOWNLOAD</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;Ionization_Energies.csv&quot;</span><span class="p">:</span> <span class="s2">&quot;https://raw.githubusercontent.com/uowoolab/MOSAEC/main/Ionization_Energies.csv&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;KnownON.csv&quot;</span><span class="p">:</span> <span class="s2">&quot;https://raw.githubusercontent.com/uowoolab/MOSAEC/main/KnownON.csv&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Oxidation_Probabilities.csv&quot;</span><span class="p">:</span> <span class="s2">&quot;https://raw.githubusercontent.com/uowoolab/MOSAEC/main/Oxidation_Probabilities.csv&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;mosaec.py&quot;</span><span class="p">:</span> <span class="s2">&quot;https://raw.githubusercontent.com/uowoolab/MOSAEC/main/mosaec.py&quot;</span>
-    <span class="p">}</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">check</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">saveto</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mosaec.csv&quot;</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="o">=</span> <span class="n">folder</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">saveto</span> <span class="o">=</span> <span class="n">saveto</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">filename</span><span class="p">,</span> <span class="n">url</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">FILES_TO_DOWNLOAD</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-                <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
-                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Downloaded: </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to download </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipped (already exists): </span><span class="si">{</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">run_mosaec</span><span class="p">()</span>
-        <span class="k">if</span> <span class="n">saveto</span><span class="p">:</span>
-            <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="o">+</span> <span class="s2">&quot;/OxStatesOutput.csv&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">saveto</span><span class="p">)</span>
-<div class="viewcode-block" id="MOSAEC.run_mosaec"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.MOSAEC.run_mosaec">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_mosaec</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">script_path</span> <span class="o">=</span> <span class="s2">&quot;mosaec.py&quot;</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Running </span><span class="si">{</span><span class="n">script_path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-
-        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
-            <span class="p">[</span><span class="s2">&quot;python&quot;</span><span class="p">,</span> <span class="n">script_path</span><span class="p">],</span>
-            <span class="n">cwd</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span>
-            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">text</span><span class="o">=</span><span class="kc">True</span>
-        <span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span></div>
-
-<div class="viewcode-block" id="MOSAEC.check_result"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.MOSAEC.check_result">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">saveto</span><span class="p">):</span>
-        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">saveto</span><span class="p">)</span>
-        <span class="n">status_cols</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="o">-</span><span class="mi">10</span><span class="p">:]</span>
-
-        <span class="k">def</span><span class="w"> </span><span class="nf">merge_group</span><span class="p">(</span><span class="n">group</span><span class="p">):</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
-            <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">status_cols</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">group</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;GOOD&#39;</span><span class="p">):</span>
-                    <span class="n">result</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;GOOD&#39;</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">result</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;NOT_GOOD&#39;</span>
-            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-
-        <span class="n">merged_df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;CIF&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">merge_group</span><span class="p">)</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
-
-        <span class="n">binary_df</span> <span class="o">=</span> <span class="n">merged_df</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">status_cols</span><span class="p">:</span>
-            <span class="n">binary_df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">binary_df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">x</span> <span class="o">==</span> <span class="s1">&#39;GOOD&#39;</span> <span class="k">else</span> <span class="kc">False</span><span class="p">)</span>
-
-        <span class="n">binary_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">saveto</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div></div>
+    <span class="k">return</span> <span class="n">result</span></div>
 </pre></div>
 
            </div>

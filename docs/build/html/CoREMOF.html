@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF package &mdash; CoREMOF 0.1.6 documentation</title>
+  <title>CoREMOF package &mdash; CoREMOF 0.1.8 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
 
@@ -53,12 +53,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-CoREMOF.curate">CoREMOF.curate module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.curate.MOSAEC"><code class="docutils literal notranslate"><span class="pre">MOSAEC</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#CoREMOF.curate.MOSAEC.FILES_TO_DOWNLOAD"><code class="docutils literal notranslate"><span class="pre">MOSAEC.FILES_TO_DOWNLOAD</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#CoREMOF.curate.MOSAEC.check_result"><code class="docutils literal notranslate"><span class="pre">MOSAEC.check_result()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#CoREMOF.curate.MOSAEC.run_mosaec"><code class="docutils literal notranslate"><span class="pre">MOSAEC.run_mosaec()</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.curate.MOSAEC"><code class="docutils literal notranslate"><span class="pre">MOSAEC()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#CoREMOF.curate.clean"><code class="docutils literal notranslate"><span class="pre">clean</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#CoREMOF.curate.clean.CustomMatrix"><code class="docutils literal notranslate"><span class="pre">clean.CustomMatrix()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#CoREMOF.curate.clean.all_clean"><code class="docutils literal notranslate"><span class="pre">clean.all_clean()</span></code></a></li>
@@ -316,17 +311,13 @@
 <section id="module-CoREMOF.curate">
 <span id="coremof-curate-module"></span><h2>CoREMOF.curate module<a class="headerlink" href="#module-CoREMOF.curate" title="Permalink to this heading"></a></h2>
 <p>Process your CIF to “CoRE MOF” CIF.</p>
-<dl class="py class">
+<dl class="py function">
 <dt class="sig sig-object py" id="CoREMOF.curate.MOSAEC">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">CoREMOF.curate.</span></span><span class="sig-name descname"><span class="pre">MOSAEC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveto</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mosaec.csv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/curate.html#MOSAEC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.curate.MOSAEC" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Check MOF by Metal Oxidation State Automated Error Checker [MOSAEC](<a class="reference external" href="https://github.com/uowoolab/MOSAEC">https://github.com/uowoolab/MOSAEC</a>).</p>
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.curate.</span></span><span class="sig-name descname"><span class="pre">MOSAEC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/curate.html#MOSAEC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.curate.MOSAEC" title="Permalink to this definition"></a></dt>
+<dd><p>Check MOF by Metal Oxidation State Automated Error Checker [MOSAEC](<a class="reference external" href="https://github.com/uowoolab/MOSAEC">https://github.com/uowoolab/MOSAEC</a>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>folder</strong> (<em>str</em>) – path to your folder contain MOFs.</p></li>
-<li><p><strong>saveto</strong> (<em>bool</em><em> or </em><em>str</em>) – the name of csv file with clean result.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>structure</strong> (<em>str</em>) – path to your CIF.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><ul class="simple">
@@ -335,24 +326,9 @@
 </p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>CSV</p>
+<dd class="field-odd"><p>dict</p>
 </dd>
 </dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="CoREMOF.curate.MOSAEC.FILES_TO_DOWNLOAD">
-<span class="sig-name descname"><span class="pre">FILES_TO_DOWNLOAD</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'Ionization_Energies.csv':</span> <span class="pre">'https://raw.githubusercontent.com/uowoolab/MOSAEC/main/Ionization_Energies.csv',</span> <span class="pre">'KnownON.csv':</span> <span class="pre">'https://raw.githubusercontent.com/uowoolab/MOSAEC/main/KnownON.csv',</span> <span class="pre">'Oxidation_Probabilities.csv':</span> <span class="pre">'https://raw.githubusercontent.com/uowoolab/MOSAEC/main/Oxidation_Probabilities.csv',</span> <span class="pre">'mosaec.py':</span> <span class="pre">'https://raw.githubusercontent.com/uowoolab/MOSAEC/main/mosaec.py'}</span></em><a class="headerlink" href="#CoREMOF.curate.MOSAEC.FILES_TO_DOWNLOAD" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="CoREMOF.curate.MOSAEC.check_result">
-<span class="sig-name descname"><span class="pre">check_result</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">saveto</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/curate.html#MOSAEC.check_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.curate.MOSAEC.check_result" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="CoREMOF.curate.MOSAEC.run_mosaec">
-<span class="sig-name descname"><span class="pre">run_mosaec</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/curate.html#MOSAEC.run_mosaec"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.curate.MOSAEC.run_mosaec" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
@@ -572,7 +548,7 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="CoREMOF.curate.mof_check.mof_checker">
 <span class="sig-name descname"><span class="pre">mof_checker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/curate.html#mof_check.mof_checker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.curate.mof_check.mof_checker" title="Permalink to this definition"></a></dt>
-<dd><p>checking MOF by mofchecker 1.0: <a class="reference external" href="https://github.com/lamalab-org/mofchecker">https://github.com/lamalab-org/mofchecker</a>.</p>
+<dd><p>checking MOF by mofchecker 2.0: <a class="reference external" href="https://github.com/Au-4/mofchecker_2.0">https://github.com/Au-4/mofchecker_2.0</a>. Ref: <a class="reference external" href="https://doi.org/10.1039/D5DD00109A">https://doi.org/10.1039/D5DD00109A</a></p>
 </dd></dl>
 
 </dd></dl>
