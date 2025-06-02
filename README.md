@@ -6,7 +6,7 @@
 [![PyPI](https://img.shields.io/pypi/v/CoREMOF-tools?logo=pypi&logoColor=white)](https://pypi.org/project/CoREMOF-tools?logo=pypi&logoColor=white)
 [![Requires Python 3.9](https://img.shields.io/badge/Python-3.9-blue.svg?logo=python&logoColor=white)](https://python.org/downloads)
 [![GitHub license](https://img.shields.io/github/license/mtap-research/CoRE-MOF-Tools)](https://github.com/mtap-research/CoRE-MOF-Tools/blob/main/LICENSE)
-[![Downloads](https://pepy.tech/badge/CoRE-MOF-Tools)](https://pepy.tech/project/CoRE-MOF-Tools)
+[![Downloads](https://pepy.tech/badge/CoREMOF-tools)](https://pepy.tech/project/CoREMOF-tools)
 [![GitHub issues](https://img.shields.io/github/issues/mtap-research/CoRE-MOF-Tools.svg)](https://GitHub.com/mtap-research/CoRE-MOF-Tools/issues/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15055758.svg)](https://doi.org/10.5281/zenodo.15055758)
 <!-- [![codecov](https://codecov.io/gh/sxm13/CoREMOF_tools/branch/main/graph/badge.svg)](https://codecov.io/gh/sxm13/CoREMOF_tools)
