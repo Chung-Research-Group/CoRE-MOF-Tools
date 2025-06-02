@@ -29,6 +29,13 @@ CoREMOF.get_mofid module
    :undoc-members:
    :show-inheritance:
 
+CoREMOF.mosaec module
+--------------------------
+.. automodule:: CoREMOF.mosaec
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 CoREMOF.prediction module
 -----------------------------
 

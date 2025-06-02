@@ -1,20 +1,20 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../../../">
+<html class="writer-html5" lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.models.cp_app.predictions &mdash; CoREMOF_tools 0.0.9 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+  <title>CoREMOF.models.cp_app.predictions &mdash; CoREMOF 0.1.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
 
   
-      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../_static/documentation_options.js?v=f7cdbf68"></script>
-      <script src="../../../../_static/doctools.js?v=9a2dae69"></script>
-      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/jquery.js"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+      <script src="../../../../_static/doctools.js"></script>
+      <script src="../../../../_static/sphinx_highlight.js"></script>
     <script src="../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
@@ -29,7 +29,7 @@
           
           
           <a href="../../../../index.html" class="icon icon-home">
-            CoREMOF_tools
+            CoREMOF
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
@@ -39,15 +39,20 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../CoREMOF.html">CoREMOF package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../../../index.html">CoREMOF_tools</a>
+          <a href="../../../../index.html">CoREMOF</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -75,9 +80,7 @@
 
 <span class="n">FEATURES</span> <span class="o">=</span> <span class="n">cv_features</span>
 
-<div class="viewcode-block" id="predict_Cv_ensemble_structure">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.predictions.predict_Cv_ensemble_structure">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">predict_Cv_ensemble_structure</span><span class="p">(</span><span class="n">models</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">FEATURES</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">df_features</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<div class="viewcode-block" id="predict_Cv_ensemble_structure"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.predictions.predict_Cv_ensemble_structure">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">predict_Cv_ensemble_structure</span><span class="p">(</span><span class="n">models</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">FEATURES</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">df_features</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="n">temperature</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
 <span class="w">     </span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Predict heat capacity using an ensemble of ML models for one structure.</span>
 
@@ -116,10 +119,7 @@
     <span class="k">return</span> <span class="n">results</span></div>
 
 
-
-<div class="viewcode-block" id="predict_Cv_ensemble_structure_multitemperatures">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.predictions.predict_Cv_ensemble_structure_multitemperatures">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">predict_Cv_ensemble_structure_multitemperatures</span><span class="p">(</span><span class="n">path_to_models</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">structure_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">features_file</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s2">&quot;features.csv&quot;</span><span class="p">,</span> 
+<div class="viewcode-block" id="predict_Cv_ensemble_structure_multitemperatures"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.predictions.predict_Cv_ensemble_structure_multitemperatures">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">predict_Cv_ensemble_structure_multitemperatures</span><span class="p">(</span><span class="n">path_to_models</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">structure_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">features_file</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s2">&quot;features.csv&quot;</span><span class="p">,</span> 
                 <span class="n">FEATURES</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="n">cv_features</span><span class="p">,</span> <span class="n">temperatures</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="p">[</span><span class="mf">300.00</span><span class="p">],</span> <span class="n">save_to</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s2">&quot;cv_predicted.csv&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Predict heat capacity using an ensemble of ML models for a dataset.</span>
@@ -153,7 +153,6 @@
     <span class="k">if</span> <span class="n">save_to</span><span class="p">:</span>
         <span class="n">all_results</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">save_to</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">all_results</span></div>
-
 </pre></div>
 
            </div>

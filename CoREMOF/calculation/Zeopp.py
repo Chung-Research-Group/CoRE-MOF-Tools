@@ -19,7 +19,7 @@ def ChanDim(structure, probe_radius = 0, high_accuracy = True, prefix="tmp_chan"
     Returns:
         Dictionary:
             -   unit by ["unit"], always nan.
-            -   dimention by ["Dimention"].
+            -   dimention by ["Dimension"].
     """
     
     results_chan = {}
@@ -45,7 +45,7 @@ def ChanDim(structure, probe_radius = 0, high_accuracy = True, prefix="tmp_chan"
             if i == 0:
                 dim = int(row.split('dimensionality')[1].split()[0])
 
-    results_chan["Dimention"] = dim
+    results_chan["Dimension"] = dim
 
     os.remove(tmp_file)
 
@@ -63,7 +63,7 @@ def FrameworkDim(structure, high_accuracy = True, prefix="tmp_strinfo"):
     Returns:
         Dictionary:
             -   unit by ["unit"], always nan
-            -   dimention by ["Dimention"]
+            -   dimention by ["Dimension"]
             -   number of 2D framewor by ["N_1D"]
             -   number of 1D framework by ["N_2D"]
             -   number of 3D framewor by ["N_3D"]
@@ -99,7 +99,7 @@ def FrameworkDim(structure, high_accuracy = True, prefix="tmp_strinfo"):
             two_dim = 0
             three_dim = 0
             dim = 0
-    results_strinfo["Dimention"] = dim
+    results_strinfo["Dimension"] = dim
     results_strinfo["N_1D"] = one_dim
     results_strinfo["N_2D"] = two_dim
     results_strinfo["N_3D"] = three_dim

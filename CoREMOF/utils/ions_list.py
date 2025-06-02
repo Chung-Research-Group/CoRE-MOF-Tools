@@ -18,6 +18,7 @@ ALLIONS = [
             'C2H10N2',
             'C2H5O',
             'C2H8NO',
+            'C2H8N',
             'C3H8N',
             'C4H10N',
             'C4H10NO',
@@ -89,5 +90,6 @@ ALLIONS = [
             'C10H10N',
             'CoH18N6',
             'CdCl4',
-            ' H3O'
+            ' H3O',
+            'O19W6'
             ]

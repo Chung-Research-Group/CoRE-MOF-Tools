@@ -322,6 +322,7 @@ def run_v2(structure, nodes_dataset, refname):
                         print(node_formula, "the node can be found in nodes dataset")
                         break
                 if not matched:
+                    # raise RuntimeError(f"fail matched from nodes dataset, stop")
                     node_part = node_formula + "_Type-" + str(len(known_nodes) + 1)
                     all_nodes_part.append(node_part)
                     shutil.move(node_xyz, nodes_dataset + "/" + node_part + ".xyz")

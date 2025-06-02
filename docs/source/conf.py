@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 project = 'CoREMOF'
 copyright = '2025, MTAP @ Pusan National University'
 author = 'Guobin Zhao'
-release = '0.1.8'
+release = '0.2.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -38,7 +38,7 @@ extensions = [
     'sphinx_autodoc_typehints'
 ]
 autodoc_mock_imports = [
-    "tensorflow", "torch", "zeopp", "pymatgen", "ase", "molSimplify","optree",
+    "tensorflow", "torch", "zeopp", "pymatgen", "ase", "molSimplify","optree","ccdc",
     "PACMAN_charge", "mofchecker", "gemmi", "phonopy", "xgboost", 'juliacall', 'mofid','keras',
     'cloudpickle','scikit-learn==1.3.2','networkx', 'selfies', 'mendeleev', 'requests'
 ]

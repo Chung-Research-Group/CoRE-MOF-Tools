@@ -1,25 +1,28 @@
-<img src="./logo.png" alt="coremofdb" width="500">
+<img src="https://raw.githubusercontent.com/mtap-research/CoRE-MOF-Tools/main/logo.png" alt="CoRE MOF Tools logo" width="500"/>
 
 [![Static Badge](https://img.shields.io/badge/chemrxiv-2024.nvmnr.v2-brightgreen?style=flat)](https://doi.org/10.26434/chemrxiv-2024-nvmnr-v2)
 [![Docs](https://img.shields.io/badge/API-Docs-blue?logo=readthedocs&logoColor=white)](https://coremof-tools.readthedocs.io/en/latest/index.html#)
-![GitHub repo size](https://img.shields.io/github/repo-size/sxm13/CoREMOF_tools?logo=github&logoColor=white&label=Repo%20Size)
+![GitHub repo size](https://img.shields.io/github/repo-size/mtap-research/CoREMOF_tools?logo=github&logoColor=white&label=Repo%20Size)
 [![PyPI](https://img.shields.io/pypi/v/CoREMOF-tools?logo=pypi&logoColor=white)](https://pypi.org/project/CoREMOF-tools?logo=pypi&logoColor=white)
 [![Requires Python 3.9](https://img.shields.io/badge/Python-3.9-blue.svg?logo=python&logoColor=white)](https://python.org/downloads)
-[![GitHub license](https://img.shields.io/github/license/sxm13/CoREMOF_tools)](https://github.com/sxm13/CoREMOF_tools/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/mtap-research/CoREMOF_tools)](https://github.com/mtap-research/CoREMOF_tools/blob/main/LICENSE)
 [![Downloads](https://pepy.tech/badge/CoREMOF_tools)](https://pepy.tech/project/CoREMOF_tools)
-[![GitHub issues](https://img.shields.io/github/issues/sxm13/CoREMOF_tools.svg)](https://GitHub.com/sxm13/CoREMOF_tools/issues/)
+[![GitHub issues](https://img.shields.io/github/issues/mtap-research/CoREMOF_tools.svg)](https://GitHub.com/mtap-research/CoREMOF_tools/issues/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15055758.svg)](https://doi.org/10.5281/zenodo.15055758)
-[![codecov](https://codecov.io/gh/sxm13/CoREMOF_tools/branch/main/graph/badge.svg)](https://codecov.io/gh/sxm13/CoREMOF_tools)
-[![Build Status](https://travis-ci.org/sxm13/CoREMOF_tools.svg?branch=master)](https://travis-ci.org/sxm13/CoREMOF_toolst)
-                         
+<!-- [![codecov](https://codecov.io/gh/sxm13/CoREMOF_tools/branch/main/graph/badge.svg)](https://codecov.io/gh/sxm13/CoREMOF_tools)
+[![Build Status](https://travis-ci.org/sxm13/CoREMOF_tools.svg?branch=master)](https://travis-ci.org/sxm13/CoREMOF_toolst) -->
+
+**Develop by [Guobin Zhao](https://github.com/sxm13)**
+
 #### Installation                                                                                    
 This API includes tools developed to collect, curate, and classify Computation-Ready, Experimental MOF database.    
 a. You need to install the [CSD software and python API](https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html) before downloading the full CoRE MOF database.                                                            
 b. For using CoREMOF.calculation.Zeopp, you need to input `conda install -c conda-forge zeopp-lsmo` to install Zeo++.   
-c. For using CoREMOF.get_mofid, you need to install MOFid following the [manual](https://snurr-group.github.io/mofid/compiling/#installation). 
+c. For using CoREMOF.get_mofid, you need to install MOFid following the [manual](https://snurr-group.github.io/mofid/compiling/#installation).                    
+d. For using CoREMOF.mof_check, you need to install MOFChecker by input `pip install git+https://github.com/sxm13/mofchecker_2.0.git@main`. 
 
 #### Examples                                                                                     
-Available at [Github](https://github.com/mtap-research/CoRE-MOF-Tools/tree/main/7-data4API/examples) and [CoRE MOF Website](https://mof-db.pusan.ac.kr/API) to view examples.                         
+Available at [Github](https://github.com/mtap-research/CoRE-MOF-Tools/tree/main/tests/examples) and [CoRE MOF Website](https://mof-db.pusan.ac.kr/API) to view examples.                         
                             
 
 #### Citation                                          

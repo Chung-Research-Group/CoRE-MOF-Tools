@@ -1,6 +1,9 @@
 """ML-predicted features.
 """
 
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 from PACMANCharge import pmcharge
 
 import os, warnings, shutil, joblib, requests, cloudpickle

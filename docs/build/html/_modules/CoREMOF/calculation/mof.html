@@ -1,20 +1,20 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../../">
+<html class="writer-html5" lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.calculation.mof &mdash; CoREMOF_tools 0.0.9 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+  <title>CoREMOF.calculation.mof &mdash; CoREMOF 0.1.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
 
   
-      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=f7cdbf68"></script>
-      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/jquery.js"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+      <script src="../../../_static/doctools.js"></script>
+      <script src="../../../_static/sphinx_highlight.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -29,7 +29,7 @@
           
           
           <a href="../../../index.html" class="icon icon-home">
-            CoREMOF_tools
+            CoREMOF
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -39,15 +39,20 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../CoREMOF.html">CoREMOF package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../../index.html">CoREMOF_tools</a>
+          <a href="../../../index.html">CoREMOF</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -83,9 +88,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 
 
-<div class="viewcode-block" id="MofStructure">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MofStructure</span><span class="p">(</span><span class="n">Structure</span><span class="p">):</span>
+<div class="viewcode-block" id="MofStructure"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">MofStructure</span><span class="p">(</span><span class="n">Structure</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extend the pymatgen Structure class to add MOF specific features. Create a MOf structure. The arguments are the same as in the pymatgen Structure class with the addition of the name argument.</span>
 <span class="sd">    The super constructor is called and additional MOF specific properties are initialized.</span>
@@ -133,9 +136,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_tolerance</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_split_structure_to_organic_and_metal</span><span class="p">()</span>
 
-<div class="viewcode-block" id="MofStructure.from_file">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure.from_file">[docs]</a>
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="MofStructure.from_file"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure.from_file">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">primitive</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">sort</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">merge_tol</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a MofStructure from a CIF file. This makes use of the from_file function of the Structure class and catches the exception in case a CIF file cannot be read. If the CIF is read successfully then the MofStructure is marked as okay, and the file checksum is added to the summary. If the CIF file cannot be read then it is marked as not okay and all the other properties are set to None and because there cannot be an empty Structure a carbon atom is added as placeholder at 0,0,0.</span>
 
@@ -168,10 +169,7 @@
 
         <span class="k">return</span> <span class="n">s_mof</span></div>
 
-
-<div class="viewcode-block" id="MofStructure.analyze_metals">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure.analyze_metals">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_metals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="MofStructure.analyze_metals"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure.analyze_metals">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">analyze_metals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Run analysis to detect all open metal sites in a MofStructure. In addition the metal sites are marked as unique.</span>
 
 <span class="sd">        Args:</span>
@@ -209,10 +207,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">write_results</span><span class="p">(</span><span class="n">output_folder</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">running_indicator</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofStructure.write_results">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure.write_results">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">write_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="MofStructure.write_results"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MofStructure.write_results">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">write_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="s1">&#39;normal&#39;</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Store summary dictionary holding all MOF and OMS information to a JSON file, store CIF files for the metal and non-metal parts of the MOF as well as all the identified coordination spheres.</span>
 
@@ -240,7 +235,6 @@
                 <span class="n">ms</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;min_dihedral&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">json_file_out</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
             <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">summary</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span></div>
-
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">tolerance</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -405,10 +399,7 @@
         <span class="k">return</span> <span class="n">cs</span></div>
 
 
-
-<div class="viewcode-block" id="MetalSite">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MetalSite</span><span class="p">(</span><span class="n">MofStructure</span><span class="p">):</span>
+<div class="viewcode-block" id="MetalSite"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">MetalSite</span><span class="p">(</span><span class="n">MofStructure</span><span class="p">):</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">lattice</span><span class="p">,</span> <span class="n">species</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">validate_proximity</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                  <span class="n">to_unit_cell</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">coords_are_cartesian</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -484,9 +475,7 @@
 
         <span class="k">return</span> <span class="n">_summary</span>
 
-<div class="viewcode-block" id="MetalSite.keep_valid_bonds">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.keep_valid_bonds">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">keep_valid_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="MetalSite.keep_valid_bonds"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.keep_valid_bonds">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">keep_valid_bonds</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Loop over atoms in the coordination sphere and remove any extraneous sites.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
@@ -505,10 +494,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">remove_sites</span><span class="p">([</span><span class="n">index_to_remove</span><span class="p">])</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_valid_bonds</span><span class="p">()</span></div>
 
-
-<div class="viewcode-block" id="MetalSite.center_around_metal">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.center_around_metal">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">center_around_metal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="MetalSite.center_around_metal"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.center_around_metal">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">center_around_metal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Shift atoms across periodic boundary conditions to have the coordination appear centered around the metal atom for visualisation purposes</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">gc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lattice</span><span class="o">.</span><span class="n">get_cartesian_coords</span>
@@ -531,10 +517,7 @@
                     <span class="n">c_i_centered</span> <span class="o">=</span> <span class="n">c_i</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">c_i_centered</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MetalSite.check_if_open">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.check_if_open">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">check_if_open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="MetalSite.check_if_open"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.check_if_open">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_if_open</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get t-factor, check if problematic based on number of linkers and if necessary call to check the dihedrals to determine if the metal site is open.</span>
 <span class="sd">         &quot;&quot;&quot;</span>
 
@@ -554,14 +537,11 @@
             <span class="c1"># 0 should always correspond to the</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_check_planes</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
 
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_mark_oms</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">oms_type</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_metal_type</span> <span class="o">=</span> <span class="n">oms_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_is_open</span> <span class="o">=</span> <span class="kc">True</span>
 
-<div class="viewcode-block" id="MetalSite.get_t_factor">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t_factor">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_t_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="MetalSite.get_t_factor"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t_factor">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_t_factor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute t-factors, only meaningful for 4-,5-, and 6-coordinated metals, if not the value of -1 is assigned.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">nl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_sites</span> <span class="o">-</span> <span class="mi">1</span>
@@ -597,38 +577,25 @@
             <span class="n">tau</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_t_factor</span> <span class="o">=</span> <span class="n">tau</span></div>
 
-
-<div class="viewcode-block" id="MetalSite.get_t4_factor">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t4_factor">[docs]</a>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="MetalSite.get_t4_factor"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t4_factor">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_t4_factor</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="mi">360</span> <span class="o">-</span> <span class="p">(</span><span class="n">a</span> <span class="o">+</span> <span class="n">b</span><span class="p">))</span> <span class="o">/</span> <span class="mf">141.0</span></div>
 
-
-<div class="viewcode-block" id="MetalSite.get_t5_factor">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t5_factor">[docs]</a>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="MetalSite.get_t5_factor"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t5_factor">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_t5_factor</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">(</span><span class="n">b</span> <span class="o">-</span> <span class="n">a</span><span class="p">)</span> <span class="o">/</span> <span class="mf">60.0</span></div>
 
-
-<div class="viewcode-block" id="MetalSite.get_t6_factor">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t6_factor">[docs]</a>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="MetalSite.get_t6_factor"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.get_t6_factor">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_t6_factor</span><span class="p">(</span><span class="n">c</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">c</span> <span class="o">/</span> <span class="mf">180.0</span></div>
 
-
-<div class="viewcode-block" id="MetalSite.write_cif_file">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.write_cif_file">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">write_cif_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+<div class="viewcode-block" id="MetalSite.write_cif_file"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.MetalSite.write_cif_file">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">write_cif_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Write MofSite to specified output_folder as a CIF file and use index to name it.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">Helper</span><span class="o">.</span><span class="n">make_folder</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span>
         <span class="n">output_fname</span> <span class="o">=</span> <span class="n">output_folder</span>
         <span class="n">output_fname</span> <span class="o">+=</span> <span class="s1">&#39;/first_coordination_sphere&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">)</span><span class="o">+</span><span class="s1">&#39;.cif&#39;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">output_fname</span><span class="p">)</span></div>
-
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_valid_pair</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="n">dis</span><span class="p">):</span>
 
@@ -815,31 +782,20 @@
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">po</span> <span class="o">-</span> <span class="n">v</span> <span class="o">*</span> <span class="n">const</span> <span class="k">for</span> <span class="n">po</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">point</span><span class="p">,</span> <span class="n">vector</span><span class="p">)])</span></div>
 
 
+<div class="viewcode-block" id="Helper"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Helper</span><span class="p">:</span>
 
-<div class="viewcode-block" id="Helper">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">Helper</span><span class="p">:</span>
-
-<div class="viewcode-block" id="Helper.make_folder">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.make_folder">[docs]</a>
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Helper.make_folder"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.make_folder">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">make_folder</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">output_folder</span><span class="p">):</span>
             <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">output_folder</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="Helper.compare_lists">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.compare_lists">[docs]</a>
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Helper.compare_lists"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.compare_lists">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">compare_lists</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">l1</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">l2</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="nb">all</span><span class="p">([</span><span class="n">i</span> <span class="o">==</span> <span class="n">j</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">)])</span></div>
 
-
-<div class="viewcode-block" id="Helper.copy_folder">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.copy_folder">[docs]</a>
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Helper.copy_folder"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.copy_folder">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">copy_folder</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">dest</span><span class="p">,</span> <span class="n">src</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dest</span><span class="p">):</span>
             <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">dest</span><span class="p">)</span>
@@ -848,16 +804,11 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">d</span><span class="p">):</span>
             <span class="n">shutil</span><span class="o">.</span><span class="n">copytree</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="Helper.get_checksum">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.get_checksum">[docs]</a>
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="Helper.get_checksum"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof.Helper.get_checksum">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_checksum</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">file</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span></div>
-</div>
-
+        <span class="k">return</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">file</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span></div></div>
 </pre></div>
 
            </div>

@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.curate &mdash; CoREMOF 0.1.8 documentation</title>
+  <title>CoREMOF.curate &mdash; CoREMOF 0.2.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
 
@@ -88,14 +88,63 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.sparse.csgraph</span><span class="w"> </span><span class="kn">import</span> <span class="n">connected_components</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
 
-
+<span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">Structure</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.io.ase</span><span class="w"> </span><span class="kn">import</span> <span class="n">AseAtomsAdaptor</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">mofchecker</span><span class="w"> </span><span class="kn">import</span> <span class="n">MOFChecker</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">mofchecker</span><span class="w"> </span><span class="kn">import</span> <span class="n">MOFChecker</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;please run pip install git+https://github.com/sxm13/mofchecker_2.0.git@main&quot;</span><span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">CoREMOF.utils.atoms_definitions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ATR</span><span class="p">,</span> <span class="n">Coef_A</span><span class="p">,</span> <span class="n">Coef_C</span> <span class="c1">#, BO_list, metals4check</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">gemmi</span><span class="w"> </span><span class="kn">import</span> <span class="n">cif</span> <span class="k">as</span> <span class="n">CIF</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">PACMANCharge</span><span class="w"> </span><span class="kn">import</span> <span class="n">pmcharge</span>
 
+
+<div class="viewcode-block" id="ensure_data"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.ensure_data">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">ensure_data</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Precheck your CIF.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        cif:</span>
+<span class="sd">            -   added &quot;data_struc&quot; CIF</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">lines</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;data_&#39;</span><span class="p">):</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;data_struc</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+            <span class="n">file</span><span class="o">.</span><span class="n">writelines</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ase_format"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.ase_format">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">ase_format</span><span class="p">(</span><span class="n">structure</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;try to read CIF and convert to ASE format.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        structure (str): path to your CIF.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        cif:</span>
+<span class="sd">            -   ASE format CIF.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+        
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">warnings</span><span class="o">.</span><span class="n">catch_warnings</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">&#39;ignore&#39;</span><span class="p">)</span>
+            <span class="c1"># mof_temp = Structure.from_file(mof,primitive=True)</span>
+            <span class="n">mof_temp</span> <span class="o">=</span> <span class="n">Structure</span><span class="o">.</span><span class="n">from_file</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+            <span class="n">mof_temp</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">filename</span><span class="o">=</span><span class="n">structure</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;cif&quot;</span><span class="p">)</span>
+            <span class="n">struc</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+            <span class="n">write</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">struc</span><span class="p">)</span>
+            <span class="c1"># print(&#39;Reading by ase: &#39; + mof)</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">struc</span> <span class="o">=</span> <span class="n">read</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span>
+            <span class="n">write</span><span class="p">(</span><span class="n">structure</span><span class="p">,</span> <span class="n">struc</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Reading by ase: &#39;</span> <span class="o">+</span> <span class="n">structure</span><span class="p">)</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">ensure_data</span><span class="p">(</span><span class="n">structure</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="preprocess"><a class="viewcode-back" href="../../CoREMOF.html#CoREMOF.curate.preprocess">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">preprocess</span><span class="p">():</span>
 

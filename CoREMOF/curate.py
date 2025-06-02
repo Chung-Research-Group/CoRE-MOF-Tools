@@ -15,14 +15,63 @@ from ase.neighborlist import NeighborList
 from scipy.sparse.csgraph import connected_components
 warnings.filterwarnings('ignore')
 
-
+from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
-from mofchecker import MOFChecker
+try:
+    from mofchecker import MOFChecker
+except:
+    print("please run pip install git+https://github.com/sxm13/mofchecker_2.0.git@main")
 from CoREMOF.utils.atoms_definitions import ATR, Coef_A, Coef_C #, BO_list, metals4check
 
 from gemmi import cif as CIF
 from PACMANCharge import pmcharge
 
+
+def ensure_data(structure):
+    """Precheck your CIF.
+
+    Args:
+        structure (str): path to your CIF.
+
+    Returns:
+        cif:
+            -   added "data_struc" CIF
+    """
+        
+    with open(structure, 'r') as file:
+        lines = file.readlines()
+    if not lines[1].strip().startswith('data_'):
+        lines.insert(1, 'data_struc\n')
+        with open(structure, 'w') as file:
+            file.writelines(lines)
+
+def ase_format(structure):
+    """try to read CIF and convert to ASE format.
+
+    Args:
+        structure (str): path to your CIF.
+
+    Returns:
+        cif:
+            -   ASE format CIF.
+    """
+        
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore')
+            # mof_temp = Structure.from_file(mof,primitive=True)
+            mof_temp = Structure.from_file(structure)
+            mof_temp.to(filename=structure, fmt="cif")
+            struc = read(structure)
+            write(structure, struc)
+            # print('Reading by ase: ' + mof)
+    except:
+        try:
+            struc = read(structure)
+            write(structure, struc)
+            print('Reading by ase: ' + structure)
+        except:
+            ensure_data(structure)
 
 class preprocess():
 

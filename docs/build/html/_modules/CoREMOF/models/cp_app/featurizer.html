@@ -1,20 +1,20 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../../../">
+<html class="writer-html5" lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.models.cp_app.featurizer &mdash; CoREMOF 0.1.3 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css?v=e59714d7" />
+  <title>CoREMOF.models.cp_app.featurizer &mdash; CoREMOF 0.1.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../../_static/css/theme.css" />
 
   
-      <script src="../../../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../../_static/documentation_options.js?v=360bc84d"></script>
-      <script src="../../../../_static/doctools.js?v=9a2dae69"></script>
-      <script src="../../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../../_static/jquery.js"></script>
+      <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+      <script src="../../../../_static/doctools.js"></script>
+      <script src="../../../../_static/sphinx_highlight.js"></script>
     <script src="../../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" /> 
@@ -39,8 +39,13 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../CoREMOF.html">CoREMOF package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
@@ -82,9 +87,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">pymatgen.analysis.local_env</span><span class="w"> </span><span class="kn">import</span> <span class="n">VoronoiNN</span>
 
 
-<div class="viewcode-block" id="featurize_dataset">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.featurize_dataset">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">featurize_dataset</span><span class="p">(</span><span class="n">cifs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">verbos</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">saveto</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s2">&quot;features.csv&quot;</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<div class="viewcode-block" id="featurize_dataset"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.featurize_dataset">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">featurize_dataset</span><span class="p">(</span><span class="n">cifs</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">verbos</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">saveto</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s2">&quot;features.csv&quot;</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Featurize crystal structures using elemetal, geometric, and chemical descriptors for local environments.</span>
 
@@ -179,10 +182,7 @@
     <span class="k">return</span> <span class="n">df_features</span></div>
 
 
-
-<div class="viewcode-block" id="featurize_structure">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.featurize_structure">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">featurize_structure</span><span class="p">(</span><span class="n">cif</span><span class="p">:</span> <span class="n">string</span><span class="p">,</span> <span class="n">verbos</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">saveto</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s2">&quot;features.csv&quot;</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<div class="viewcode-block" id="featurize_structure"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.featurize_structure">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">featurize_structure</span><span class="p">(</span><span class="n">cif</span><span class="p">:</span> <span class="n">string</span><span class="p">,</span> <span class="n">verbos</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">saveto</span><span class="p">:</span> <span class="nb">str</span><span class="o">=</span><span class="s2">&quot;features.csv&quot;</span><span class="p">)</span><span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Featurize a crystal structure using elemetal, geometric, and chemical descriptors for local environments.</span>
 
 <span class="sd">    Args:</span>
@@ -267,10 +267,7 @@
     <span class="k">return</span> <span class="n">df_features</span></div>
 
 
-
-<div class="viewcode-block" id="LocalPropertyStatsNew">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">LocalPropertyStatsNew</span><span class="p">(</span><span class="n">BaseFeaturizer</span><span class="p">):</span>
+<div class="viewcode-block" id="LocalPropertyStatsNew"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LocalPropertyStatsNew</span><span class="p">(</span><span class="n">BaseFeaturizer</span><span class="p">):</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Differences, minima and maxima in elemental properties between site and its neighboring sites.</span>
@@ -311,9 +308,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cutoff</span> <span class="o">=</span> <span class="n">cutoff</span>
 
-<div class="viewcode-block" id="LocalPropertyStatsNew.from_preset">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.from_preset">[docs]</a>
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="LocalPropertyStatsNew.from_preset"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.from_preset">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_preset</span><span class="p">(</span><span class="n">preset</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cutoff</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">13</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Create a new LocalPropertyStats class according to a preset.</span>
@@ -348,10 +343,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unrecognized preset: &quot;</span> <span class="o">+</span> <span class="n">preset</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="LocalPropertyStatsNew.featurize">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.featurize">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">featurize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strc</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<div class="viewcode-block" id="LocalPropertyStatsNew.featurize"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.featurize">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">featurize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">strc</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
         <span class="c1"># Get the targeted site</span>
         <span class="n">my_site</span> <span class="o">=</span> <span class="n">strc</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
 
@@ -387,10 +379,7 @@
             <span class="n">output_min</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">n_props</span><span class="p">,</span> <span class="n">my_prop</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">output</span><span class="p">,</span> <span class="n">output_signed</span><span class="p">,</span> <span class="n">output_max</span><span class="p">,</span> <span class="n">output_min</span><span class="p">])</span></div>
 
-
-<div class="viewcode-block" id="LocalPropertyStatsNew.feature_labels">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.feature_labels">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">feature_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="LocalPropertyStatsNew.feature_labels"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.feature_labels">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">feature_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="k">return</span> <span class="p">(</span>
             <span class="p">[</span><span class="s2">&quot;local difference in &quot;</span> <span class="o">+</span> <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">]</span>
@@ -399,10 +388,7 @@
             <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;minimum local difference in &quot;</span> <span class="o">+</span> <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">properties</span><span class="p">]</span>
         <span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="LocalPropertyStatsNew.citations">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.citations">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">citations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="LocalPropertyStatsNew.citations"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.citations">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">citations</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">[</span>
             <span class="s2">&quot;@article{Ward2017,&quot;</span>
             <span class="s2">&quot;author = {Ward, Logan and Liu, Ruoqian &quot;</span>
@@ -426,24 +412,16 @@
             <span class="s2">&quot;year=</span><span class="si">{2016}</span><span class="s2">, month=</span><span class="si">{Mar}</span><span class="s2">}&quot;</span><span class="p">,</span>
         <span class="p">]</span></div>
 
-
-<div class="viewcode-block" id="LocalPropertyStatsNew.implementors">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.implementors">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">implementors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;Logan Ward&quot;</span><span class="p">,</span> <span class="s2">&quot;Aik Rui Tan&quot;</span><span class="p">]</span></div>
-</div>
+<div class="viewcode-block" id="LocalPropertyStatsNew.implementors"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.LocalPropertyStatsNew.implementors">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">implementors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;Logan Ward&quot;</span><span class="p">,</span> <span class="s2">&quot;Aik Rui Tan&quot;</span><span class="p">]</span></div></div>
 
 
-
-<div class="viewcode-block" id="add_type_feature">
-<a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.add_type_feature">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">add_type_feature</span><span class="p">(</span><span class="n">mydict</span><span class="p">,</span><span class="n">atomtype</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">feat</span><span class="p">):</span>
+<div class="viewcode-block" id="add_type_feature"><a class="viewcode-back" href="../../../../CoREMOF.models.cp_app.html#CoREMOF.models.cp_app.featurizer.add_type_feature">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">add_type_feature</span><span class="p">(</span><span class="n">mydict</span><span class="p">,</span><span class="n">atomtype</span><span class="p">,</span><span class="n">name</span><span class="p">,</span><span class="n">feat</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">atomtype</span> <span class="ow">in</span> <span class="n">mydict</span><span class="p">:</span>
         <span class="n">mydict</span><span class="p">[</span><span class="n">atomtype</span><span class="p">][</span><span class="n">name</span><span class="p">]</span><span class="o">=</span><span class="n">feat</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">mydict</span><span class="p">[</span><span class="n">atomtype</span><span class="p">]</span><span class="o">=</span><span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="n">feat</span><span class="p">}</span>
     <span class="k">return</span> <span class="n">mydict</span></div>
-
 </pre></div>
 
            </div>

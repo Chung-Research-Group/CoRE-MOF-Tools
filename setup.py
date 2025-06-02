@@ -7,7 +7,7 @@ long_description = readme_path.read_text(encoding="utf-8") if readme_path.exists
 
 setup(
     name='CoREMOF_tools',
-    version='0.1.7',
+    version='0.2.1',
     author='Guobin Zhao',
     author_email='sxmzhaogb@gmail.com',
     description='Python API for CoRE MOF DB',
@@ -25,7 +25,6 @@ setup(
         'matminer',
         'xgboost',
         'scikit-learn==1.3.2',
-        'mofchecker',
         'gemmi==0.7.0',
         'phonopy',
         'networkx',

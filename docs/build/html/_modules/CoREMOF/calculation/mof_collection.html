@@ -1,20 +1,20 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="../../../">
+<html class="writer-html5" lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF.calculation.mof_collection &mdash; CoREMOF_tools 0.0.9 documentation</title>
-      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+  <title>CoREMOF.calculation.mof_collection &mdash; CoREMOF 0.1.9 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
 
   
-      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
-      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="../../../_static/documentation_options.js?v=f7cdbf68"></script>
-      <script src="../../../_static/doctools.js?v=9a2dae69"></script>
-      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../../../_static/jquery.js"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+      <script src="../../../_static/doctools.js"></script>
+      <script src="../../../_static/sphinx_highlight.js"></script>
     <script src="../../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" /> 
@@ -29,7 +29,7 @@
           
           
           <a href="../../../index.html" class="icon icon-home">
-            CoREMOF_tools
+            CoREMOF
           </a>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
@@ -39,15 +39,20 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <!-- Local TOC -->
-              <div class="local-toc"></div>
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../CoREMOF.html">CoREMOF package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../setup.html">setup module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">CoREMOF_tools API Documentation</a></li>
+</ul>
+
         </div>
       </div>
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="../../../index.html">CoREMOF_tools</a>
+          <a href="../../../index.html">CoREMOF</a>
       </nav>
 
       <div class="wy-nav-content">
@@ -85,9 +90,7 @@
 <span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">max_rows</span> <span class="o">=</span> <span class="mi">1000</span>
 
 
-<div class="viewcode-block" id="MofCollection">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection">[docs]</a>
-<span class="k">class</span><span class="w"> </span><span class="nc">MofCollection</span><span class="p">:</span>
+<div class="viewcode-block" id="MofCollection"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">MofCollection</span><span class="p">:</span>
 
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A collection to hold and analyse MOF structures from CIF files. Create a MofCollection from a list of path names.</span>
 
@@ -244,9 +247,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_metal_site_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">site_info</span><span class="p">,</span> <span class="n">orient</span><span class="o">=</span><span class="s1">&#39;index&#39;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metal_site_df</span>
 
-<div class="viewcode-block" id="MofCollection.from_folder">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.from_folder">[docs]</a>
-    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="MofCollection.from_folder"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.from_folder">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_folder</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">collection_folder</span><span class="p">,</span> <span class="n">analysis_folder</span><span class="o">=</span><span class="s1">&#39;analysis_folder&#39;</span><span class="p">,</span> <span class="n">name_list</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a MofCollection from a the CIF files in a folder.</span>
@@ -270,10 +271,7 @@
             <span class="n">path_list</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">collection_folder</span> <span class="o">+</span> <span class="s2">&quot;/*.cif&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">path_list</span><span class="p">,</span> <span class="n">analysis_folder</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.analyse_mofs">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.analyse_mofs">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">analyse_mofs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_batches</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">analysis_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="MofCollection.analyse_mofs"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.analyse_mofs">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">analyse_mofs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_batches</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">analysis_limit</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Run OMS analysis for the MOFs in the collection.</span>
 
@@ -328,10 +326,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Analysis Finished. Time required:</span><span class="si">{:.2f}</span><span class="s1"> sec&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t1</span> <span class="o">-</span> <span class="n">t0</span><span class="p">))</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.check_structures">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.check_structures">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">check_structures</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="MofCollection.check_structures"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.check_structures">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_structures</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate over all the MOFs in the collection and validate that they can be read and a MofStructure can be created.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_properties</span><span class="p">([</span><span class="s1">&#39;cif_okay&#39;</span><span class="p">])</span>
@@ -366,10 +361,7 @@
 
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Finished checking structures.&#39;</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.check_analysis_status">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.check_analysis_status">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">check_analysis_status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="MofCollection.check_analysis_status"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.check_analysis_status">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">check_analysis_status</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate over all the MOFs in the collection and check if the results from the OMS analysis exist.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span>
@@ -387,10 +379,7 @@
             <span class="nb">print</span><span class="p">(</span><span class="n">nd</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.sample_collection">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.sample_collection">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">sample_collection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample_size</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+<div class="viewcode-block" id="MofCollection.sample_collection"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.sample_collection">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample_collection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample_size</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Randomly select a sample of MOFs in the collection and return a new collection with the MOFs in the sample.</span>
 
@@ -407,10 +396,7 @@
         <span class="n">sampled_list</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">mof_list</span><span class="p">,</span> <span class="n">sample_size</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">MofCollection</span><span class="p">(</span><span class="n">sampled_list</span><span class="p">,</span> <span class="n">analysis_folder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">analysis_folder</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.filter_collection">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.filter_collection">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">filter_collection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">using_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<div class="viewcode-block" id="MofCollection.filter_collection"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.filter_collection">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">filter_collection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">using_filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                           <span class="n">new_collection_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                           <span class="n">new_analysis_folder</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span>
@@ -468,10 +454,7 @@
 
         <span class="k">return</span> <span class="n">sub_collection</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.read_cif_files">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.read_cif_files">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">read_cif_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="MofCollection.read_cif_files"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.read_cif_files">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">read_cif_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate over all MOF files in the collection, load each CIF and store MOF properties such as density, unit cell volume etc.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span>
@@ -481,10 +464,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Done&#39;</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.read_oms_results">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.read_oms_results">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">read_oms_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="MofCollection.read_oms_results"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.read_oms_results">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">read_oms_results</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Iterate over all MOF files in the collection, load each OMS result file and store OMS information to the MOF properties.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span>
@@ -494,10 +474,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_store_properties</span><span class="p">()</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.copy_cifs">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.copy_cifs">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">copy_cifs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_folder</span><span class="p">):</span>
+<div class="viewcode-block" id="MofCollection.copy_cifs"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.copy_cifs">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">copy_cifs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_folder</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy cif files from their existing location to the specified target_folder.</span>
 
@@ -523,10 +500,7 @@
                 <span class="n">shutil</span><span class="o">.</span><span class="n">copyfile</span><span class="p">(</span><span class="n">mi</span><span class="p">[</span><span class="s1">&#39;mof_file&#39;</span><span class="p">],</span> <span class="n">destination_path</span><span class="p">)</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.copy_results">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.copy_results">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">copy_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_folder</span><span class="p">):</span>
+<div class="viewcode-block" id="MofCollection.copy_results"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.copy_results">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">copy_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_folder</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy OMS result files from their existing location to the specified target_folder.</span>
 
@@ -557,10 +531,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_properties</span><span class="p">([</span><span class="s1">&#39;has_oms&#39;</span><span class="p">])</span>
         <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">separator</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.summarize_results">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.summarize_results">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">summarize_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_atomic_number</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<div class="viewcode-block" id="MofCollection.summarize_results"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.summarize_results">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">summarize_results</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_atomic_number</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a summary table for the OMS results of the collection, group results by metal type.</span>
 
@@ -620,10 +591,7 @@
         <span class="nb">print</span><span class="p">(</span><span class="n">s_df</span><span class="p">)</span>
         <span class="n">s_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39; &#39;</span><span class="p">)</span></div>
 
-
-<div class="viewcode-block" id="MofCollection.summarize_tfactors">
-<a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.summarize_tfactors">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">summarize_tfactors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="MofCollection.summarize_tfactors"><a class="viewcode-back" href="../../../CoREMOF.calculation.html#CoREMOF.calculation.mof_collection.MofCollection.summarize_tfactors">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">summarize_tfactors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Summarize the t-factor information and make histograms for all the MOFs in the collection.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">tfac_analysis_folder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">summary_folder</span> <span class="o">+</span> <span class="s1">&#39;/tfac_analysis&#39;</span>
@@ -635,7 +603,6 @@
 
         <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">7</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_write_t_factors</span><span class="p">(</span><span class="n">sites_u</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">tfac_analysis_folder</span><span class="p">)</span></div>
-
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_load_mofs</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add MOfs to collection, use CIF file checksum as an identifier.&quot;&quot;&quot;</span>
@@ -936,7 +903,6 @@
         <span class="n">rename</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;mof_name&quot;</span><span class="p">:</span> <span class="n">names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;is_open&quot;</span><span class="p">:</span> <span class="n">names</span><span class="p">[</span><span class="mi">1</span><span class="p">]}</span>
         <span class="n">agg_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;mof_name&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="o">.</span><span class="n">nunique</span><span class="p">,</span> <span class="s2">&quot;is_open&quot;</span><span class="p">:</span> <span class="s2">&quot;count&quot;</span><span class="p">}</span>
         <span class="k">return</span> <span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;metal&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">(</span><span class="n">agg_dict</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">rename</span><span class="p">)</span></div>
-
 </pre></div>
 
            </div>

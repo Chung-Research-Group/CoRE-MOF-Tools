@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CoREMOF package &mdash; CoREMOF 0.1.8 documentation</title>
+  <title>CoREMOF package &mdash; CoREMOF 0.2.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
 
@@ -54,6 +54,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-CoREMOF.curate">CoREMOF.curate module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#CoREMOF.curate.MOSAEC"><code class="docutils literal notranslate"><span class="pre">MOSAEC()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.curate.ase_format"><code class="docutils literal notranslate"><span class="pre">ase_format()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#CoREMOF.curate.clean"><code class="docutils literal notranslate"><span class="pre">clean</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#CoREMOF.curate.clean.CustomMatrix"><code class="docutils literal notranslate"><span class="pre">clean.CustomMatrix()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#CoREMOF.curate.clean.all_clean"><code class="docutils literal notranslate"><span class="pre">clean.all_clean()</span></code></a></li>
@@ -83,6 +84,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#CoREMOF.curate.clean_pacman.run_pacman"><code class="docutils literal notranslate"><span class="pre">clean_pacman.run_pacman()</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.curate.ensure_data"><code class="docutils literal notranslate"><span class="pre">ensure_data()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#CoREMOF.curate.mof_check"><code class="docutils literal notranslate"><span class="pre">mof_check</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#CoREMOF.curate.mof_check.Chen_Manz"><code class="docutils literal notranslate"><span class="pre">mof_check.Chen_Manz()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#CoREMOF.curate.mof_check.check"><code class="docutils literal notranslate"><span class="pre">mof_check.check()</span></code></a></li>
@@ -107,6 +109,44 @@
 <li class="toctree-l3"><a class="reference internal" href="#CoREMOF.get_mofid.split_linkers_from_cif"><code class="docutils literal notranslate"><span class="pre">split_linkers_from_cif()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#CoREMOF.get_mofid.split_nodes_from_cif"><code class="docutils literal notranslate"><span class="pre">split_nodes_from_cif()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#CoREMOF.get_mofid.xyz2fomula"><code class="docutils literal notranslate"><span class="pre">xyz2fomula()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-CoREMOF.mosaec">CoREMOF.mosaec module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.HighestKnownONs"><code class="docutils literal notranslate"><span class="pre">HighestKnownONs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.IonizationEnergies"><code class="docutils literal notranslate"><span class="pre">IonizationEnergies()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.KnownONs"><code class="docutils literal notranslate"><span class="pre">KnownONs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.ONmostprob"><code class="docutils literal notranslate"><span class="pre">ONmostprob()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.ONprobabilities"><code class="docutils literal notranslate"><span class="pre">ONprobabilities()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.assign_VBS"><code class="docutils literal notranslate"><span class="pre">assign_VBS()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.binding_contrib"><code class="docutils literal notranslate"><span class="pre">binding_contrib()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.binding_domain"><code class="docutils literal notranslate"><span class="pre">binding_domain()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.bridging"><code class="docutils literal notranslate"><span class="pre">bridging()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.carbene_type"><code class="docutils literal notranslate"><span class="pre">carbene_type()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.carbocation_check"><code class="docutils literal notranslate"><span class="pre">carbocation_check()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.check"><code class="docutils literal notranslate"><span class="pre">check()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.delocalisedLBO"><code class="docutils literal notranslate"><span class="pre">delocalisedLBO()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.distribute_ONEC"><code class="docutils literal notranslate"><span class="pre">distribute_ONEC()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.distribute_OuterSphere"><code class="docutils literal notranslate"><span class="pre">distribute_OuterSphere()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.getCN"><code class="docutils literal notranslate"><span class="pre">getCN()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.get_CN"><code class="docutils literal notranslate"><span class="pre">get_CN()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.get_binding_sites"><code class="docutils literal notranslate"><span class="pre">get_binding_sites()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.get_ligand_sites"><code class="docutils literal notranslate"><span class="pre">get_ligand_sites()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.get_metal_networks"><code class="docutils literal notranslate"><span class="pre">get_metal_networks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.get_metal_sites"><code class="docutils literal notranslate"><span class="pre">get_metal_sites()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.get_no_metal_molecule"><code class="docutils literal notranslate"><span class="pre">get_no_metal_molecule()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.get_unique_sites"><code class="docutils literal notranslate"><span class="pre">get_unique_sites()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.global_charge_distribution"><code class="docutils literal notranslate"><span class="pre">global_charge_distribution()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.hapticity"><code class="docutils literal notranslate"><span class="pre">hapticity()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.iVBS_FormalCharge"><code class="docutils literal notranslate"><span class="pre">iVBS_FormalCharge()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.iVBS_Oxidation_Contrib"><code class="docutils literal notranslate"><span class="pre">iVBS_Oxidation_Contrib()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.outer_sphere_contrib"><code class="docutils literal notranslate"><span class="pre">outer_sphere_contrib()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.outer_sphere_domain"><code class="docutils literal notranslate"><span class="pre">outer_sphere_domain()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.readSBU"><code class="docutils literal notranslate"><span class="pre">readSBU()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.read_CSD_entry"><code class="docutils literal notranslate"><span class="pre">read_CSD_entry()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.readentry"><code class="docutils literal notranslate"><span class="pre">readentry()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.redundantAON"><code class="docutils literal notranslate"><span class="pre">redundantAON()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.ringVBOs"><code class="docutils literal notranslate"><span class="pre">ringVBOs()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#CoREMOF.mosaec.valence_e"><code class="docutils literal notranslate"><span class="pre">valence_e()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-CoREMOF.prediction">CoREMOF.prediction module</a><ul>
@@ -331,6 +371,26 @@
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.curate.ase_format">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.curate.</span></span><span class="sig-name descname"><span class="pre">ase_format</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/curate.html#ase_format"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.curate.ase_format" title="Permalink to this definition"></a></dt>
+<dd><p>try to read CIF and convert to ASE format.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>structure</strong> (<em>str</em>) – path to your CIF.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>ASE format CIF.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>cif</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="CoREMOF.curate.clean">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">CoREMOF.curate.</span></span><span class="sig-name descname"><span class="pre">clean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial_skin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_folder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'result_curation'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">saveto</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'clean_result.csv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/curate.html#clean"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.curate.clean" title="Permalink to this definition"></a></dt>
@@ -509,6 +569,26 @@
 <span class="sig-name descname"><span class="pre">run_pacman</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/curate.html#clean_pacman.run_pacman"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.curate.clean_pacman.run_pacman" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.curate.ensure_data">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.curate.</span></span><span class="sig-name descname"><span class="pre">ensure_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">structure</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/curate.html#ensure_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.curate.ensure_data" title="Permalink to this definition"></a></dt>
+<dd><p>Precheck your CIF.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>structure</strong> (<em>str</em>) – path to your CIF.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p>added “data_struc” CIF</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>cif</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py class">
@@ -773,6 +853,848 @@ removal, the atoms object is centered at the center of the unit cell.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+<section id="module-CoREMOF.mosaec">
+<span id="coremof-mosaec-module"></span><h2>CoREMOF.mosaec module<a class="headerlink" href="#module-CoREMOF.mosaec" title="Permalink to this heading"></a></h2>
+<p>Code for MOSAEC checker. Ref: White, A.; Gibaldi, M.; Burner, J.; Woo, T. K. Alarming Structural Error Rates in MOF Databases Used in Computational Screening Identified via a Novel Metal Oxidation State-Based Method. ChemRxiv 2024. <a class="reference external" href="https://doi.org/10.26434/chemrxiv-2024-ftsv3">https://doi.org/10.26434/chemrxiv-2024-ftsv3</a>.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.HighestKnownONs">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">HighestKnownONs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#HighestKnownONs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.HighestKnownONs" title="Permalink to this definition"></a></dt>
+<dd><p>Determines the highest known oxidation states for each metal element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>dictionary with metal element symbols as keys</dt><dd><p>and their highest known oxidation state as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>HKONs (dict[str, int])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.IonizationEnergies">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">IonizationEnergies</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#IonizationEnergies"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.IonizationEnergies" title="Permalink to this definition"></a></dt>
+<dd><p>Reads in the reported ionization energies for each metal element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>dictionary with metal element symbols as keys</dt><dd><p>and a list of their reported ionization energies as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>KIEs (dict[str, list[float]])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.KnownONs">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">KnownONs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#KnownONs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.KnownONs" title="Permalink to this definition"></a></dt>
+<dd><p>Reads in the known oxidation states for each metal element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>dictionary with metal element symbols as keys</dt><dd><p>and a list of their known oxidation states as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>KONs (dict[str, list(int)])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.ONmostprob">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">ONmostprob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">iONP</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#ONmostprob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.ONmostprob" title="Permalink to this definition"></a></dt>
+<dd><p>Determines the highest probability oxidation state for each metal element.
+These values are utilized during charge distribution routines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>iONP</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>list</em><em>[</em><em>float</em><em>]</em><em>]</em>) – dictionary with metal element symbols as
+keys and a list of the probability at the relevant oxidation
+states as values.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary with metal element symbols as keys and</dt><dd><p>their oxidation state with the highest probability as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>MPOS (dict[str, int])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.ONprobabilities">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">ONprobabilities</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#ONprobabilities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.ONprobabilities" title="Permalink to this definition"></a></dt>
+<dd><p>Reads in the probability of each oxidation state for all metal elements.
+Approximate probabilities are assessed by their relative frequency of
+occurence in the CSD metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>dictionary with metal element symbols as keys</dt><dd><p>and a list of the probability at the relevant oxidation
+states as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>ONP (dict[str, list[float]])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.assign_VBS">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">assign_VBS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rVBO</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dVBO</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#assign_VBS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.assign_VBS" title="Permalink to this definition"></a></dt>
+<dd><p>Assigns a Valence-Bond-Sum (VBS) to an atom.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>atom</strong> (<em>ccdc.molecule.Atom</em>) – Atom object.</p></li>
+<li><p><strong>rVBO</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>int</em><em>]</em>) – dictionary with each atom’s index in mole.atoms
+as keys and VBO (valence bond order) as values.</p></li>
+<li><p><strong>dVBO</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>float</em><em>]</em>) – dictionary with delocalized bond-possessing
+atom’s index in mole.atoms as keys and their
+corresponding (delocalized-only) VBS.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>valence bond sum value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>VBO (int)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.binding_contrib">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">binding_contrib</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">binding_sphere</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">binding_sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AON</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#binding_contrib"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.binding_contrib" title="Permalink to this definition"></a></dt>
+<dd><p>Redistributes oxidation state contributions within a binding domain.
+Equal distribution is assumed across connected binding sites in each domain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>binding_sphere</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em><em>]</em>) – dictionary with Atom object as keys and a list of Atoms
+connected through bonding that form a binding domain as values.</p></li>
+<li><p><strong>binding_sites</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of binding sites connecting
+metal atoms and ligands.</p></li>
+<li><p><strong>AON</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>float</em><em>]</em>) – dictionary with Atom object as keys
+and their oxidation state contribution as values for unique Atoms.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary with Atom object as keys</dt><dd><p>and their updated oxidation state contribution as values accounting
+for distribution within the binding domain.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>site_contrib (dict[ccdc.molecule.Atom, float])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.binding_domain">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">binding_domain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">binding_sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AON</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molecule</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">usites</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#binding_domain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.binding_domain" title="Permalink to this definition"></a></dt>
+<dd><p>Builds bonding domains within the crystal structure to determine which
+metal binding sites (Atom objects directly bonded to a metal) are connected
+via conjugation. Function accounts for the inconsistent assignment of
+delocalized bonds, by using the bonding domains (see methodology section
+for details on the implementation and validation).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>binding_sites</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of binding sites connecting
+metal atoms and ligands.</p></li>
+<li><p><strong>AON</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>float</em><em>]</em>) – dictionary with Atom object as keys
+and their oxidation state contribution as values for unique
+Atom objects.</p></li>
+<li><p><strong>molecule</strong> (<em>ccdc.molecule.Molecule</em>) – Molecule object.</p></li>
+<li><p><strong>uniquesites</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of unique atoms.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary with Atom object as keys and a list of Atoms
+connected through bonding that form a binding domain
+as values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>sitedomain (dict[ccdc.molecule.Atom, list[ccdc.molecule.Atom]])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.bridging">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">bridging</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#bridging"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.bridging" title="Permalink to this definition"></a></dt>
+<dd><p>Determines how many metal atoms the input atom binds to search for
+bridging sites.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>atom</strong> (<em>ccdc.molecule.Atom</em>) – binding site Atom object.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>number of metal atoms bound to the atom.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bridge (int)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.carbene_type">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">carbene_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#carbene_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.carbene_type" title="Permalink to this definition"></a></dt>
+<dd><p>Distinguishes between singlet and triplet carbenes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>atom</strong> (<em>ccdc.molecule.Atom</em>) – Atom object(s) suspected of belonging to a
+carbene (2-coordinate carbon II).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>carbene type at input atom.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Literal[“singlet”, “triplet”]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.carbocation_check">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">carbocation_check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#carbocation_check"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.carbocation_check" title="Permalink to this definition"></a></dt>
+<dd><p>Check carbocation/carbanion geometry according to bond angles.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>atom</strong> (<em>ccdc.molecule.Atom</em>) – Atom object.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>geometry at input atom.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Literal[“tetrahedral”, “trigonal”]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.check">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#check"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.check" title="Permalink to this definition"></a></dt>
+<dd><p>Process a single .cif or .mol2 file and return a dict mapping each metal site
+label to the list of flag-names that are not ‘GOOD’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.delocalisedLBO">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">delocalisedLBO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">molecule</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#delocalisedLBO"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.delocalisedLBO" title="Permalink to this definition"></a></dt>
+<dd><p>Writes a dictionary of all atoms in the molecule with delocalized bonds
+and their (delocalized-only) valence bond sum (VBS).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>molecule</strong> (<em>ccdc.molecule.Molecule</em>) – Molecule object.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary with delocalized bond-possessing</dt><dd><p>atom’s index in mole.atoms as keys and their
+corresponding (delocalized-only) VBS.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>delocal_dict (dict[int, float])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.distribute_ONEC">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">distribute_ONEC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sONEC</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metal_networks</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">IEs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ONP</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highest_known_ON</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metal_CN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">most_probable_ON</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#distribute_ONEC"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.distribute_ONEC" title="Permalink to this definition"></a></dt>
+<dd><p>Redistributes the oxidation state contributions across all metal atoms in
+the structure according to their metal networks (fully local distribution)
+&amp; calculates their associated electron counts. Features utilizing electron
+counts are minimally implemented at this time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sONEC</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>list</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em><em>]</em>) – dictionary with
+metal Atom object as keys and lists containing the initial
+oxidation state and electron count implied by only the
+equal splitting of binding domain charges as values.</p></li>
+<li><p><strong>metal_networks</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em><em>]</em>) – dictionary with as metal Atom objects as keys and a list of
+other metal Atom objects connected through binding domains/
+charged ligands as values. Ignores neutral ligand connections.</p></li>
+<li><p><strong>IEs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>list</em><em>[</em><em>float</em><em>]</em><em>]</em>) – dictionary with metal element symbols as keys
+and a list of their reported ionization energies as values.</p></li>
+<li><p><strong>ONP</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>list</em><em>[</em><em>float</em><em>]</em><em>]</em>) – dictionary with metal element symbols as keys
+and a list of the probability at the relevant oxidation states
+as values.</p></li>
+<li><p><strong>highest_known_ON</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>) – dictionary with metal element symbols as
+keys and a their highest known oxidation state as values.</p></li>
+<li><p><strong>metal_CN</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Molecule</em><em>, </em><em>int</em><em>]</em>) – dictionary with as metal Atom
+objects as keys and their effective coordination number as values.</p></li>
+<li><p><strong>most_probable_ON</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>) – dictionary with metal element symbols as
+keys and a their oxidation state with the highest probability
+as values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary</dt><dd><p>with metal Atom object as keys and lists containing their
+redistributed oxidation state and electron count as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>distributed_ONEC (dict[ccdc.molecule.Atom, list[float, float]])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.distribute_OuterSphere">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">distribute_OuterSphere</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sONEC</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outer_sphere_charge</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">IEs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ONP</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highest_known_ON</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metal_CN</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#distribute_OuterSphere"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.distribute_OuterSphere" title="Permalink to this definition"></a></dt>
+<dd><p>Redistributes the oxidation state contributions across all metal atoms in
+the structure according to the outer sphere charge contribution (partially
+local distribution) &amp; calculates their associated electron counts.
+Features utilizing electron counts are minimally implemented at this time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sONEC</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>list</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em><em>]</em>) – dictionary with
+metal Atom object as keys and lists containing the initial
+oxidation state and electron count implied by only the equal
+splitting of binding domain charges as values.</p></li>
+<li><p><strong>outer_sphere_charge</strong> (<em>int</em>) – sum of outer sphere charge contributions.</p></li>
+<li><p><strong>IEs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>list</em><em>(</em><em>float</em><em>)</em><em>]</em>) – dictionary with metal element symbols as keys
+and a list of  their reported ionization energies as values.</p></li>
+<li><p><strong>ONP</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>list</em><em>(</em><em>float</em><em>)</em><em>]</em>) – dictionary with metal element symbols as keys
+and a list of the probability at the relevant oxidation
+states as values.</p></li>
+<li><p><strong>highest_known_ON</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>) – dictionary with metal element symbols
+as keys and a their highest known oxidation state as values.</p></li>
+<li><p><strong>metal_CN</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Molecule</em><em>, </em><em>int</em><em>]</em>) – dictionary with as metal Atom
+objects as keys and their  effective coordination number
+as values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary</dt><dd><p>with metal Atom object as keys and lists containing their
+redistributed oxidation state and electron count as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>distributed_ONEC (dict[ccdc.molecule.Atom, list[float, float]])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.getCN">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">getCN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lsites</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#getCN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.getCN" title="Permalink to this definition"></a></dt>
+<dd><p>Determines the highest probability oxidation state for each metal element.
+These values are utilized during charge distribution routines.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>lsites</strong> (<em>dict</em><em>[</em><a class="reference internal" href="CoREMOF.calculation.html#CoREMOF.calculation.atomic_parameters.Atom" title="CoREMOF.calculation.atomic_parameters.Atom"><em>Atom</em></a><em>, </em><em>list</em><em>[</em><a class="reference internal" href="CoREMOF.calculation.html#CoREMOF.calculation.atomic_parameters.Atom" title="CoREMOF.calculation.atomic_parameters.Atom"><em>Atom</em></a><em>]</em><em>]</em>) – dictionary with metal Atom object as keys
+and the list of ligand atoms which bind them as values.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary with as metal Atom objects as</dt><dd><p>keys and effective coordination number as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>CNdict (dict[Molecule, int])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.get_CN">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">get_CN</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#get_CN"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.get_CN" title="Permalink to this definition"></a></dt>
+<dd><p>Determines the coordination number of the input atom.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>atom</strong> (<em>ccdc.molecule.Atom</em>) – Atom object.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Atom’s coordination number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>coord_number (int)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.get_binding_sites">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">get_binding_sites</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metalsites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uniquesites</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#get_binding_sites"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.get_binding_sites" title="Permalink to this definition"></a></dt>
+<dd><p>Get the binding sites in a structure, given the list of unique metal atoms
+and all unique atoms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>metalsites</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of unique metal atoms.</p></li>
+<li><p><strong>uniquesites</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of unique atoms.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>list of binding sites connecting</dt><dd><p>metal atoms and ligands.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>binding_sites (list[ccdc.molecule.Atom])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.get_ligand_sites">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">get_ligand_sites</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metalsites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sites</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#get_ligand_sites"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.get_ligand_sites" title="Permalink to this definition"></a></dt>
+<dd><p>Get the ligand sites binding each metal atom in a structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>metalsites</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of metal sites in the structure
+that belong to the asymmetric unit.</p></li>
+<li><p><strong>sites</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of unique atoms in the structure
+that belong to the asymmetric unit.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary with metal Atom object as keys and the the list
+of ligand atoms which bind them as values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>metal_sphere (dict[ccdc.molecule.Atom, list[ccdc.molecule.Atom]])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.get_metal_networks">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">get_metal_networks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ligand_sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">binding_sphere</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bindingAON</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#get_metal_networks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.get_metal_networks" title="Permalink to this definition"></a></dt>
+<dd><p>Determines the metal atoms that are connected through binding domains and
+charged ligands. Any connections through neutral ligands are ignored as they
+do not contribute to the charge accounting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ligand_sites</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em><em>]</em>) – dictionary with metal Atom object as key and the
+list of ligand atoms which bind them as values.</p></li>
+<li><p><strong>binding_sphere</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em><em>]</em>) – dictionary with Atom object as keys and a list of Atoms
+connected through bonding that form a binding domain
+as values.</p></li>
+<li><p><strong>bindingAON</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>float</em><em>]</em>) – dictionary with Atom object as
+keys and their updated oxidation state contribution as
+values accounting for distribution within the binding domain.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>dictionary with as metal Atom objects as keys and a list
+of other metal Atom objects connected through binding
+domains/charged ligands as values. Ignores neutral ligand
+connections.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>network_dict (dict[ccdc.molecule.Atom, list[ccdc.molecule.Atom]])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.get_metal_sites">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">get_metal_sites</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sites</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#get_metal_sites"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.get_metal_sites" title="Permalink to this definition"></a></dt>
+<dd><p>Get the metal sites in a structure belonging to the asymmetric unit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sites</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of unique atoms in the structure
+that belong to the asymmetric unit.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>list of metal sites in the structure</dt><dd><p>that belong to the asymmetric unit.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>metalsites (list[ccdc.molecule.Atom])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.get_no_metal_molecule">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">get_no_metal_molecule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inputmolecule</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#get_no_metal_molecule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.get_no_metal_molecule" title="Permalink to this definition"></a></dt>
+<dd><p>Remove metal atoms from the input Molecule object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>inputmolecule</strong> (<em>ccdc.molecule.Molecule</em>) – original Molecule object.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Molecule object with all metal</dt><dd><p>atoms removed.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>workingmol (ccdc.molecule.Molecule)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.get_unique_sites">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">get_unique_sites</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mole</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asymmole</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#get_unique_sites"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.get_unique_sites" title="Permalink to this definition"></a></dt>
+<dd><p>Get the unique atoms in a structure belonging to the asymmetric unit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>mole</strong> (<em>ccdc.molecule.Molecule</em>) – original structure Molecule object.</p></li>
+<li><p><strong>asymmole</strong> (<em>ccdc.molecule.Molecule</em>) – asymmetric unit of the structure.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>list of unique atoms in the structure</dt><dd><p>that belong to the asymmetric unit.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>uniquesites (list[ccdc.molecule.Atom])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.global_charge_distribution">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">global_charge_distribution</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metalONdict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">IEs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ONP</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highest_known_ON</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metal_CN</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">most_probable_ON</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#global_charge_distribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.global_charge_distribution" title="Permalink to this definition"></a></dt>
+<dd><p>Redistributes the oxidation state contributions across all metal atoms in
+the structure according to full/global shating (fully delocalized distribution)
+&amp; calculates their associated electron counts. Features utilizing electron
+counts are minimally implemented at this time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>metalONdict</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>list</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em><em>]</em>) – dictionary with
+metal Atom object as keys and lists containing the initial
+oxidation state and electron count implied by only the
+equal splitting of binding domain charges as values.</p></li>
+<li><p><strong>IEs</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>list</em><em>[</em><em>float</em><em>]</em><em>]</em>) – dictionary with metal element symbols as keys
+and a list of their reported ionization energies as values.</p></li>
+<li><p><strong>ONP</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>list</em><em>[</em><em>float</em><em>]</em><em>]</em>) – dictionary with metal element symbols as keys
+and a list of the probability at the relevant oxidation
+states as values.</p></li>
+<li><p><strong>highest_known_ON</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>) – dictionary with metal element symbols
+as keys and a their highest known oxidation state as values.</p></li>
+<li><p><strong>metal_CN</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Molecule</em><em>, </em><em>int</em><em>]</em>) – dictionary with as metal Atom
+objects as keys and their effective coordination number
+as values.</p></li>
+<li><p><strong>most_probable_ON</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>int</em><em>]</em>) – dictionary with metal element symbols
+as keys and a their oxidation state with the highest
+probability as values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary with</dt><dd><p>metal Atom object  as keys and lists containing their
+redistributed oxidation state and electron count as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>global_ONEC (dict[ccdc.molecule.Atom, list[float, float]])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.hapticity">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">hapticity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metalsite</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#hapticity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.hapticity" title="Permalink to this definition"></a></dt>
+<dd><p>Determines if a ligand binding site possesses hapticity (any n-hapto).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>atom</strong> (<em>ccdc.molecule.Atom</em>) – Atom object.</p></li>
+<li><p><strong>metalsites</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of metal sites in the structure
+that belong to the asymmetric unit.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>whether the the input ligand is hapto-.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.iVBS_FormalCharge">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">iVBS_FormalCharge</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">atom</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#iVBS_FormalCharge"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.iVBS_FormalCharge" title="Permalink to this definition"></a></dt>
+<dd><p>Determines the formal charge of an atom NOT involved in any aromatic or
+delocalized bonding system.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>atom</strong> (<em>ccdc.molecule.Atom</em>) – Atom object</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>formal charge of the input atom.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>charge (int)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.iVBS_Oxidation_Contrib">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">iVBS_Oxidation_Contrib</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">unique_atoms</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rVBO</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dVBO</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#iVBS_Oxidation_Contrib"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.iVBS_Oxidation_Contrib" title="Permalink to this definition"></a></dt>
+<dd><p>Determines the oxidation state contribution of all unique atoms.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>unique_atoms</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – unique atoms belonging to the
+asymmetric unit.</p></li>
+<li><p><strong>rVBO</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>int</em><em>]</em>) – dictionary with each atom’s index in mole.atoms
+as keys and VBO (valence bond order) as values.</p></li>
+<li><p><strong>dVBO</strong> (<em>dict</em><em>[</em><em>int</em><em>, </em><em>float</em><em>]</em>) – dictionary with delocalized bond-possessing atom’s
+index in mole.atoms as keys and their corresponding
+(delocalized-only) VBS.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary with Atom object</dt><dd><p>as keys and their oxidation state contribution as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>oxi_contrib (dict[ccdc.molecule.Atom, float)]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.outer_sphere_contrib">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">outer_sphere_contrib</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">outer_sphere</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">AON</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#outer_sphere_contrib"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.outer_sphere_contrib" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates the total oxidation state contribution of the outer sphere atoms as
+the sum of their formal charge/contributions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>outer_sphere</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of unique, non-metal atoms
+outside of binding domains.</p></li>
+<li><p><strong>AON</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>float</em><em>]</em>) – dictionary with Atom object as keys
+and their oxidation state contribution as values for unique Atoms.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>sum of outer sphere charge contributions.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>contrib (int)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.outer_sphere_domain">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">outer_sphere_domain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">uniquesites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">binding_domains</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#outer_sphere_domain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.outer_sphere_domain" title="Permalink to this definition"></a></dt>
+<dd><p>Identifies sites outside of the binding domains which must be checked for
+outer sphere charge contributions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>uniquesites</strong> (<em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em>) – list of unique atoms in the structure
+belonging to the asymmetric unit.</p></li>
+<li><p><strong>binding_domains</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>list</em><em>[</em><em>ccdc.molecule.Atom</em><em>]</em><em>]</em>) – dictionary with Atom object as keys and a list of Atoms
+connected through bonding that form a binding domain as values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>list of unique, non-metal atoms</dt><dd><p>outside of binding domains.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>outer_sphere (list[ccdc.molecule.Atom])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.readSBU">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">readSBU</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_mol2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#readSBU"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.readSBU" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a MOL2 file containing SBU/metal complex structural data
+and converts it to a standard atom labeling convention using
+the ccdc.crystal module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_mol2</strong> (<em>str</em>) – filename (.mol2) containing SBU/metal complex
+structural data.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Crystal object containing structural data</dt><dd><p>in the standard atom labeling convention.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>mol (ccdc.crystal.Crystal)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.read_CSD_entry">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">read_CSD_entry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_refcode</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#read_CSD_entry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.read_CSD_entry" title="Permalink to this definition"></a></dt>
+<dd><p>Read entries directly from the CSD CrystalReader according to CSD refcode.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_refcode</strong> (<em>str</em>) – string used to identify materials in the CSD.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Crystal object containing structural data</dt><dd><p>in the standard atom labeling convention.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>cif (ccdc.crystal.Crystal)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.readentry">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">readentry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_cif</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#readentry"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.readentry" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a CIF file containing structure data and converts it to a
+standard atom labeling convention using the ccdc.crystal module.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_cif</strong> (<em>str</em>) – filename (.CIF) containing crystal structure data.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Crystal object containing structural data</dt><dd><p>in the standard atom labeling convention.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>newcif (ccdc.crystal.Crystal)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.redundantAON">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">redundantAON</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">AON</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">molecule</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#redundantAON"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.redundantAON" title="Permalink to this definition"></a></dt>
+<dd><p>Maps the oxidation contributions of unique atom sites to the redundant atom
+sites according to their shared atom labels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>AON</strong> (<em>dict</em><em>[</em><em>ccdc.molecule.Atom</em><em>, </em><em>float</em><em>]</em>) – dictionary with Atom object as keys
+and their oxidation state contribution as values for unique
+Atom objects.</p></li>
+<li><p><strong>molecule</strong> (<em>ccdc.molecule.Molecule</em>) – Molecule object.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary with Atom object as keys</dt><dd><p>and their oxidation state contribution as values for all
+(including redundant) Atom objects.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>redAON (dict[ccdc.molecule.Atom, float])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.ringVBOs">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">ringVBOs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mole</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#ringVBOs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.ringVBOs" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates the VBO (valence bond order) for each atom in the structure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mole</strong> (<em>ccdc.molecule.Molecule</em>) – Molecule object representing the structure.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>dictionary with each atom’s index in mole.atoms</dt><dd><p>as keys and VBO (valence bond order) as values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ringVBO (dict[int, int])</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="CoREMOF.mosaec.valence_e">
+<span class="sig-prename descclassname"><span class="pre">CoREMOF.mosaec.</span></span><span class="sig-name descname"><span class="pre">valence_e</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">elmnt</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/CoREMOF/mosaec.html#valence_e"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#CoREMOF.mosaec.valence_e" title="Permalink to this definition"></a></dt>
+<dd><p>Determines the number of valence electrons of an atom/element.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>elmnt</strong> (<em>ccdc.molecule.Atom</em>) – Atom object.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Atom’s valence electron count.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>valence (int)</p>
 </dd>
 </dl>
 </dd></dl>
