@@ -16,8 +16,8 @@ package_directory = os.path.abspath(__file__).replace("structure.py","")
 files_to_download = {
                     'data/CR.json': 'https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/CoREMOF/data/info/CR.json',
                     'data/NCR.json': 'https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/CoREMOF/data/info/NCR.json',
-                    'data/SI/CR.zip': 'https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/data/SI/CR.zip',
-                    'data/SI/NCR.zip': 'https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/data/SI/NCR.zip'
+                    'data/SI/CR.zip': 'https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/CoREMOF/data/SI/CR.zip',
+                    'data/SI/NCR.zip': 'https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/CoREMOF/data/SI/NCR.zip'
                     }
 
 for file_name, url in files_to_download.items():
