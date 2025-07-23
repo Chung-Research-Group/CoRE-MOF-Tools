@@ -1,4 +1,4 @@
-<img src="https://raw.githubusercontent.com/mtap-research/CoRE-MOF-Tools/main/logo.png" alt="CoRE MOF Tools logo" width="500"/>
+<img src="https://raw.githubusercontent.com/Chung-Research-Group/CoRE-MOF-Tools/main/logo.png" alt="CoRE MOF Tools logo" width="500"/>
 
 [![Static Badge](https://img.shields.io/badge/chemrxiv-2024.nvmnr.v2-brightgreen?style=flat)](https://doi.org/10.26434/chemrxiv-2024-nvmnr-v2)
 [![Docs](https://img.shields.io/badge/API-Docs-blue?logo=readthedocs&logoColor=white)](https://coremof-tools.readthedocs.io/en/latest/index.html#)
@@ -9,8 +9,6 @@
 [![Downloads](https://pepy.tech/badge/CoREMOF-tools)](https://pepy.tech/project/CoREMOF-tools)
 [![GitHub issues](https://img.shields.io/github/issues/mtap-research/CoRE-MOF-Tools.svg)](https://GitHub.com/mtap-research/CoRE-MOF-Tools/issues/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15055758.svg)](https://doi.org/10.5281/zenodo.15055758)
-<!-- [![codecov](https://codecov.io/gh/sxm13/CoREMOF_tools/branch/main/graph/badge.svg)](https://codecov.io/gh/sxm13/CoREMOF_tools)
-[![Build Status](https://travis-ci.org/sxm13/CoREMOF_tools.svg?branch=master)](https://travis-ci.org/sxm13/CoREMOF_toolst) -->
 
 **Develop by [Guobin Zhao](https://github.com/sxm13)**
 
@@ -36,5 +34,5 @@ Available at [Github](https://github.com/mtap-research/CoRE-MOF-Tools/tree/main/
 - [Revised Autocorrelation](https://pubs.acs.org/doi/10.1021/acs.jpca.7b08750): Jon Paul Janet and Heather J. Kulik. Resolving Transition Metal Chemical Space: Feature Selection for Machine Learning and Structure-Property Relationships. The Journal of Physical Chemistry A. 121 (2017), 8939-8954. 
 - [Topology](https://doi.org/10.21468/SciPostChem.1.2.005): Zoubritzky L, Coudert F X. CrystalNets. jl: identification of crystal topologies. SciPost Chemistry, 1 (2022), 005.
 - [Chen_Manz](https://doi.org/10.1039/D0RA02498H): Chen T, Manz T.A. Identifying misbonded atoms in the 2019 CoRE metal–organic framework database. RSC Adv, 10 (2025), 26944-26951.
-- [MOFChecker](https://doi.org/10.1039/D5DD00109A): JIN X, Jablonka K, Moubarak E, Li Y, Smit B. MOFChecker: An algorithm for Validating and Correcting Metal-Organic Framework (MOF) Structures. Digital Discovery, (2025).
-- [MOSAEC](https://chemrxiv.org/engage/chemrxiv/article-details/6706b96312ff75c3a1fb0365): White A, Gibaldi M, Burner J, Mayo RA, Woo T. Alarming structural error rates in MOF databases used in data driven workflows identified via a novel metal oxidation state-based method. ChemRxiv, (2024).
+- [MOFChecker](https://doi.org/10.1039/D5DD00109A): JIN X, Jablonka K, Moubarak E, Li Y, Smit B. MOFChecker: An algorithm for Validating and Correcting Metal-Organic Framework (MOF) Structures. Digital Discovery, 4 (2025), 1560-1569.
+- [MOSAEC](https://chemrxiv.org/engage/chemrxiv/article-details/6706b96312ff75c3a1fb0365): White A, Gibaldi M, Burner J, Mayo RA, Woo T. High Structural Error Rates in “Computation-Ready” MOF Databases Discovered by Checking Metal Oxidation States. JACS, 147 (2025), 17579-17583.                                    
