@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 <img src="https://raw.githubusercontent.com/Chung-Research-Group/CoRE-MOF-Tools/main/logo.png" alt="CoRE MOF Tools logo" width="500"/>
 
 [![Static Badge](https://img.shields.io/badge/chemrxiv-2024.nvmnr.v2-brightgreen?style=flat)](https://doi.org/10.26434/chemrxiv-2024-nvmnr-v2)
@@ -37,6 +36,3 @@ Available at [Github](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/tre
 - [Chen_Manz](https://doi.org/10.1039/D0RA02498H): Chen T, Manz T.A. Identifying misbonded atoms in the 2019 CoRE metal–organic framework database. RSC Adv, 10 (2025), 26944-26951.
 - [MOFChecker](https://doi.org/10.1039/D5DD00109A): JIN X, Jablonka K, Moubarak E, Li Y, Smit B. MOFChecker: An algorithm for Validating and Correcting Metal-Organic Framework (MOF) Structures. Digital Discovery, 4 (2025), 1560-1569.
 - [MOSAEC](https://chemrxiv.org/engage/chemrxiv/article-details/6706b96312ff75c3a1fb0365): White A, Gibaldi M, Burner J, Mayo RA, Woo T. High Structural Error Rates in “Computation-Ready” MOF Databases Discovered by Checking Metal Oxidation States. JACS, 147 (2025), 17579-17583.                                    
-=======
-THE REPOSITORY HAS BEEN TRANSITIONED TO https://github.com/Chung-Research-Group/CoRE-MOF-Tools
->>>>>>> cd64ace7b79a1ca8880ba7558a3e73364a40e528
