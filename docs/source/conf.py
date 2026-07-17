@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from CoREMOF import __version__
 
 project = "CoRE MOF Tools"
-copyright = "2025–2026, MTAP at Pusan National University"
+copyright = "2026, MTAP at Pusan National University"
 author = "Guobin Zhao and contributors"
 version = __version__
 release = __version__
