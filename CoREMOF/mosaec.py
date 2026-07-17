@@ -49,9 +49,6 @@ def readentry(input_cif: str) -> Crystal:
         columncount = 0
         type_pos = 0
         label_pos = 0
-        x_pos = 0
-        y_pos = 0
-        z_pos = 0
         for i, line in enumerate(lines):
             lines[i] = lines[i].lstrip()
         for i, line in enumerate(lines):

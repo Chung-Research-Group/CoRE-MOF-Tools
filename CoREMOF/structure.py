@@ -1,43 +1,59 @@
 """Download structures and query information of CoRE MOF Database.
 """
 
-try:
-    from ccdc import io
-    csd_reader = io.EntryReader('CSD')
-except:
-    print("You need to install CSD software with the license if you want to download all structures")
+import json
+import os
+from difflib import get_close_matches
+from functools import lru_cache
+from pathlib import Path
+import tempfile
+import zipfile
 
-import os, json, requests, zipfile
+import requests
 
 from gemmi import cif
 
 package_directory = os.path.abspath(__file__).replace("structure.py","")
 
 files_to_download = {
-                    'data/CR.json': 'https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/CoREMOF/data/info/CR.json',
-                    'data/NCR.json': 'https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/CoREMOF/data/info/NCR.json',
-                    'data/SI/CR.zip': 'https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/CoREMOF/data/SI/CR.zip',
-                    'data/SI/NCR.zip': 'https://raw.githubusercontent.com/sxm13/CoREMOF_tools/main/CoREMOF/data/SI/NCR.zip'
+                    'data/CR.json': 'https://raw.githubusercontent.com/Chung-Research-Group/CoRE-MOF-Tools/main/CoREMOF/data/info/CR.json',
+                    'data/NCR.json': 'https://raw.githubusercontent.com/Chung-Research-Group/CoRE-MOF-Tools/main/CoREMOF/data/info/NCR.json',
+                    'data/SI/CR.zip': 'https://raw.githubusercontent.com/Chung-Research-Group/CoRE-MOF-Tools/main/CoREMOF/data/SI/CR.zip',
+                    'data/SI/NCR.zip': 'https://raw.githubusercontent.com/Chung-Research-Group/CoRE-MOF-Tools/main/CoREMOF/data/SI/NCR.zip'
                     }
 
-for file_name, url in files_to_download.items():
-    
-    file_path = os.path.join(package_directory, file_name)
-    directory = os.path.dirname(file_path) 
 
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-        
-    if not os.path.exists(file_path):
-        response = requests.get(url)
-        if response.status_code == 200:
-            with open(file_path, 'wb') as f:
-                f.write(response.content)
-            print(f"Downloaded {file_name} to {file_path}")
-        else:
-            print(f"Failed to download {file_name} from {url}")
-    else:
-        pass
+def _ensure_data_file(file_name):
+    """Return a local data file, downloading it atomically only when required."""
+
+    if file_name not in files_to_download:
+        raise ValueError(f"Unknown CoRE MOF data file: {file_name}")
+    file_path = Path(package_directory, file_name)
+    if file_path.is_file():
+        return file_path
+
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with requests.get(files_to_download[file_name], timeout=60, stream=True) as response:
+            response.raise_for_status()
+            with tempfile.NamedTemporaryFile(dir=file_path.parent, delete=False) as tmp:
+                for chunk in response.iter_content(chunk_size=1024 * 1024):
+                    if chunk:
+                        tmp.write(chunk)
+                temporary_path = Path(tmp.name)
+        temporary_path.replace(file_path)
+    except Exception:
+        if "temporary_path" in locals():
+            temporary_path.unlink(missing_ok=True)
+        raise
+    return file_path
+
+
+@lru_cache(maxsize=4)
+def _load_json_data(file_name):
+    path = _ensure_data_file(file_name)
+    with open(path, "r", encoding="utf-8") as stream:
+        return json.load(stream)
 
 class download_from_SI():
 
@@ -53,7 +69,7 @@ class download_from_SI():
 
     def __init__(self, output_folder="./CoREMOF2024DB"):
         
-        self.SI_path = package_directory+'/data/SI/'
+        self.SI_path = Path(package_directory, 'data', 'SI')
         self.output = output_folder
         self.run()
 
@@ -62,16 +78,18 @@ class download_from_SI():
         """start to run. 
         """
             
-        CR_files = self.list_zip(self.SI_path+"CR.zip")
-        NCR_files = self.list_zip(self.SI_path+"NCR.zip")
+        cr_zip = _ensure_data_file('data/SI/CR.zip')
+        ncr_zip = _ensure_data_file('data/SI/NCR.zip')
+        CR_files = self.list_zip(cr_zip)
+        NCR_files = self.list_zip(ncr_zip)
      
         os.makedirs(self.output+"/CR/", exist_ok=True)
         os.makedirs(self.output+"/NCR/", exist_ok=True)
 
         for file in CR_files[:]:
-            self.get_from_SI(self.SI_path+"CR.zip", file, self.output)
+            self.get_from_SI(cr_zip, file, self.output)
         for file in NCR_files[:]:
-            self.get_from_SI(self.SI_path+"NCR.zip", file, self.output)
+            self.get_from_SI(ncr_zip, file, self.output)
 
     def list_zip(self, zip_path):
 
@@ -102,7 +120,11 @@ class download_from_SI():
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             file_list = zip_ref.namelist()
             if entry in file_list:
-                zip_ref.extract(entry, output_folder)
+                destination = Path(output_folder).resolve()
+                member_path = (destination / entry).resolve()
+                if destination not in member_path.parents and member_path != destination:
+                    raise ValueError(f"Unsafe path in ZIP archive: {entry}")
+                zip_ref.extract(entry, destination)
             
 def download_from_CSD(refcode, output_folder="./CoREMOF2024DB"):
 
@@ -117,47 +139,59 @@ def download_from_CSD(refcode, output_folder="./CoREMOF2024DB"):
             downloading CIF.  
     """
 
+    try:
+        from ccdc import io
+    except ImportError as exc:
+        raise ImportError(
+            "The licensed CSD Python API is required to download CSD structures."
+        ) from exc
+
+    csd_reader = io.EntryReader('CSD')
     cryst = csd_reader.crystal(refcode)
     data = cryst.to_string('cif')
-    f = open(os.path.join(output_folder, refcode+'.cif'),'w')
-    f.write(data)
-    f.close()
+    os.makedirs(output_folder, exist_ok=True)
+    with open(os.path.join(output_folder, refcode+'.cif'), 'w', encoding='utf-8') as f:
+        f.write(data)
 
 
-def information(dataset, entry):
+def information(dataset, entry, show_units=False):
 
     """get information of CoRE MOF database.
 
     Args:
         dataset (str): name of subset.
-        entry (str): name of structure
+        entry (str): name of structure.
+        show_units (bool): print the dataset unit metadata when ``True``.
 
     Returns:
         Dictionary:
             properties, DOI, issues and so on. 
     """     
 
-    CR_data_path = package_directory+'/data/CR.json'
-    NCR_data_path = package_directory+'/data/NCR.json'
+    valid_datasets = {'CR-ASR', 'CR-FSR', 'CR-Ion', 'NCR'}
+    if dataset not in valid_datasets:
+        raise ValueError(
+            f"Unknown dataset {dataset!r}; expected one of {sorted(valid_datasets)}"
+        )
 
-    with open (CR_data_path, "r") as CR_f:
-        CR_data = json.load(CR_f)
-        
-    with open (NCR_data_path, "r") as NCR_f:
-        NR_data = json.load(NCR_f)
-    
     if dataset == "CR-ASR":
-        print("unit:\n", CR_data["unit"])
+        CR_data = _load_json_data('data/CR.json')
         query_data = CR_data["ASR"]
     elif dataset == "CR-FSR":
-        print("unit:\n", CR_data["unit"])
+        CR_data = _load_json_data('data/CR.json')
         query_data = CR_data["FSR"]
     elif dataset == "CR-Ion":
-        print("unit:\n", CR_data["unit"])
+        CR_data = _load_json_data('data/CR.json')
         query_data = CR_data["Ion"]
-    elif dataset == "NCR":
-        query_data = NR_data
+    else:
+        query_data = _load_json_data('data/NCR.json')
 
+    if entry not in query_data:
+        suggestions = get_close_matches(entry, query_data.keys(), n=3)
+        hint = f" Close matches: {', '.join(suggestions)}" if suggestions else ""
+        raise KeyError(f"Entry {entry!r} was not found in {dataset}.{hint}")
+    if show_units and dataset.startswith("CR-"):
+        print("unit:\n", CR_data["unit"])
     return query_data[entry]
 
 def read_aif(GEMC_data):
@@ -174,10 +208,11 @@ def read_aif(GEMC_data):
             -   uptake by ["uptake"].
     """    
         
-    with open("temp_gemc.aif", "w") as f:
-        f.write("".join(GEMC_data) )
-    data = cif.read_file("temp_gemc.aif")
-    os.remove("temp_gemc.aif")
+    if isinstance(GEMC_data, str):
+        aif_text = GEMC_data
+    else:
+        aif_text = "".join(GEMC_data)
+    data = cif.read_string(aif_text)
     block = data.sole_block()
 
     item = block.find_pair_item('_units_loading')

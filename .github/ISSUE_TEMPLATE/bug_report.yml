@@ -1,0 +1,33 @@
+name: Bug report
+description: Report a reproducible CoRE MOF Tools problem
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction
+      description: Include the smallest Python example and complete traceback.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Environment
+      description: Paste `coremof doctor`, `python --version`, and operating-system output.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: scientific
+    attributes:
+      label: Scientific parameters
+      description: Include probe radii, units, sampling count, model/external-program versions, and a shareable CIF when relevant.

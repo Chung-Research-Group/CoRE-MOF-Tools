@@ -1,0 +1,43 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.11']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install test dependencies
+        run: python -m pip install gemmi==0.7.0 joblib numpy pandas pyyaml requests ruff
+      - name: Run static checks
+        run: ruff check CoREMOF tests setup.py --select F
+      - name: Compile source
+        run: python -m compileall -q CoREMOF tests
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
+
+  documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install documentation dependencies
+        run: python -m pip install -r docs/requirements.txt
+      - name: Build documentation with warnings as errors
+        run: python -m sphinx -W --keep-going -b html docs/source docs/build/html

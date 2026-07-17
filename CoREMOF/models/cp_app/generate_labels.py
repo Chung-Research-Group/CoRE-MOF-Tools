@@ -54,7 +54,6 @@ def compute_projected_dos_structure(phonopy_params: str, unitfactor=CP2KToTHz, d
     phonon = None
     phonon = phonopy.load(phonopy_params, factor=unitfactor)
     phonon.run_mesh([1,1,1], with_eigenvectors=True)
-    mesh = phonon.get_mesh_dict()
     # pdos
     phonon.run_projected_dos(sigma=dx,freq_min=0,freq_max=fmax, freq_pitch=freq_pitch)
     pdos_dict = phonon.get_projected_dos_dict()
@@ -78,7 +77,10 @@ def compute_atomic_cv_dataset(phonopy_params: list[str], cifs: list[str], temper
     for phonopy_param,cif in zip(phonopy_params,cifs):
         if verbos:
             print(cif)
-        pdos=compute_projected_dos_structure(phonopy_params=phonopy_param, saveto="%s_projected_dos.dat".format(cif.replace(".cif","")))
+        pdos = compute_projected_dos_structure(
+            phonopy_params=phonopy_param,
+            saveto="{}_projected_dos.dat".format(cif.replace(".cif", "")),
+        )
         pdos[:,0]*=th2cm
         atoms=read(cif)
         if not atoms.get_global_number_of_atoms()==pdos.shape[1]-1:

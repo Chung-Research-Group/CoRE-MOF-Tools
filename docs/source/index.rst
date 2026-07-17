@@ -1,37 +1,46 @@
-CoREMOF_tools documentation
-===========================
+CoRE MOF Tools
+==============
 
-Welcome to the CoREMOF_tools documentation! Below you will find the API reference and user guides.
+CoRE MOF Tools is the Python interface for querying and processing the CoRE MOF
+database and for running the associated curation, validation, descriptor, and
+property-prediction workflows.
 
-Installation
-------------
-To install CoREMOF_tools, use the following command:
+Start with :doc:`installation`, then run ``coremof doctor`` to see which features
+are available in your environment. Most workflows accept a CIF path and either
+return a dictionary/dataframe or write documented files to an output directory.
 
-.. code-block:: bash
+.. warning::
 
-   pip install CoREMOF-tools
-
-Web Application
----------------
-The CoREMOF Web App is available at: https://mof-db.pusan.ac.kr/
-
-Related Publication
--------------------
-For more details on CoREMOF_tools, please refer to the following paper:
-
-1. **Zhao G, Brabson L, Chheda S, Huang J, Kim H, Liu K, et al.**  
-   *CoRE MOF DB: A curated experimental metal-organic framework database with machine-learned properties for integrated material-process screening.* **Matter, 8 (2025), 102140** DOI: 10.1016/j.matt.2025.102140
+   CSD downloads and MOSAEC require a licensed CSD installation. Zeo++ and MOFid
+   are external programs. Heat-capacity prediction requires the ensemble files
+   from the full GitHub repository. A successful base installation does not imply
+   that these optional components are present.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
-   
-   CoREMOF
-   setup
-   modules
+   :caption: User guide
 
-Indices and tables
-==================
+   installation
+   quickstart
+   features
+   troubleshooting
+   references
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API reference
+
+   CoREMOF
+
+Project links
+-------------
+
+* `GitHub repository <https://github.com/Chung-Research-Group/CoRE-MOF-Tools>`_
+* `CoRE MOF web application <https://mof-db.pusan.ac.kr/>`_
+* `Issue tracker <https://github.com/Chung-Research-Group/CoRE-MOF-Tools/issues>`_
+
+Indices
+-------
 
 * :ref:`genindex`
 * :ref:`modindex`

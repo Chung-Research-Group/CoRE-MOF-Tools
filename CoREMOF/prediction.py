@@ -1,25 +1,27 @@
 """ML-predicted features.
 """
 
+import cloudpickle
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+from pathlib import Path
+import pickle as pkl
+import shutil
+import tempfile
+import requests
 
-from PACMANCharge import pmcharge
-
-import os, warnings, shutil, joblib, requests, cloudpickle
 import keras
 import keras.backend as K
-import pandas as pd
-
-warnings.filterwarnings('ignore')
-
 import numpy as np
-import pickle as pkl
+import pandas as pd
+from PACMANCharge import pmcharge
 
 from CoREMOF.calculation import Zeopp
 from CoREMOF.calculation.mof_features import RACs, Volume
+from CoREMOF.models.cp_app.descriptors import cv_features
+from CoREMOF.models.cp_app.featurizer import featurize_structure
+from CoREMOF.models.cp_app.predictions import predict_Cv_ensemble_structure_multitemperatures
 
-package_directory = os.path.abspath(__file__).replace("prediction.py","")
+package_directory = str(Path(__file__).resolve().parent) + os.sep
 
 def get_files_from_github(repo, path):
 
@@ -36,7 +38,7 @@ def get_files_from_github(repo, path):
         
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
     headers = {'Accept': 'application/vnd.github.v3+json'}
-    response = requests.get(url, headers=headers)
+    response = requests.get(url, headers=headers, timeout=30)
     response.raise_for_status() 
     return response.json()
 
@@ -51,7 +53,7 @@ def download_file(url, save_path):
     """    
 
     if not os.path.exists(save_path):
-        response = requests.get(url)
+        response = requests.get(url, timeout=60)
         response.raise_for_status()
         os.makedirs(os.path.dirname(save_path), exist_ok=True) 
         with open(save_path, 'wb') as file:
@@ -84,11 +86,6 @@ def download_file(url, save_path):
 #             local_path_suffix = path_map[github_path].lstrip('/')
 #             local_file_path = os.path.join(package_directory, local_path_suffix, os.path.basename(file_info['path']))
 #             download_file(raw_url, local_file_path)
-
-from CoREMOF.models.cp_app.descriptors import cv_features
-from CoREMOF.models.cp_app.featurizer import featurize_structure
-from CoREMOF.models.cp_app.predictions import predict_Cv_ensemble_structure_multitemperatures
-
 
 def pacman(structure, output_folder="result_pacman", charge_type="DDEC6", digits=10, atom_type=True, neutral=True, keep_connect=False):
 
@@ -141,7 +138,7 @@ def pacman(structure, output_folder="result_pacman", charge_type="DDEC6", digits
     except Exception as e:
         print(e)
 
-def cp(structure, T=[300, 350, 400]):
+def cp(structure, T=None):
     
     """predict heat capacity by GBR models at different temperatures: https://doi.org/10.1038/s41563-022-01374-3.
 
@@ -155,29 +152,42 @@ def cp(structure, T=[300, 350, 400]):
             -   predicted heat capacity of your structure.    
     """  
         
-    name = os.path.basename(structure).replace(".cif", "")
-    featurize_structure(structure, verbos=False, saveto="features.csv")
-    
-    predict_Cv_ensemble_structure_multitemperatures(
-                                                    path_to_models=package_directory+"models/cp_app/ensemble_models_smallML_120_100",
-                                                    structure_name=name + ".cif",
-                                                    features_file="features.csv", 
-                                                    FEATURES=cv_features,
-                                                    temperatures=T,
-                                                    save_to="cp.csv"
-                                                    )
-    result_ = pd.read_csv("cp.csv")
+    if T is None:
+        T = [300, 350, 400]
+    temperatures = list(T)
+    name = Path(structure).stem
+    model_directory = Path(
+        package_directory, "models", "cp_app", "ensemble_models_smallML_120_100"
+    )
+    missing = [temperature for temperature in temperatures if not (model_directory / str(temperature)).is_dir()]
+    if missing:
+        raise FileNotFoundError(
+            "Heat-capacity ensemble models are missing for temperatures "
+            f"{missing}. Install from the full CoRE-MOF-Tools repository."
+        )
+
+    with tempfile.TemporaryDirectory(prefix="coremof_cp_") as directory:
+        features_file = Path(directory, "features.csv")
+        prediction_file = Path(directory, "cp.csv")
+        featurize_structure(structure, verbose=False, saveto=str(features_file))
+
+        predict_Cv_ensemble_structure_multitemperatures(
+            path_to_models=str(model_directory),
+            structure_name=name + ".cif",
+            features_file=str(features_file),
+            FEATURES=cv_features,
+            temperatures=temperatures,
+            save_to=str(prediction_file),
+        )
+        result_ = pd.read_csv(prediction_file)
     result_cp = {}
     result_cp["unit"] = "J/g/K", "J/mol/K"
 
-    for t in T:
+    for t in temperatures:
         result_cp[str(t)+"_mean"] = [result_["Cv_gravimetric_"+str(t)+"_mean"].iloc[0],
                                         result_["Cv_molar_"+str(t)+"_mean"].iloc[0]]
         result_cp[str(t)+"_std"] = [result_["Cv_gravimetric_"+str(t)+"_std"].iloc[0],
                                         result_["Cv_molar_"+str(t)+"_std"].iloc[0]]
-
-    os.remove("features.csv")
-    os.remove("cp.csv")
 
     return result_cp
 
@@ -265,10 +275,6 @@ def f1(y_true, y_pred):
     return 2 * ((p * r) / (p + r + K.epsilon()))
 
 
-import tensorflow as tf
-# tf.config.set_visible_devices([], 'GPU')
-
-# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 def stability(structure):
     
     """predict stability of MOFs: https://doi.org/10.1021/jacs.1c07217, https://doi.org/10.1021/jacs.4c05879.

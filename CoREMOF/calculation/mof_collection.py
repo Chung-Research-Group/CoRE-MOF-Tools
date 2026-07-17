@@ -505,7 +505,7 @@ class MofCollection:
         print(self.separator)
 
         msg = "Summary Table\n"
-        fname = "{0}/stats.out".format(self.summary_folder, max_atomic_number)
+        fname = "{0}/stats.out".format(self.summary_folder)
         if max_atomic_number:
             subset = pd.Series(s_df.index).apply(
                 lambda x: Atom(x).atomic_number <= max_atomic_number)
@@ -805,7 +805,7 @@ class MofCollection:
             fout = "{}/{}_{}_hist_abs.out".format(target, flag, n)
             self._write_histogram(s['t_factor'], False, fout)
 
-        fig = plt.figure(figsize=(10, 5))
+        plt.figure(figsize=(10, 5))
         plt.title('t-{} factor'.format(n))
         s_yes = s_n[s_n['is_open_yn'] == 'yes']
         s_yes['t_factor'].hist(bins=50, range=(0, 1), normed=False)
