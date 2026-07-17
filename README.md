@@ -2,7 +2,7 @@
 
 # CoRE MOF Tools
 
-[![Documentation](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs)](https://coremof-tools.readthedocs.io/)
+[![Documentation](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs)](https://core-mof-tools.readthedocs.io/)
 [![PyPI](https://img.shields.io/pypi/v/CoREMOF-tools?logo=pypi)](https://pypi.org/project/CoREMOF-tools/)
 [![Python](https://img.shields.io/badge/Python-3.9--3.11-blue.svg?logo=python)](https://python.org/downloads/)
 [![License](https://img.shields.io/github/license/Chung-Research-Group/CoRE-MOF-Tools)](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/blob/main/LICENSE)
@@ -114,7 +114,7 @@ stability_result = stability("my_mof.cif")
 | Property models | `CoREMOF.prediction` | `pacman()`, `cp()`, `stability()` |
 | MOF identifiers | `CoREMOF.get_mofid` | `run_v1()`, `run_v2()` |
 
-Full guides and API documentation are available on [Read the Docs](https://coremof-tools.readthedocs.io/). Executable notebooks and CIF examples are in [`examples/`](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/tree/main/examples).
+Full guides and API documentation are available on [Read the Docs](https://core-mof-tools.readthedocs.io/). Executable notebooks and CIF examples are in [`examples/`](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/tree/main/examples).
 
 ## Citation
 
@@ -122,7 +122,7 @@ If you use the database or toolkit, cite:
 
 > Zhao G., Brabson L., Chheda S., Huang J., Kim H., Liu K., et al. “CoRE MOF DB: a curated experimental metal–organic framework database with machine-learned properties for integrated material-process screening.” *Matter* 8 (2025), 102140. [https://doi.org/10.1016/j.matt.2025.102140](https://doi.org/10.1016/j.matt.2025.102140)
 
-Also cite the underlying method used in your workflow (for example Zeo++, PACMAN-charge, MOFClassifier, MOFChecker, MOSAEC, CrystalNets, or the relevant stability model). A method-by-method list is provided in the [documentation](https://coremof-tools.readthedocs.io/).
+Also cite the underlying method used in your workflow (for example Zeo++, PACMAN-charge, MOFClassifier, MOFChecker, MOSAEC, CrystalNets, or the relevant stability model). A method-by-method list is provided in the [documentation](https://core-mof-tools.readthedocs.io/).
 
 ## Support and development
 
