@@ -78,7 +78,7 @@ setup(
     license_files = ("LICENSE",),
     python_requires='>=3.9, <3.12',
     project_urls={
-        "Homepage": "https://coremof-tools.readthedocs.io/",
+        "Homepage": "https://core-mof-tools.readthedocs.io/",
         "Repository": "https://github.com/Chung-Research-Group/CoRE-MOF-Tools",
         "Issues": "https://github.com/Chung-Research-Group/CoRE-MOF-Tools/issues",
         "PyPI": "https://pypi.org/project/CoREMOF-tools/",
