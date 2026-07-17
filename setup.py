@@ -54,7 +54,12 @@ setup(
     ],
     extras_require={
         'openbabel': ['openbabel-wheel'],
-        'docs': ['sphinx', 'sphinx-rtd-theme', 'sphinx-autodoc-typehints'],
+        'docs': [
+            'sphinx',
+            'pydata-sphinx-theme',
+            'sphinx-design',
+            'sphinx-autodoc-typehints',
+        ],
         'test': ['ruff'],
     },
     entry_points={
