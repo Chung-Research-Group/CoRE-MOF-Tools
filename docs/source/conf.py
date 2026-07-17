@@ -28,6 +28,7 @@ autodoc_mock_imports = [
     "ccdc",
     "cloudpickle",
     "gemmi",
+    "joblib",
     "juliacall",
     "keras",
     "matminer",
