@@ -1,4 +1,4 @@
-pip install sphinx sphinx-rtd-theme sphinx-autodoc-typehints
+pip install sphinx pydata-sphinx-theme sphinx-design sphinx-autodoc-typehints
 sphinx-quickstart
 sphinx-apidoc -o docs/source/ CoREMOF
 cd docs

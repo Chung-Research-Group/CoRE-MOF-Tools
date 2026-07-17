@@ -19,6 +19,7 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
     "sphinx_autodoc_typehints",
+    "sphinx_design",
 ]
 
 autodoc_mock_imports = [
@@ -62,5 +63,37 @@ intersphinx_mapping = {
 
 templates_path = ["_templates"]
 exclude_patterns = []
-html_theme = "sphinx_rtd_theme"
+html_theme = "pydata_sphinx_theme"
 html_title = f"CoRE MOF Tools {release}"
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
+html_meta = {
+    "description": (
+        "Documentation for CoRE MOF Tools: database access, structure curation, "
+        "validation, descriptors, and property prediction for metal-organic frameworks."
+    ),
+}
+html_context = {
+    "github_user": "Chung-Research-Group",
+    "github_repo": "CoRE-MOF-Tools",
+    "github_version": "main",
+    "doc_path": "docs/source",
+}
+html_theme_options = {
+    "navbar_align": "left",
+    "navigation_depth": 3,
+    "show_toc_level": 2,
+    "header_links_before_dropdown": 5,
+    "show_nav_level": 2,
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/Chung-Research-Group/CoRE-MOF-Tools",
+            "icon": "fa-brands fa-github",
+        },
+    ],
+    "secondary_sidebar_items": ["page-toc", "sourcelink"],
+    "footer_start": ["copyright"],
+    "footer_center": ["sphinx-version"],
+    "footer_end": ["theme-version"],
+}
