@@ -1,33 +1,63 @@
-# -*- coding: utf-8 -*-
-
 """The methods to featurize a dataset of porous materials for heat capacity."""
 
-import string
+from __future__ import annotations
+
 from pathlib import Path
+import warnings
+
 import numpy as np
 import pandas as pd
 from typing import List
 from pymatgen.io.cif import CifParser
-from matminer.featurizers.site import GaussianSymmFunc, SiteElementalProperty,AGNIFingerprints 
+from matminer.featurizers.site import (
+    AGNIFingerprints,
+    GaussianSymmFunc,
+    SiteElementalProperty,
+)
 from matminer.featurizers.base import BaseFeaturizer
 from matminer.utils.data import MagpieData
 from pymatgen.analysis.local_env import VoronoiNN
 
 
-def featurize_dataset(cifs: list, verbos=False, saveto: str="features.csv")-> pd.DataFrame:
+def _parse_cif(cif):
+    parser = CifParser(str(cif))
+    if hasattr(parser, "parse_structures"):
+        return parser.parse_structures(primitive=False)[0]
+    return parser.get_structures(primitive=False)[0]
+
+
+def _verbose_value(verbose, legacy_verbose):
+    if legacy_verbose is not None:
+        warnings.warn(
+            "'verbos' is deprecated; use 'verbose' instead",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        return bool(legacy_verbose)
+    return bool(verbose)
+
+
+def featurize_dataset(
+    cifs: list[str | Path],
+    verbose=False,
+    saveto: str | None = "features.csv",
+    *,
+    verbos=None,
+) -> pd.DataFrame:
 
     """Featurize crystal structures using elemetal, geometric, and chemical descriptors for local environments.
 
     Args:
         cifs: list of paths to crystal structure in cif format.
-        verbos: printing the steps.
+        verbose: printing the steps.
         saveto: filename to save the generated features.
         
     """
 
+    verbose = _verbose_value(verbose, verbos)
     features={}
     for cif in cifs:
-        structure = CifParser(cif).get_structures()[0]
+        structure = _parse_cif(cif)
         structure_name = Path(cif).name
         features[structure_name]={}
         features[structure_name]["structure"]=structure
@@ -47,13 +77,14 @@ def featurize_dataset(cifs: list, verbos=False, saveto: str="features.csv")-> pd
             features_dict[site_name].update({"structure_path": row["structure_path"]})
 
     ## 2. Site Elemental Property
-    print("site elemental properties")
+    if verbose:
+        print("site elemental properties")
     property_list=("Number","AtomicWeight","Row","Column","Electronegativity","CovalentRadius")
     SEP = SiteElementalProperty(properties=property_list)
     colnames=SEP._generate_column_labels(multiindex=False,return_errors=False)
     for index,row in data.iterrows():
         structure=row["structure"]
-        if verbos:
+        if verbose:
             print(index)
         for atomidx in range(structure.num_sites):
             feat=SEP.featurize(structure,idx=atomidx)
@@ -61,13 +92,14 @@ def featurize_dataset(cifs: list, verbos=False, saveto: str="features.csv")-> pd
             features_dict[site_name].update(dict(zip(colnames, feat)))
 
     ## 3. AGNI
-    print("AGNI")
+    if verbose:
+        print("AGNI")
     property_list=("Number","AtomicWeight","Row","Column","Electronegativity","CovalentRadius")
     AGNI = AGNIFingerprints(cutoff=5,directions=[None])
     colnames=AGNI._generate_column_labels(multiindex=False,return_errors=False)
     for index,row in data.iterrows():
         structure=row["structure"]
-        if verbos:
+        if verbose:
             print(index)
         for atomidx in range(structure.num_sites):
             feat=AGNI.featurize(structure,idx=atomidx)
@@ -76,12 +108,13 @@ def featurize_dataset(cifs: list, verbos=False, saveto: str="features.csv")-> pd
 
 
     ## 4. Gaussian Symmetry Functions 
-    print("GSF")
+    if verbose:
+        print("GSF")
     GSF = GaussianSymmFunc(cutoff=5)
     colnames=GSF._generate_column_labels(multiindex=False,return_errors=False)
     for index,row in data.iterrows():
         structure=row["structure"]
-        if verbos:
+        if verbose:
             print(index)
         for atomidx in range(structure.num_sites):
             feat=GSF.featurize(structure,idx=atomidx)
@@ -89,12 +122,13 @@ def featurize_dataset(cifs: list, verbos=False, saveto: str="features.csv")-> pd
             features_dict[site_name].update(dict(zip(colnames, feat)))
 
     ## 5. site difference stats 
-    print("LPD")
+    if verbose:
+        print("LPD")
     LPD = LocalPropertyStatsNew(properties=property_list)
     colnames=LPD._generate_column_labels(multiindex=False,return_errors=False)
     for index,row in data.iterrows():
         structure=row["structure"]
-        if verbos:
+        if verbose:
             print(index)
         for atomidx in range(structure.num_sites):
             feat=LPD.featurize(structure,idx=atomidx)
@@ -109,16 +143,23 @@ def featurize_dataset(cifs: list, verbos=False, saveto: str="features.csv")-> pd
     return df_features
 
 
-def featurize_structure(cif: string, verbos=False, saveto: str="features.csv")-> pd.DataFrame:
+def featurize_structure(
+    cif: str | Path,
+    verbose=False,
+    saveto: str | None = "features.csv",
+    *,
+    verbos=None,
+) -> pd.DataFrame:
     """Featurize a crystal structure using elemetal, geometric, and chemical descriptors for local environments.
 
     Args:
-        cifs: list of paths to crystal structure in cif format.
-        verbos: printing the steps.
+        cif: path to a crystal structure in CIF format.
+        verbose: printing the steps.
         saveto: filename to save the generated features.
     """
 
-    structure = CifParser(cif).get_structures()[0]
+    verbose = _verbose_value(verbose, verbos)
+    structure = _parse_cif(cif)
     structure_name = Path(cif).name
     features = {structure_name:{}}
     features[structure_name]["structure"]=structure
@@ -141,7 +182,7 @@ def featurize_structure(cif: string, verbos=False, saveto: str="features.csv")->
     colnames=SEP._generate_column_labels(multiindex=False,return_errors=False)
     for index,row in data.iterrows():
         structure=row["structure"]
-        if verbos:
+        if verbose:
             print(index)
         for atomidx in range(structure.num_sites):
             feat=SEP.featurize(structure,idx=atomidx)
@@ -154,7 +195,7 @@ def featurize_structure(cif: string, verbos=False, saveto: str="features.csv")->
     colnames=AGNI._generate_column_labels(multiindex=False,return_errors=False)
     for index,row in data.iterrows():
         structure=row["structure"]
-        if verbos:
+        if verbose:
             print(index)
         for atomidx in range(structure.num_sites):
             feat=AGNI.featurize(structure,idx=atomidx)
@@ -167,7 +208,7 @@ def featurize_structure(cif: string, verbos=False, saveto: str="features.csv")->
     colnames=GSF._generate_column_labels(multiindex=False,return_errors=False)
     for index,row in data.iterrows():
         structure=row["structure"]
-        if verbos:
+        if verbose:
             print(index)
         for atomidx in range(structure.num_sites):
             feat=GSF.featurize(structure,idx=atomidx)
@@ -179,7 +220,7 @@ def featurize_structure(cif: string, verbos=False, saveto: str="features.csv")->
     colnames=LPD._generate_column_labels(multiindex=False,return_errors=False)
     for index,row in data.iterrows():
         structure=row["structure"]
-        if verbos:
+        if verbose:
             print(index)
         for atomidx in range(structure.num_sites):
             feat=LPD.featurize(structure,idx=atomidx)
@@ -196,23 +237,22 @@ def featurize_structure(cif: string, verbos=False, saveto: str="features.csv")->
 
 class LocalPropertyStatsNew(BaseFeaturizer):
 
-    """
-    Differences, minima and maxima in elemental properties between site and its neighboring sites.
+    r"""
+    Differences, minima, and maxima in elemental properties around a site.
+
     Uses the Voronoi tessellation of the structure to determine the
     neighbors of the site, and assigns each neighbor (:math:`n`) a
     weight (:math:`A_n`) that corresponds to the area of the facet
     on the tessellation corresponding to that neighbor.
     The local property difference is then computed by
-    :math:`\\frac{\sum_n {A_n |p_n - p_0|}}{\sum_n {A_n}}`
+    :math:`\frac{\sum_n {A_n |p_n - p_0|}}{\sum_n {A_n}}`
     where :math:`p_n` is the property (e.g., atomic number) of a neighbor
     and :math:`p_0` is the property of a site. If signed parameter is assigned
     True, signed difference of the properties is returned instead of absolute
-    difference. Taken from oximachine featurizer: https://github.com/kjappelbaum/oximachine_featurizer                          
-                                             
-    Features:
-        -   "local property stat in [property]"                               
-    References:
-        -   `Ward et al. _PRB_ 2017 <http://link.aps.org/doi/10.1103/PhysRevB.96.024104>`_
+    difference. The generated columns are named ``local property stat in
+    [property]``. Adapted from the oximachine featurizer.
+
+    See Ward et al., *Physical Review B* 96, 024104 (2017).
     """
 
     def __init__(

@@ -14,5 +14,4 @@ Module contents
 
 .. automodule:: CoREMOF.models
    :members:
-   :undoc-members:
    :show-inheritance:

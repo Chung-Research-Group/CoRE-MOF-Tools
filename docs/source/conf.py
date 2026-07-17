@@ -1,45 +1,66 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""Sphinx configuration for CoRE MOF Tools."""
 
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+from pathlib import Path
+import sys
 
-import os, sys
-sys.path.insert(0, os.path.abspath('../..')) 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-project = 'CoREMOF'
-copyright = '2025, MTAP @ Pusan National University'
-author = 'Guobin Zhao'
-release = '0.2.1'
+from CoREMOF import __version__
 
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-
-extensions = []
-
-templates_path = ['_templates']
-exclude_patterns = []
-
-
-
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
-html_theme = 'sphinx_rtd_theme'
-html_static_path = ['_static']
-
+project = "CoRE MOF Tools"
+copyright = "2025–2026, MTAP at Pusan National University"
+author = "Guobin Zhao and contributors"
+version = __version__
+release = __version__
 
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.viewcode',
-    'sphinx_autodoc_typehints'
-]
-autodoc_mock_imports = [
-    "tensorflow", "torch", "zeopp", "pymatgen", "ase", "molSimplify","optree","ccdc",
-    "PACMAN_charge", "mofchecker", "gemmi", "phonopy", "xgboost", 'juliacall', 'mofid','keras',
-    'cloudpickle','scikit-learn==1.3.2','networkx', 'selfies', 'mendeleev', 'requests'
+    "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.intersphinx",
+    "sphinx_autodoc_typehints",
 ]
 
+autodoc_mock_imports = [
+    "PACMANCharge",
+    "MOFClassifier",
+    "ase",
+    "ccdc",
+    "cloudpickle",
+    "gemmi",
+    "joblib",
+    "juliacall",
+    "keras",
+    "matminer",
+    "matplotlib",
+    "mendeleev",
+    "mofchecker",
+    "mofid",
+    "molSimplify",
+    "networkx",
+    "numpy",
+    "openbabel",
+    "pandas",
+    "phonopy",
+    "pymatgen",
+    "scipy",
+    "selfies",
+    "sklearn",
+    "tensorflow",
+    "torch",
+    "xgboost",
+    "yaml",
+]
+autodoc_member_order = "bysource"
+autoclass_content = "both"
+napoleon_google_docstring = True
+napoleon_numpy_docstring = True
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+}
+
+templates_path = ["_templates"]
+exclude_patterns = []
+html_theme = "sphinx_rtd_theme"
+html_title = f"CoRE MOF Tools {release}"

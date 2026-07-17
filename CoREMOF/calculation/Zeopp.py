@@ -1,259 +1,177 @@
-"""Geometery properties calculation based on Zeo++ software
-You need install Zeo++ package independently from source (https://www.zeoplusplus.org/download.html) or conda (https://anaconda.org/conda-forge/zeopp-lsmo)
-Befor run this class please test "network" commond is works or not.
+"""Geometric-property calculations backed by the Zeo++ ``network`` binary.
+
+Install Zeo++ independently, for example with
+``conda install -c conda-forge zeopp-lsmo``.  The executable can be overridden
+with the ``COREMOF_NETWORK_EXECUTABLE`` environment variable.
 """
 
+from __future__ import annotations
+
 import os
+from pathlib import Path
+import shutil
 import subprocess
+import tempfile
+from typing import Iterable
 
-def ChanDim(structure, probe_radius = 0, high_accuracy = True, prefix="tmp_chan"):
 
-    """Analysis dimension of channel.
+def _run_network(structure: str | os.PathLike, arguments: Iterable[object], prefix: str) -> str:
+    """Run Zeo++ safely and return the generated output text.
 
-    Args:
-        structure (str): path to your CIF.
-        probe_radius (float): probe of radiu.
-        high_accuracy (bool): use high accuracy or not.
-        prefix (str): temporary file.
-
-    Returns:
-        Dictionary:
-            -   unit by ["unit"], always nan.
-            -   dimention by ["Dimension"].
-    """
-    
-    results_chan = {}
-    results_chan["unit"]="nan"
-    
-    tmp_file = f"{prefix}.txt"
-    
-    if high_accuracy:
-        cmd = f'network -ha -chan {probe_radius} {tmp_file} {structure}'
-        # cmd = f'network -ha S50 -chan {probe_radius} {tmp_file} {structure}'
-    else:
-        cmd = f'network -chan {probe_radius} {tmp_file} {structure}'
-    _ = subprocess.run(
-                        cmd,
-                        shell=True,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        check=True,
-                    )
-
-    with open(tmp_file) as f:
-        for i, row in enumerate(f):
-            if i == 0:
-                dim = int(row.split('dimensionality')[1].split()[0])
-
-    results_chan["Dimension"] = dim
-
-    os.remove(tmp_file)
-
-    return results_chan
-
-def FrameworkDim(structure, high_accuracy = True, prefix="tmp_strinfo"):
-
-    """Analysis dimension of framework.
-
-    Args:
-        structure (str): path to your CIF.
-        high_accuracy (bool): use high accuracy or not.
-        prefix (str): temporary file.
-
-    Returns:
-        Dictionary:
-            -   unit by ["unit"], always nan
-            -   dimention by ["Dimension"]
-            -   number of 2D framewor by ["N_1D"]
-            -   number of 1D framework by ["N_2D"]
-            -   number of 3D framewor by ["N_3D"]
+    A unique output file is used for every invocation.  This is important for
+    high-throughput workflows where several structures may be analysed in the
+    same working directory at once.
     """
 
-    results_strinfo = {}
-    results_strinfo["unit"]="nan"
+    structure_path = Path(structure)
+    if not structure_path.is_file():
+        raise FileNotFoundError(f"CIF file does not exist: {structure_path}")
 
-    tmp_file = f"{prefix}.txt"
-    
-    if high_accuracy:
-        cmd = f'network -ha -strinfo {tmp_file} {structure}'
-        # cmd = f'network -ha S50 -strinfo {tmp_file} {structure}'
-    else:
-        cmd = f'network -strinfo {tmp_file} {structure}'
-    _ = subprocess.run(
-                        cmd,
-                        shell=True,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        check=True,
-                    )
+    executable = os.environ.get("COREMOF_NETWORK_EXECUTABLE", "network")
+    if not shutil.which(executable):
+        raise FileNotFoundError(
+            f"Zeo++ executable '{executable}' was not found. Install zeopp-lsmo "
+            "or set COREMOF_NETWORK_EXECUTABLE."
+        )
 
-    with open(tmp_file) as f:
-        line = f.readline().split()
-        try:
-            dim = int(line[-1])
-            one_dim = int(line[7])
-            two_dim = int(line[8])
-            three_dim = int(line[9])
-        except:
-            one_dim = 0
-            two_dim = 0
-            three_dim = 0
-            dim = 0
-    results_strinfo["Dimension"] = dim
-    results_strinfo["N_1D"] = one_dim
-    results_strinfo["N_2D"] = two_dim
-    results_strinfo["N_3D"] = three_dim
+    prefix_path = Path(prefix)
+    output_dir = prefix_path.parent if str(prefix_path.parent) != "." else Path.cwd()
+    if not output_dir.is_dir():
+        raise FileNotFoundError(f"Temporary-output directory does not exist: {output_dir}")
 
-    os.remove(tmp_file)
+    handle = tempfile.NamedTemporaryFile(
+        prefix=f"{prefix_path.name}_", suffix=".txt", dir=output_dir, delete=False
+    )
+    output_path = Path(handle.name)
+    handle.close()
+    output_path.unlink()  # Zeo++ creates the output itself.
 
-    return results_strinfo
+    command = [executable, *(str(value) for value in arguments), str(output_path), str(structure_path)]
+    try:
+        completed = subprocess.run(command, capture_output=True, text=True, check=False)
+        if completed.returncode != 0:
+            detail = completed.stderr.strip() or completed.stdout.strip() or "no diagnostic output"
+            raise RuntimeError(
+                f"Zeo++ failed with exit code {completed.returncode}: {detail}"
+            )
+        if not output_path.is_file():
+            raise RuntimeError("Zeo++ completed without creating its output file")
+        return output_path.read_text(encoding="utf-8")
+    finally:
+        output_path.unlink(missing_ok=True)
 
-def PoreDiameter(structure, high_accuracy = True, prefix="tmp_pd"):
 
-    """Analysis pore diameter of structure.
+def _arguments(high_accuracy: bool, *values: object) -> list[object]:
+    return (["-ha"] if high_accuracy else []) + list(values)
 
-    Args:
-        structure (str): path to your CIF.
-        high_accuracy (bool): use high accuracy or not.
-        prefix (str): temporary file.
 
-    Returns:
-        Dictionary:
-            -   unit by ["unit"], always angstrom, Å
-            -   largest cavity diameter by ["LCD"]
-            -   pore-limiting diameter by ["PLD"]
-            -   largest free pore diameter by ["LFPD"]
-    """
+def ChanDim(structure, probe_radius=0, high_accuracy=True, prefix="tmp_chan"):
+    """Return the dimensionality of channels accessible to a probe."""
 
-    results_pd = {}
-    results_pd["unit"]="angstrom, Å"
+    text = _run_network(
+        structure, _arguments(high_accuracy, "-chan", probe_radius), prefix
+    )
+    first_line = text.splitlines()[0] if text.splitlines() else ""
+    try:
+        dimension = int(first_line.split("dimensionality", 1)[1].split()[0])
+    except (IndexError, ValueError) as exc:
+        raise ValueError(f"Could not parse Zeo++ channel output: {first_line!r}") from exc
+    return {"unit": "nan", "Dimension": dimension}
 
-    tmp_file = f"{prefix}.txt"
-    
-    if high_accuracy:
-        cmd = f'network -ha -res {tmp_file} {structure}'
-        # cmd = f'network -ha S50 -res {tmp_file} {structure}'
-    else:
-        cmd = f'network -res {tmp_file} {structure}'
-    _ = subprocess.run(
-                        cmd,
-                        shell=True,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        check=True,
-                    )
-    with open(tmp_file) as f:
-        line = f.readline().split()
-        results_pd["LCD"], results_pd["PLD"], results_pd["LFPD"] = map(float, line[1:4])
-    os.remove(tmp_file)
 
-    return results_pd
+def FrameworkDim(structure, high_accuracy=True, prefix="tmp_strinfo"):
+    """Return framework dimensionality and counts of 1D, 2D, and 3D parts."""
 
-def SurfaceArea(structure, chan_radius = 1.655, probe_radius = 1.655, num_samples = 5000, high_accuracy = True, prefix="tmp_sa"):
+    text = _run_network(structure, _arguments(high_accuracy, "-strinfo"), prefix)
+    fields = text.splitlines()[0].split() if text.splitlines() else []
+    try:
+        dimension = int(fields[-1])
+        one_dim, two_dim, three_dim = map(int, fields[7:10])
+    except (IndexError, ValueError) as exc:
+        raise ValueError(f"Could not parse Zeo++ framework output: {' '.join(fields)!r}") from exc
+    return {
+        "unit": "nan",
+        "Dimension": dimension,
+        "N_1D": one_dim,
+        "N_2D": two_dim,
+        "N_3D": three_dim,
+    }
 
-    """Analysis surface area of structure.
 
-    Args:
-        structure (str): path to your CIF.
-        chan_radius (float): probe of channel, it is advised to keep chan_radius=probe_radius.
-        probe_radius (float): probe of radiu.
-        num_samples (int): number of MC samples per atom.
-        high_accuracy (bool): use high accuracy or not.
-        prefix (str): temporary file.
+def PoreDiameter(structure, high_accuracy=True, prefix="tmp_pd"):
+    """Return largest-cavity, pore-limiting, and largest-free-pore diameters."""
 
-    Returns:
-        Dictionary:
-            -   unit by ["unit"], always Å^2, m^2/cm^3, m^2/g
-            -   accessible surface area by ["ASA"]
-            -   non-accessible surface area by ["NASA"]
-    """
+    text = _run_network(structure, _arguments(high_accuracy, "-res"), prefix)
+    fields = text.splitlines()[0].split() if text.splitlines() else []
+    try:
+        lcd, pld, lfpd = map(float, fields[1:4])
+    except (IndexError, ValueError) as exc:
+        raise ValueError(f"Could not parse Zeo++ pore-diameter output: {' '.join(fields)!r}") from exc
+    return {"unit": "angstrom, Å", "LCD": lcd, "PLD": pld, "LFPD": lfpd}
 
-    results_sa = {}
-    results_sa["unit"]="Å^2, m^2/cm^3, m^2/g"
 
-    tmp_file = f"{prefix}.txt"
-    
-    if high_accuracy:
-        cmd = f'network -ha -sa {chan_radius} {probe_radius} {num_samples} {tmp_file} {structure}'
-        # cmd = f'network -ha S50 -sa {chan_radius} {probe_radius} {num_samples} {tmp_file} {structure}'
-    else:
-        cmd = f'network -sa {chan_radius} {probe_radius} {num_samples} {tmp_file} {structure}'
-    _ = subprocess.run(
-                        cmd,
-                        shell=True,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        check=True,
-                    )
-    with open(tmp_file) as f:
-        for i, row in enumerate(f):
-            if i == 0:
-                ASA = float(row.split('ASA_A^2:')[1].split()[0])
-                VSA = float(row.split('ASA_m^2/cm^3:')[1].split()[0])
-                GSA = float(row.split('ASA_m^2/g:')[1].split()[0])
-                NASA = float(row.split('NASA_A^2:')[1].split()[0])
-                NVSA = float(row.split('NASA_m^2/cm^3:')[1].split()[0])
-                NGSA = float(row.split('NASA_m^2/g:')[1].split()[0])
+def _labelled_float(line: str, label: str) -> float:
+    try:
+        return float(line.split(label, 1)[1].split()[0])
+    except (IndexError, ValueError) as exc:
+        raise ValueError(f"Could not parse Zeo++ field {label!r} from: {line!r}") from exc
 
-    results_sa["ASA"] = [ASA, VSA, GSA]
-    results_sa["NASA"] = [NASA, NVSA, NGSA]
 
-    os.remove(tmp_file)
+def SurfaceArea(
+    structure,
+    chan_radius=1.655,
+    probe_radius=1.655,
+    num_samples=5000,
+    high_accuracy=True,
+    prefix="tmp_sa",
+):
+    """Return accessible and non-accessible surface areas."""
 
-    return results_sa
+    text = _run_network(
+        structure,
+        _arguments(high_accuracy, "-sa", chan_radius, probe_radius, num_samples),
+        prefix,
+    )
+    line = text.splitlines()[0] if text.splitlines() else ""
+    asa = _labelled_float(line, "ASA_A^2:")
+    vsa = _labelled_float(line, "ASA_m^2/cm^3:")
+    gsa = _labelled_float(line, "ASA_m^2/g:")
+    nasa = _labelled_float(line, "NASA_A^2:")
+    nvsa = _labelled_float(line, "NASA_m^2/cm^3:")
+    ngsa = _labelled_float(line, "NASA_m^2/g:")
+    return {
+        "unit": "Å^2, m^2/cm^3, m^2/g",
+        "ASA": [asa, vsa, gsa],
+        "NASA": [nasa, nvsa, ngsa],
+    }
 
-def PoreVolume(structure, chan_radius = 0, probe_radius = 0, num_samples = 5000, high_accuracy = True, prefix="tmp_pv"):
 
-    """Analysis pore volume of structure.
+def PoreVolume(
+    structure,
+    chan_radius=0,
+    probe_radius=0,
+    num_samples=5000,
+    high_accuracy=True,
+    prefix="tmp_pv",
+):
+    """Return accessible/non-accessible pore volumes and void fractions."""
 
-    Args:
-        structure (str): path to your CIF.
-        chan_radius (float): probe of channel, it is advised to keep chan_radius=probe_radius.
-        probe_radius (float): probe of radiu.
-        num_samples (int): number of MC samples per atom.
-        high_accuracy (bool): use high accuracy or not.
-        prefix (str): temporary file.
-
-    Returns:
-        Dictionary:
-            -   unit by ["unit"], always PV: Å^3, cm^3/g; VF: nan
-            -   accessible pore volume by ["PV"]
-            -   non-accessible pore volume by ["NPV"]
-            -   accessible void fraction by ["VF"]
-            -   non-accessible void fraction by ["NVF"]
-    """
-
-    results_pv = {}
-    results_pv["unit"]="PV: Å^3, cm^3/g; VF: nan"
-
-    tmp_file = f"{prefix}.txt"
-    
-    if high_accuracy:
-        cmd = f'network -ha -volpo {chan_radius} {probe_radius} {num_samples} {tmp_file} {structure}'
-        # cmd = f'network -ha S50 -volpo {chan_radius} {probe_radius} {num_samples} {tmp_file} {structure}'
-    else:
-        cmd = f'network -volpo {chan_radius} {probe_radius} {num_samples} {tmp_file} {structure}'
-    _ = subprocess.run(
-                        cmd,
-                        shell=True,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        check=True,
-                    )
-    with open(tmp_file) as f:
-        for i, row in enumerate(f):
-            if i == 0:
-                POAV = float(row.split('POAV_A^3:')[1].split()[0])
-                PONAV = float(row.split('PONAV_A^3:')[1].split()[0])
-                GPOAV = float(row.split('POAV_cm^3/g:')[1].split()[0])
-                GPONAV = float(row.split('PONAV_cm^3/g:')[1].split()[0])
-                POAV_volume_fraction = float(row.split('POAV_Volume_fraction:')[1].split()[0])
-                PONAV_volume_fraction = float(row.split('PONAV_Volume_fraction:')[1].split()[0])
-    results_pv["PV"] = [POAV, GPOAV]
-    results_pv["NPV"] = [PONAV, GPONAV]
-    results_pv["VF"] = POAV_volume_fraction
-    results_pv["NVF"] = PONAV_volume_fraction
-
-    os.remove(tmp_file)
-
-    return results_pv
+    text = _run_network(
+        structure,
+        _arguments(high_accuracy, "-volpo", chan_radius, probe_radius, num_samples),
+        prefix,
+    )
+    line = text.splitlines()[0] if text.splitlines() else ""
+    poav = _labelled_float(line, "POAV_A^3:")
+    ponav = _labelled_float(line, "PONAV_A^3:")
+    gpoav = _labelled_float(line, "POAV_cm^3/g:")
+    gponav = _labelled_float(line, "PONAV_cm^3/g:")
+    poav_fraction = _labelled_float(line, "POAV_Volume_fraction:")
+    ponav_fraction = _labelled_float(line, "PONAV_Volume_fraction:")
+    return {
+        "unit": "PV: Å^3, cm^3/g; VF: nan",
+        "PV": [poav, gpoav],
+        "NPV": [ponav, gponav],
+        "VF": poav_fraction,
+        "NVF": ponav_fraction,
+    }

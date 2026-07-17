@@ -1,7 +1,15 @@
 """Process your CIF to "CoRE MOF" CIF.
 """
 
-import os, re, csv, json, glob, requests, functools, warnings, itertools, collections
+import collections
+import csv
+import functools
+import glob
+import itertools
+import json
+import os
+import re
+import warnings
 from ase.io import read, write
 
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
@@ -13,19 +21,24 @@ import pandas as pd
 
 from ase.neighborlist import NeighborList
 from scipy.sparse.csgraph import connected_components
-warnings.filterwarnings('ignore')
-
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
 try:
     from mofchecker import MOFChecker
-except:
-    print("please run pip install git+https://github.com/sxm13/mofchecker_2.0.git@main")
+except ImportError:
+    MOFChecker = None
 from CoREMOF.utils.atoms_definitions import ATR, Coef_A, Coef_C #, BO_list, metals4check
 
 from gemmi import cif as CIF
-from PACMANCharge import pmcharge
-from MOFClassifier import CLscore
+try:
+    from PACMANCharge import pmcharge
+except ImportError:
+    pmcharge = None
+
+try:
+    from MOFClassifier import CLscore
+except ImportError:
+    CLscore = None
 
 
 def ensure_data(structure):
@@ -39,12 +52,17 @@ def ensure_data(structure):
             -   added "data_struc" CIF
     """
         
-    with open(structure, 'r') as file:
+    if not os.path.isfile(structure):
+        raise FileNotFoundError(f"CIF file does not exist: {structure}")
+    with open(structure, 'r', encoding='utf-8') as file:
         lines = file.readlines()
-    if not lines[1].strip().startswith('data_'):
-        lines.insert(1, 'data_struc\n')
-        with open(structure, 'w') as file:
+    first_content = next((i for i, line in enumerate(lines) if line.strip()), 0)
+    if not lines or not lines[first_content].strip().lower().startswith('data_'):
+        lines.insert(first_content, 'data_struc\n')
+        with open(structure, 'w', encoding='utf-8') as file:
             file.writelines(lines)
+        return True
+    return False
 
 def ase_format(structure):
     """try to read CIF and convert to ASE format.
@@ -57,22 +75,36 @@ def ase_format(structure):
             -   ASE format CIF.
     """
         
+    if not os.path.isfile(structure):
+        raise FileNotFoundError(f"CIF file does not exist: {structure}")
+    errors = []
     try:
         with warnings.catch_warnings():
             warnings.simplefilter('ignore')
-            # mof_temp = Structure.from_file(mof,primitive=True)
             mof_temp = Structure.from_file(structure)
             mof_temp.to(filename=structure, fmt="cif")
             struc = read(structure)
             write(structure, struc)
-            # print('Reading by ase: ' + mof)
-    except:
-        try:
-            struc = read(structure)
-            write(structure, struc)
-            print('Reading by ase: ' + structure)
-        except:
-            ensure_data(structure)
+            return structure
+    except Exception as exc:
+        errors.append(exc)
+    try:
+        struc = read(structure)
+        write(structure, struc)
+        return structure
+    except Exception as exc:
+        errors.append(exc)
+
+    ensure_data(structure)
+    try:
+        struc = read(structure)
+        write(structure, struc)
+        return structure
+    except Exception as exc:
+        errors.append(exc)
+        raise ValueError(
+            f"Could not parse CIF {structure!r} with pymatgen or ASE: {errors[-1]}"
+        ) from exc
 
 class preprocess():
 
@@ -98,6 +130,7 @@ class preprocess():
         result_check = self.split_pri_p1(self.structure, self.output)
         with open(self.output + os.path.basename(self.structure).replace(".cif","") + "_precheck.json", "w") as f:
             json.dump(result_check,f,indent=2)
+        return result_check
 
 
     def split_pri_p1(self, structure, output_folder):
@@ -607,7 +640,12 @@ class mof_check():
                 return list(set(has_problem))
             else:
                 return ["good"]
-        except Exception as e:
+        except Exception as exc:
+            warnings.warn(
+                f"Chen–Manz validation failed for {structure}: {exc}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
             return ["unknown"]
         
 
@@ -616,6 +654,11 @@ class mof_check():
         """checking MOF by mofchecker 2.0: https://github.com/Au-4/mofchecker_2.0. Ref: https://doi.org/10.1039/D5DD00109A
         """
 
+        if MOFChecker is None:
+            raise ImportError(
+                "MOFChecker is required for this check. Install it with "
+                "'pip install git+https://github.com/Au-4/mofchecker_2.0.git@main'."
+            )
         try:
             checker = MOFChecker.from_cif(structure)
             check_result = checker.get_mof_descriptors()
@@ -647,7 +690,12 @@ class mof_check():
                 return list(set(has_problem))
             else:
                 return ["good"]
-        except Exception as e:
+        except Exception as exc:
+            warnings.warn(
+                f"MOFChecker validation failed for {structure}: {exc}",
+                RuntimeWarning,
+                stacklevel=2,
+            )
             return ["unknown"]
 
 
@@ -683,6 +731,11 @@ class clean_pacman():
         self.process()
         
     def run_pacman(self):
+        if pmcharge is None:
+            raise ImportError(
+                "PACMAN-charge is required for clean_pacman. "
+                "Install it with 'pip install PACMAN-charge'."
+            )
         pmcharge.predict(
             cif_file=self.structure,
             charge_type="DDEC6",
@@ -833,10 +886,9 @@ class clean_pacman():
             print("[all_clean]", input_file, "failed:", e)
 
 try:
-    from ccdc import io
     from CoREMOF.mosaec import run
-except:
-    print("Before using MOSAEC to check your structure, please install CSD Python API with license")
+except ImportError:
+    run = None
 
 
 def run_MOSAEC(cif_folder, save_path="./", max_workers=64):
@@ -852,6 +904,11 @@ def run_MOSAEC(cif_folder, save_path="./", max_workers=64):
             -   results of MOSAEC.
     """
 
+    if run is None:
+        raise ImportError(
+            "MOSAEC requires the licensed CSD Python API. Install and configure "
+            "the CSD API before calling run_MOSAEC."
+        )
     results = run(cif_folder, max_workers=max_workers, save_path=save_path)
 
     return results
@@ -870,7 +927,14 @@ def run_mofclassifier(cif_folder, save_path="./mofclassifier_results.json", mode
         dict:
             -   results of MOFClassifier.
     """
+    if CLscore is None:
+        raise ImportError(
+            "MOFClassifier is required for run_mofclassifier. "
+            "Install it with 'pip install MOFClassifier==0.1.1'."
+        )
     all_structures = [stuc for stuc in glob.glob(cif_folder+"/*cif")[:]]
+    if not all_structures:
+        raise FileNotFoundError(f"No CIF files were found in {cif_folder}")
     results = CLscore.predict_batch(root_cifs=all_structures, model=model, batch_size=batch_size)
     out = {}
     for rid, s1, s2 in results:

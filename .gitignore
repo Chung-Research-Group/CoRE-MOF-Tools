@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+build/
+dist/
+docs/build/
+.ipynb_checkpoints/
+
+# CoREMOF prediction routines create these working files by default.
+features.csv
+cp.csv
+tmp_*/
+tmp_*.txt

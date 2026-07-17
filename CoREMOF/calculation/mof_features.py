@@ -6,11 +6,8 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from ase.io import read
 from pymatgen.core.structure import Structure
 
-import os,juliacall
-from CoREMOF.calculation.mof_collection import MofCollection
-from CoREMOF.utils import remove
-
-from molSimplify.Informatics.MOF.MOF_descriptors import get_MOF_descriptors
+import os
+import tempfile
 
 
 def SpaceGroup(structure):
@@ -122,10 +119,13 @@ def topology(structure, node_type="single"):
             -   catenation by ["catenation"]
     """
 
-    package_directory = os.path.abspath(__file__).replace("mof_features.py","")
-    os.environ["JULIA_DEPOT_PATH"] = package_directory
-
-    juliacall.Main.seval('import Pkg; Pkg.add("CrystalNets")')
+    try:
+        import juliacall
+    except ImportError as exc:
+        raise ImportError(
+            "Topology analysis requires juliacall and CrystalNets.jl. "
+            "Install juliacall, then retry while connected to the internet."
+        ) from exc
 
     jl = juliacall.newmodule("topo")
     jl.seval("using CrystalNets")
@@ -167,16 +167,19 @@ def get_oms_file(structure):
             -    of type of OMS if has by ["OMS Types"]
     """
         
-    a_mof_collection = MofCollection(path_list = [structure], 
-                                 analysis_folder="tmp_oms")
-    a_mof_collection.analyse_mofs(num_batches=1,overwrite=False)
-    oms_result = {
-                    "Metal Types": a_mof_collection.mof_oms_df["Metal Types"][structure.replace(".cif","").split("/")[-1]],
-                    "Has OMS": a_mof_collection.mof_oms_df["Has OMS"][structure.replace(".cif","").split("/")[-1]],
-                    "OMS Types": a_mof_collection.mof_oms_df["OMS Types"][structure.replace(".cif","").split("/")[-1]],
-                }
+    from CoREMOF.calculation.mof_collection import MofCollection
 
-    remove.remove_dir_with_permissions("tmp_oms")
+    with tempfile.TemporaryDirectory(prefix="coremof_oms_") as analysis_folder:
+        a_mof_collection = MofCollection(
+            path_list=[structure], analysis_folder=analysis_folder
+        )
+        a_mof_collection.analyse_mofs(num_batches=1, overwrite=False)
+        name = os.path.splitext(os.path.basename(structure))[0]
+        oms_result = {
+            "Metal Types": a_mof_collection.mof_oms_df["Metal Types"][name],
+            "Has OMS": a_mof_collection.mof_oms_df["Has OMS"][name],
+            "OMS Types": a_mof_collection.mof_oms_df["OMS Types"][name],
+        }
 
     return oms_result
 
@@ -196,19 +199,20 @@ def get_oms_folder(input_folder, n_batch = 1):
             -   type of OMS if has of each structure by [structure]["OMS Types"]
     """
 
-    mof_collection = MofCollection.from_folder(collection_folder = input_folder, 
-                                                analysis_folder="tmp_oms")
-    mof_collection.analyse_mofs(num_batches=n_batch,overwrite=False)
-    oms_result = {}
-    for name, row in mof_collection.mof_oms_df.iterrows():
-        
-        oms_result[name] = {
-                            "Metal Types": row[0],
-                            "Has OMS": row[1],
-                            "OMS Types": row[2]
-                        }
+    from CoREMOF.calculation.mof_collection import MofCollection
 
-    remove.remove_dir_with_permissions("tmp_oms")
+    with tempfile.TemporaryDirectory(prefix="coremof_oms_") as analysis_folder:
+        mof_collection = MofCollection.from_folder(
+            collection_folder=input_folder, analysis_folder=analysis_folder
+        )
+        mof_collection.analyse_mofs(num_batches=n_batch, overwrite=False)
+        oms_result = {}
+        for name, row in mof_collection.mof_oms_df.iterrows():
+            oms_result[name] = {
+                "Metal Types": row.iloc[0],
+                "Has OMS": row.iloc[1],
+                "OMS Types": row.iloc[2],
+            }
 
     return oms_result
 
@@ -258,17 +262,23 @@ def RACs(structure):
     result_rac["Linker"] = {}
     result_rac["Function-group"] = {}
 
-    os.makedirs("tmp_rac", exist_ok=True)
-    
-    name = os.path.basename(structure).replace(".cif", "")
-    
-    full_names, full_descriptors = get_MOF_descriptors(
-                                                        structure,
-                                                        3,
-                                                        path='tmp_rac',
-                                                        xyzpath=f'tmp_rac/{name}.xyz',
-                                                        max_num_atoms=6000
-                                                        )
+    try:
+        from molSimplify.Informatics.MOF.MOF_descriptors import get_MOF_descriptors
+    except ImportError as exc:
+        raise ImportError(
+            "RAC descriptors require molSimplify. Install it with "
+            "'pip install molSimplify'."
+        ) from exc
+
+    name = os.path.splitext(os.path.basename(structure))[0]
+    with tempfile.TemporaryDirectory(prefix="coremof_rac_") as workdir:
+        full_names, full_descriptors = get_MOF_descriptors(
+            structure,
+            3,
+            path=workdir,
+            xyzpath=os.path.join(workdir, f"{name}.xyz"),
+            max_num_atoms=6000,
+        )
                                                         
     descriptor_data = dict(zip(full_names, full_descriptors))
 
@@ -278,7 +288,5 @@ def RACs(structure):
         result_rac["Linker"][linker] =  round(float(descriptor_data[linker]), 4)
     for fg in fg_fnames:
         result_rac["Function-group"][fg] =  round(float(descriptor_data[fg]), 4)
-
-    remove.remove_dir_with_permissions("tmp_rac")
 
     return result_rac

@@ -7,7 +7,9 @@ from ase import neighborlist
 import networkx as nx
 from ase.build import sort
 import ase
-import os, glob, shutil
+import glob
+import os
+import shutil
 import numpy as np
 import collections
 
@@ -190,13 +192,20 @@ def convert_ase_pymat(ase_objects):
         ase_objects (ase.Atoms): ase-type atoms.
 
     Returns:
-        ase.Atoms:
-            -   pymatgen-type atoms.
+        pymatgen.core.structure.Structure:
+            -   pymatgen-type structure.
     """
     structure_lattice = Lattice(ase_objects.cell)
     structure_species = ase_objects.get_chemical_symbols()
     structure_positions = ase_objects.get_positions()
-    return Structure(structure_lattice,structure_species,structure_positions)
+    # ASE positions are Cartesian coordinates in angstrom.  Pymatgen assumes
+    # fractional coordinates unless ``coords_are_cartesian`` is explicitly set.
+    return Structure(
+        structure_lattice,
+        structure_species,
+        structure_positions,
+        coords_are_cartesian=True,
+    )
 
 def remove_pbc_cuts(atoms):
     """Remove building block cuts due to periodic boundary conditions. After the
