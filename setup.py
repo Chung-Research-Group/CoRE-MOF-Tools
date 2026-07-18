@@ -43,7 +43,7 @@ setup(
         'PyYAML',
         'scipy',
         'xgboost',
-        'scikit-learn==1.3.2',
+        'scikit-learn==1.5.0',
         'gemmi==0.7.0',
         'phonopy',
         'networkx',
