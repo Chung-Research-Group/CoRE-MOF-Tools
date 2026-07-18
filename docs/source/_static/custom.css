@@ -7,37 +7,32 @@
   --coremof-ink: #172536;
   --coremof-muted: #5c6d7e;
   --coremof-border: #dbe5ec;
-  --pst-color-primary: #2177a9;
-  --pst-color-link: #176f9f;
-  --pst-color-link-hover: #c77400;
-}
-
-html[data-theme="dark"] {
-  --pst-color-primary: #58b3e5;
-  --pst-color-link: #69bee9;
-  --pst-color-link-hover: #ffbd4a;
 }
 
 body {
-  color: var(--pst-color-text-base);
+  color: var(--color-foreground-primary);
   font-feature-settings: "kern", "liga";
 }
 
-.navbar-brand {
+.article-container {
+  max-width: 960px;
+}
+.sidebar-brand-text {
+  color: var(--coremof-navy);
   font-weight: 750;
   letter-spacing: -0.02em;
 }
 
-.bd-header {
-  border-bottom: 1px solid rgba(23, 47, 69, 0.1);
-  box-shadow: 0 3px 18px rgba(20, 45, 67, 0.06);
+.sidebar-tree .current-page > .reference {
+  font-weight: 700;
 }
 
-.bd-main .bd-content .bd-article-container {
-  max-width: 960px;
+.content {
+  overflow-wrap: anywhere;
 }
 
-.bd-article h2 {
+
+article h2 {
   margin-top: 3.25rem;
   color: var(--coremof-navy);
   font-weight: 750;
@@ -319,20 +314,31 @@ body {
   }
 }
 
-html[data-theme="dark"] .coremof-card.sd-card,
-html[data-theme="dark"] .coremof-checklist > div,
-html[data-theme="dark"] .coremof-resource.sd-card {
+body[data-theme="dark"] .coremof-card.sd-card,
+body[data-theme="dark"] .coremof-checklist > div,
+body[data-theme="dark"] .coremof-resource.sd-card {
   border-color: #32495c;
   background: #182b3b;
 }
 
-html[data-theme="dark"] .coremof-card .sd-card-title,
-html[data-theme="dark"] .bd-article h2 {
+body[data-theme="dark"] .coremof-card .sd-card-title,
+body[data-theme="dark"] article h2 {
   color: #c6e8f8;
 }
 
-html[data-theme="dark"] .coremof-card .sd-card-footer,
-html[data-theme="dark"] .coremof-principle {
+body[data-theme="dark"] .coremof-card .sd-card-footer,
+body[data-theme="dark"] .coremof-principle {
   border-color: #32495c;
   background: #132636;
+}
+
+body[data-theme="dark"] {
+  --coremof-border: #32495c;
+  --coremof-blue-soft: #17374a;
+  --coremof-ink: #e7f2f8;
+  --coremof-muted: #a9c4d5;
+}
+
+body[data-theme="dark"] .sidebar-brand-text {
+  color: #c6e8f8;
 }
