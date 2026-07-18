@@ -4,28 +4,28 @@
 
    <section class="coremof-hero">
      <div class="coremof-hero__content">
-       <span class="coremof-eyebrow">OPEN TOOLS FOR REPRODUCIBLE MOF RESEARCH</span>
-       <h1>From MOF structures to research-ready insight.</h1>
+       <div class="coremof-hero__topline">
+         <span class="coremof-eyebrow">OPEN TOOLS FOR REPRODUCIBLE MOF RESEARCH</span>
+         <span class="coremof-hero__label">Python 3.9–3.11</span>
+       </div>
+       <h1>Research-ready MOF workflows, from structure to prediction.</h1>
        <p>
-         A unified Python toolkit for accessing the CoRE MOF database, curating
-         crystal structures, computing descriptors, and running validated
-         property-prediction workflows.
+         Access curated CoRE MOF data, standardize crystal structures, compute
+         scientific descriptors, and run validated prediction workflows through
+         one documented Python interface.
        </p>
        <div class="coremof-actions">
-         <a class="coremof-button coremof-button--primary" href="installation.html">Install CoRE MOF Tools</a>
-         <a class="coremof-button coremof-button--secondary" href="quickstart.html">Explore the quick start</a>
+         <a class="coremof-button coremof-button--primary" href="installation.html">Get started</a>
+         <a class="coremof-button coremof-button--secondary" href="quickstart.html">View the quick start</a>
        </div>
-       <div class="coremof-meta" aria-label="Project highlights">
-         <span>Python 3.9–3.11</span>
-         <span>Command-line diagnostics</span>
-         <span>Research-focused workflows</span>
+       <div class="coremof-meta" aria-label="Project strengths">
+         <span>Curated data</span>
+         <span>Reproducible analysis</span>
+         <span>Validated prediction</span>
        </div>
      </div>
      <div class="coremof-hero__brand" aria-hidden="true">
        <img src="_static/coremof-logo.png" alt="">
-       <div class="coremof-lattice">
-         <span></span><span></span><span></span><span></span><span></span>
-       </div>
      </div>
    </section>
 
@@ -37,7 +37,7 @@ Move from source data to analysis without stitching together undocumented
 scripts. Each workflow has explicit requirements, predictable outputs, and
 troubleshooting guidance.
 
-.. grid:: 1 2 2 4
+.. grid:: 1 2 2 2
    :gutter: 3
    :class-container: coremof-capability-grid
 
