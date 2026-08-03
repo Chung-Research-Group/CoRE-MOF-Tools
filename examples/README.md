@@ -2,6 +2,10 @@
 
 Run `coremof doctor` before using an example. The notebooks are grouped by the external requirements they need.
 
+For the standard-library-only CR/NCR classification and parent-aware dataset
+split workflow, start with
+[`CoREMOF_dataset_splitting_quickstart.ipynb`](CoREMOF_dataset_splitting_quickstart.ipynb).
+
 | Directory | Purpose | Main requirements |
 |---|---|---|
 | `checker/` | Structural validation examples | MOFChecker, MOFClassifier; CSD API for MOSAEC |

@@ -8,6 +8,30 @@ long_description = readme_path.read_text(encoding="utf-8") if readme_path.exists
 init_text = (here / "CoREMOF" / "__init__.py").read_text(encoding="utf-8")
 version = re.search(r'^__version__ = "([^\"]+)"', init_text, re.MULTILINE).group(1)
 
+LEGACY_SCIENTIFIC_REQUIREMENTS = [
+    'pymatgen',
+    'ase',
+    'juliacall',
+    'molSimplify',
+    'PACMAN-charge',
+    'cloudpickle',
+    'joblib',
+    'matminer',
+    'numpy',
+    'pandas',
+    'PyYAML',
+    'scipy',
+    'xgboost',
+    'scikit-learn==1.5.0',
+    'gemmi==0.7.0',
+    'phonopy',
+    'networkx',
+    'selfies',
+    'mendeleev',
+    'requests',
+    'MOFClassifier==0.1.1',
+]
+
 setup(
     name='CoREMOF_tools',
     version=version,
@@ -29,38 +53,20 @@ setup(
             'models/stability/*',
         ],
     },
-    install_requires=[
-        'pymatgen',
-        'ase',
-        'juliacall',
-        'molSimplify',
-        'PACMAN-charge',
-        'cloudpickle',
-        'joblib',
-        'matminer',
-        'numpy',
-        'pandas',
-        'PyYAML',
-        'scipy',
-        'xgboost',
-        'scikit-learn==1.5.0',
-        'gemmi==0.7.0',
-        'phonopy',
-        'networkx',
-        'selfies',
-        'mendeleev',
-        'requests',
-        "MOFClassifier==0.1.1"
-    ],
+    # The release loader, checker labels, parent resolver, and splitter are
+    # standard-library-only. Historical scientific features remain available
+    # through the compatibility-preserving ``full`` extra.
+    install_requires=[],
     extras_require={
-        'openbabel': ['openbabel-wheel'],
-        'docs': [
+        'full': LEGACY_SCIENTIFIC_REQUIREMENTS,
+        'openbabel': LEGACY_SCIENTIFIC_REQUIREMENTS + ['openbabel-wheel'],
+        'docs': LEGACY_SCIENTIFIC_REQUIREMENTS + [
             'sphinx',
             'pydata-sphinx-theme',
             'sphinx-design',
             'sphinx-autodoc-typehints',
         ],
-        'test': ['ruff'],
+        'test': LEGACY_SCIENTIFIC_REQUIREMENTS + ['ruff'],
     },
     entry_points={
         'console_scripts': [
@@ -68,7 +74,7 @@ setup(
         ],
     },
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Topic :: Scientific/Engineering :: Chemistry',
         'Programming Language :: Python :: 3.9',
@@ -80,6 +86,10 @@ setup(
     project_urls={
         "Homepage": "https://core-mof-tools.readthedocs.io/",
         "Repository": "https://github.com/Chung-Research-Group/CoRE-MOF-Tools",
+        "Dataset splitting handbook": (
+            "https://github.com/Chung-Research-Group/CoRE-MOF-Tools/"
+            "blob/main/README_DATASET_SPLITTING.md"
+        ),
         "Issues": "https://github.com/Chung-Research-Group/CoRE-MOF-Tools/issues",
         "PyPI": "https://pypi.org/project/CoREMOF-tools/",
     },

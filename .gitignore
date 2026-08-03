@@ -7,6 +7,7 @@ build/
 dist/
 docs/build/
 .ipynb_checkpoints/
+coremof_notebook_outputs/
 
 # CoREMOF prediction routines create these working files by default.
 features.csv
