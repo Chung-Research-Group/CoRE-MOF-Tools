@@ -124,12 +124,16 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
             "MOFid-v1 groups",
             "PARENT_METHOD_CONFLICT",
             "not row-wise first-nonmissing",
-            "five exact edge sources",
-            "full CIF SHA-256 equality",
+            "rac_status/rac_group",
+            "mofid2_status/mofid2_group",
+            "mofid1_status/mofid1_group",
+            "five exact relations",
+            "full CIF SHA-256",
             "database-namespaced source siblings",
             'leakage_guard=\"auto\"',
-            "resolves to `main_union`",
-            "Topology and StructureMatcher do not enter this graph",
+            "chooses `main_union`",
+            "missing full hash fails closed",
+            "adds no cross-method edge",
         ):
             self.assertIn(required, definition)
 
@@ -143,6 +147,48 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
             )
         )
         self.assertLess(definition_index, first_code_use)
+
+    def test_notebook_defines_identity_canonicalization_and_prefixes_locally(self):
+        cells = {cell["id"]: "".join(cell["source"]) for cell in self.notebook["cells"]}
+        definition = cells["parent-hierarchy"]
+        for required in (
+            "canonicalized identifier text",
+            "collapse each Unicode-whitespace run",
+            "Unicode NFKC",
+            "case-fold",
+            "(source_database, source_id)",
+            "never a prefix or fuzzy match",
+            "_ASR_pacman",
+            "MOFidv2.",
+            ".no_ref",
+            "never alter atoms",
+            "`identity_union`",
+            "provisional source-ID/MOFid transitive groups",
+            "identity_status",
+            "identity_size",
+            "transitive connected component",
+            "not a count of edges or identifiers",
+            "v26.0.1 components",
+            "no precedence or conflict rule",
+            "Missing identifiers add no edge",
+            "uses no RAC5",
+            "not proof of structural identity",
+            "`RT-`",
+            "`M2T-`",
+            "`SM-`",
+            "Direct edges are authoritative",
+            "not an all-pairs or duplicate-identity claim",
+            "all 264 finite ordered descriptor columns",
+            "selected Zeo++ fingerprint",
+            "current CrystalNets scientific fingerprint",
+            "catenation degree",
+            "topology key/name",
+            "ltol=stol=0.001",
+            "angle_tol=0.01",
+            "supercell_size=num_sites",
+            "no ignored species",
+        ):
+            self.assertIn(required, definition)
 
     def test_receipt_example_exposes_machine_readable_split_definitions(self):
         cells = {cell["id"]: "".join(cell["source"]) for cell in self.notebook["cells"]}

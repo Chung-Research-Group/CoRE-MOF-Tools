@@ -23,22 +23,46 @@ untyped or declare it as `"string"`; declaring it as `"float"` intentionally
 uses normal binary64 parsing. Booleans, nulls, NaN, and infinities are never
 ranked.
 
-When `--split` is used below, `priority_main` and `main_union` are
-project-defined CoREMOF-tools identifiers rather than standard scientific
-terms. `priority_main` builds an explanatory hierarchy over the full release:
-exact release-authorized RAC5 groups anchor components, then exact MOFid-v2 and
-MOFid-v1 groups are processed in that order. A lower group touching no stronger
-component creates a component; one touching exactly one attaches only its
-unresolved rows; one touching two or more never merges them, records
-`PARENT_METHOD_CONFLICT`, and leaves lower-only rows unresolved. Missing
-evidence becomes a unique singleton by default; this is not row-wise
-first-nonmissing selection.
-`main_union` is the separate leakage guard: it forms transitive components from
-exact full CIF SHA-256, database-namespaced source siblings, RAC5, MOFid-v2,
-and MOFid-v1 edges before filtering. `--leakage-guard auto` selects this guard
-for `priority_main` and `parent_only` for an explicit direct/reference method.
-`parent_only` uses only that selected explanatory grouping as blocks. Neither
-term adds Zeo++, topology, or StructureMatcher to the recommended hierarchy.
+When `--split` is used below, `priority_main`, `main_union`, `auto`, and
+`parent_only` are project-defined CoREMOF-tools identifiers rather than
+standard scientific terms. A **release-authorized parent triad** is a
+validated `status/group/size` triple declared by the release. `MATCHED` means
+available with at least two observed members, `UNMATCHED` means available with
+one member, and `NOT_AVAILABLE` supplies no edge; unavailable rows never match.
+Here **exact RAC5** means all 264 ordered finite binary64 values match after
+`-0.0` is mapped to `+0.0` and `float.hex()` is applied, with
+`rtol=atol=0` and no scaling/imputation. **Exact MOFid** means the complete
+string matches after Unicode-whitespace collapse, trim, whole-field
+missing/execution-placeholder rejection, Unicode NFKC, and case-folding, in
+that order; the case-insensitive rejected tokens are empty, `-`, `nan`,
+`none`, `null`, `n/a`, `na`, `unknown`, `missing`, `timeout`, `timed out`,
+`error`, `failed`, `fail`, `fail process`, `failed process`, and
+`process failed`. It is not partial/fuzzy matching and does not alter a CIF.
+
+`priority_main` builds an explanatory hierarchy over the full release: it
+reads `rac_status/rac_group/rac_size`,
+`mofid2_status/mofid2_group/mofid2_size`, and
+`mofid1_status/mofid1_group/mofid1_size` from
+`parent_groups/parent_groups.csv`; exact release-authorized RAC5 groups anchor
+components, then exact MOFid-v2 and MOFid-v1 groups are processed in that
+order. A lower group touching no stronger component creates a component; one
+touching exactly one attaches only its unresolved rows; one touching two or
+more never merges them, records `PARENT_METHOD_CONFLICT`, and leaves
+lower-only rows unresolved. Missing evidence becomes a unique singleton by
+default; this is not row-wise first-nonmissing selection.
+
+`main_union` is the separate leakage guard, not a parent claim. It reads full
+CIF SHA-256 values from `manifests/cif_manifest.csv` and database-namespaced
+source-sibling/RAC5/MOFid
+group/status/size columns from the parent table; it forms transitive components
+from those five exact relations before filtering. Missing CIF hashes fail
+closed, missing optional evidence adds no edge, and all available edges are
+unioned without precedence. `--leakage-guard auto` is only a selector: it
+chooses `main_union` for `priority_main` and `parent_only` for an explicit
+direct/reference method. `parent_only` uses only that selected explanatory
+grouping as blocks and adds no cross-method edges. Neither guard adds Zeo++,
+topology, common-name, provisional source-ID/MOFid transitive groups, or
+StructureMatcher relations.
 
 Rank a numeric release-metadata field directly:
 

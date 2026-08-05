@@ -75,26 +75,62 @@ For a complete executable walkthrough, open
 
 ### Build CR/NCR train/validation/test splits
 
-Two project-defined API identifiers are used below; neither is a standard
-crystallographic term:
+Four project-defined API identifiers are used below; none is a standard
+crystallographic term. A **release-authorized parent triad** means one
+``status/group/size`` triple declared by
+`parent_groups/parent_group_methods.json`, stored in
+`parent_groups/parent_groups.csv`, and validated by the loader. `MATCHED`
+means the criterion is available and the observed group has at least two
+members; `UNMATCHED` means it is available and has one member;
+`NOT_AVAILABLE` means it supplies no scientific edge and its size-one group is
+only a table-shape placeholder. Two unavailable rows never match.
+
+Here **exact RAC5** means equality of all 264 ordered finite depth-5 values
+after binary64 parsing, conversion of `-0.0` to `+0.0`, and `float.hex()`
+serialization (`rtol=atol=0`), with no scaling, deletion, imputation, or
+rounding. **Exact MOFid** means equality of the complete published string after
+converting it to text, collapsing each Unicode-whitespace run to one ASCII
+space, trimming, rejecting an empty or declared whole-field
+missing/execution placeholder, applying Unicode NFKC, and then case-folding;
+it is never prefix, substring, or fuzzy matching and never edits a CIF or its
+chemistry. Placeholder comparison is case-insensitive and rejects `-`, `nan`,
+`none`, `null`, `n/a`, `na`, `unknown`, `missing`, `timeout`, `timed out`,
+`error`, `failed`, `fail`, `fail process`, `failed process`, and
+`process failed`.
 
 - `priority_main` is the explanatory parent hierarchy. Across the complete
-  release it creates exact RAC5 anchor components, then uses exact MOFid-v2
-  groups and finally exact MOFid-v1 groups. At each lower step, a group touching
+  release it reads `rac_status/rac_group/rac_size`,
+  `mofid2_status/mofid2_group/mofid2_size`, and
+  `mofid1_status/mofid1_group/mofid1_size` from
+  `parent_groups/parent_groups.csv`. It
+  creates exact RAC5 anchor components, then uses exact MOFid-v2 groups and
+  finally exact MOFid-v1 groups. At each lower step, a group touching
   no stronger component creates a component; one touching exactly one stronger
   component attaches only its unresolved rows; one touching two or more never
   merges those stronger components, records `PARENT_METHOD_CONFLICT`, and
   leaves lower-only rows unresolved. Missing evidence becomes one unique
   singleton per structure unless exclusion is explicitly requested. This is
   not a row-wise first-nonmissing fallback. Zeo++, topology, source IDs, CIF
-  hashes, common names, and StructureMatcher do not enter this hierarchy.
+  hashes, common names, provisional source-ID/MOFid transitive groups, and
+  StructureMatcher do not enter this hierarchy.
 - `main_union` is the separate conservative leakage guard, not a parent claim.
-  It forms transitive connected components over the full unfiltered release
-  using exact full CIF SHA-256, database-namespaced source siblings, and the
-  available release-authorized RAC5, MOFid-v2, and MOFid-v1 group edges.
-  `leakage_guard="auto"` selects it when `priority_main` is requested and
-  selects `parent_only` for an explicitly chosen direct/reference method.
-  `parent_only` uses only that selected explanatory grouping as split blocks.
+  It reads the full CIF SHA-256 values from the `sha256` column in
+  `manifests/cif_manifest.csv` and the database-namespaced
+  source-sibling/RAC5/MOFid group/status/size columns in `parent_groups.csv`.
+  It forms transitive
+  connected components over the full unfiltered release from those five exact
+  relations. The release source group is exact equality of the ordered
+  `(source_database, source_id)` pair after applying the text procedure above
+  to each field separately, so IDs never match across databases. A missing CIF SHA-256 fails closed; a missing optional relation
+  adds no edge, and nulls never match. There is no evidence precedence or
+  conflict resolution: every available listed edge is unioned.
+- `leakage_guard="auto"` is only a selector: it chooses `main_union` for
+  `priority_main` and `parent_only` for an explicitly chosen direct/reference
+  method. `parent_only` uses only that selected explanatory grouping as split
+  blocks; it adds none of `main_union`'s cross-method edges. With
+  `priority_main`, an unresolved lower-method conflict is excluded under
+  `parent_only` but can remain safely assigned and diagnosed under
+  `main_union`.
 
 Load an extracted release, recompute a checker view, and keep related
 structures in the same partition:
@@ -124,14 +160,48 @@ partition blocks. Both are computed before applying experiment filters.
 Direct methods such as `rac5`, `mofid_v2`, and
 `mofid_v1` are separately selectable for sensitivity studies. Missing parent
 evidence becomes a unique singleton and never causes missing rows to match.
-Releases may also expose the optional `rac5_topology`,
-`mofid_v2_topology`, and `structure_matcher_strict` sensitivity criteria;
-these do not change the default hierarchy. The StructureMatcher view is a
-connected component of audited direct strict-match edges, not a claim that
-every pair in the component directly matches. The loader accepts `sm_*`
+Releases may also expose three optional sensitivity criteria. `rac5_topology`
+(`RT-`) means exact equality of all 264 finite RAC5 values plus a complete
+successful **current CrystalNets fingerprint**, where current means the
+topology evidence authorized by the loaded release rather than a runtime
+search for newer output. The fingerprint requires `SUCCESS`,
+`topology_available=true`, `error=null`, nonempty complete SingleNodes and
+AllNodes subnets, and count/catenation values equal to the subnet count. It
+contains network/count/net/agreement fields and every subnet node's status,
+dimension, key, name, and genome in sorted-key JSON; subnet projections are
+sorted, duplicate subnets are retained, and SHA-256 is applied. Null top-level
+dimension/net/agreement summaries are retained for heterogeneous subnets, and
+node topology name/genome may be null; runtime, paths, hashes, diagnostics,
+software text, and original subnet order are excluded.
+`mofid_v2_topology` (`M2T-`) replaces RAC5 with exact complete canonicalized
+MOFid-v2 text: convert to text, collapse each Unicode-whitespace run to one
+ASCII space, trim, reject empty/whole-field missing or execution placeholders,
+apply Unicode NFKC, and then case-fold. This text processing does not modify a
+CIF, atoms, bonds, occupancies, coordinates, chemistry, or unit cell and is
+not fuzzy matching. This method remains provisional whenever the loaded
+release's MOFid-v2 input is provisional.
+`structure_matcher_strict` (`SM-`) is a convenience connected component of
+exhaustive composition-compatible pairs whose symmetric forward and reverse
+pymatgen 2024.2.8
+`ElementComparator` fits both pass with `ltol=stol=0.001`,
+`angle_tol=0.01`, `primitive_cell/attempt_supercell=true`,
+`scale/allow_subset=false`, `supercell_size=num_sites`, and no ignored species;
+direct edges are authoritative; the component is not proof that every pair in
+it directly matches or that its members are duplicates. Missing
+or failed input adds no optional edge. The digest after each prefix is only a
+group label, not a topology, MOFid, RMSD, or score. These methods do not change
+`priority_main` or `main_union`. The loader accepts `sm_*`
 columns only with the exact optional-reference method declaration and its
 hash-verified release-adapter receipt; incomplete components must project to
 unique `NOT_AVAILABLE` singletons, and relaxed evidence cannot be executed or exposed.
+The strict parser expands declared symmetry, merges generated sites at
+`site_tolerance=1e-4`, rounds fractions near 1/3 or 2/3 at
+`frac_tolerance=1e-4`, checks occupancy, sorts the periodic structure, and
+preserves disorder; parser, timeout, OOM, matcher, or directional-disagreement
+cases are unavailable rather than nonmatches. Its directional normalized RMS
+and maximum displacements divide periodic site displacement by
+`(V/Nsites)^(1/3)` for that direction, so they are dimensionless and are not
+angstrom RMSD or output from the separate `charnley/rmsd` package.
 The COD/SI filter still constructs its leakage blocks over the complete
 COD+CSD+SI release. A future standalone open-data bundle must therefore ship
 an audited full-universe block projection before it can reproduce

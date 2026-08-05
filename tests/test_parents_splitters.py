@@ -11,10 +11,17 @@ from unittest.mock import patch
 
 from CoREMOF.parents import (
     AUTO_LEAKAGE_GUARD_DEFINITION,
+    CANONICALIZED_IDENTIFIER_TEXT_DEFINITION,
+    CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION,
     LEAKAGE_GUARD_CHOICES,
     MAIN_UNION_DEFINITION,
+    PARENT_GROUP_TRIAD_DEFINITION,
+    PARENT_METHOD_CONTRACT_VERSION,
     PRIORITY_MAIN_DEFINITION,
+    RAC5_NUMERIC_FINGERPRINT_DEFINITION,
     SELECTABLE_PARENT_METHODS,
+    STRICT_STRUCTURE_MATCHER_DEFINITION,
+    ZEO_NUMERIC_FINGERPRINT_DEFINITION,
     ParentResolver,
     leakage_guard_definition,
     parent_method_definition,
@@ -81,17 +88,228 @@ class ParentResolverTests(unittest.TestCase):
         for method in SELECTABLE_PARENT_METHODS:
             with self.subTest(parent_method=method):
                 definition = parent_method_definition(method)
+                self.assertEqual(
+                    definition["schema_version"], PARENT_METHOD_CONTRACT_VERSION
+                )
                 self.assertEqual(definition["identifier"], method)
+                self.assertTrue(definition["display_name"])
                 self.assertTrue(definition["project_defined_identifier"])
                 self.assertTrue(definition["purpose"])
                 self.assertTrue(definition["summary"])
+                for field in (
+                    "input_fields",
+                    "algorithm",
+                    "conflict_behavior",
+                    "missing_behavior",
+                    "excluded_inputs",
+                    "relation_to_other_terms",
+                ):
+                    self.assertIn(field, definition)
+                    self.assertTrue(definition[field] or field == "input_fields")
         for guard in LEAKAGE_GUARD_CHOICES:
             with self.subTest(leakage_guard=guard):
                 definition = leakage_guard_definition(guard)
+                self.assertEqual(
+                    definition["schema_version"], PARENT_METHOD_CONTRACT_VERSION
+                )
                 self.assertEqual(definition["identifier"], guard)
+                self.assertTrue(definition["display_name"])
                 self.assertTrue(definition["project_defined_identifier"])
                 self.assertTrue(definition["purpose"])
                 self.assertTrue(definition["summary"])
+                for field in (
+                    "input_fields",
+                    "algorithm",
+                    "conflict_behavior",
+                    "missing_behavior",
+                    "excluded_inputs",
+                    "relation_to_other_terms",
+                ):
+                    self.assertIn(field, definition)
+                    self.assertTrue(definition[field])
+
+    def test_identity_union_and_identifier_canonicalization_are_explicit(self):
+        definition = parent_method_definition("identity_union")
+        self.assertEqual(
+            definition["input_fields"],
+            (
+                "parent_groups.identity_status",
+                "parent_groups.identity_group",
+                "parent_groups.identity_size",
+            ),
+        )
+        self.assertEqual(
+            definition["display_name"],
+            "provisional source-ID/MOFid transitive groups",
+        )
+        self.assertIn("v26.0.1", definition["release_construction"])
+        self.assertIn("v26.0.2", definition["release_construction"])
+        self.assertIn("no precedence", definition["algorithm"])
+        self.assertIn("common_nulls_never_match", definition["missing_behavior"])
+        self.assertIn("RAC5", definition["excluded_inputs"])
+        self.assertIn("excluded", definition["relation_to_other_terms"])
+        canonical = definition["canonicalized_identifier_text"]
+        self.assertEqual(canonical, CANONICALIZED_IDENTIFIER_TEXT_DEFINITION)
+        self.assertEqual(
+            canonical["current_release_text_steps_in_order"],
+            (
+                "convert_the_published_value_to_text",
+                "collapse_each_Unicode_whitespace_run_to_one_ASCII_space",
+                "trim_leading_and_trailing_whitespace",
+                "reject_a_whole_field_missing_or_execution_placeholder",
+                "apply_Unicode_NFKC",
+                "apply_Unicode_default_casefold",
+            ),
+        )
+        self.assertEqual(
+            canonical["current_release_case_insensitive_whole_field_placeholders"],
+            (
+                "",
+                "-",
+                "nan",
+                "none",
+                "null",
+                "n/a",
+                "na",
+                "unknown",
+                "missing",
+                "timeout",
+                "timed out",
+                "error",
+                "failed",
+                "fail",
+                "fail process",
+                "failed process",
+                "process failed",
+            ),
+        )
+        self.assertTrue(
+            canonical["source_key"][
+                "database_namespace_prevents_cross_database_ID_matches"
+            ]
+        )
+        self.assertFalse(canonical["mofid_key"]["fuzzy_or_partial_string_matching"])
+        inherited = canonical["inherited_v2601_identity_component_cleanup"]
+        self.assertEqual(
+            inherited["record_or_source_ID_steps"],
+            (
+                "convert_the_v11_value_to_text",
+                "remove_everything_from_the_first_semicolon_record_suffix_onward",
+                "replace_backslashes_with_forward_slashes",
+                "remove_any_directory_path",
+                "remove_one_terminal_.cif_or_.cif.gz_case_insensitively",
+                "trim_leading_and_trailing_whitespace",
+                "delete_every_Unicode_whitespace_character",
+                "apply_Unicode_default_casefold_without_NFKC",
+                "reject_a_whole_field_literal_placeholder",
+                "remove_only_one_recognized_terminal_processing_bundle_"
+                "ASR_pacman_FSR_pacman_ION_pacman_ION_ASR_pacman_or_ION_FSR_pacman",
+                "reject_an_empty_or_whole_field_literal_placeholder_again",
+            ),
+        )
+        self.assertEqual(
+            inherited["mofid_steps"],
+            (
+                "convert_the_v11_value_to_text",
+                "remove_the_semicolon_record_ID_suffix",
+                "trim_leading_and_trailing_whitespace",
+                "rewrite_only_the_literal_MOFidv2._marker_as_MOFid-v2.",
+                "collapse_each_Unicode_whitespace_run_to_one_ASCII_space",
+                "trim_leading_and_trailing_whitespace_again",
+                "apply_Unicode_default_casefold_without_NFKC",
+                "remove_terminal_.no_ref_only_from_a_MOFid-v1_value",
+                "reject_literal_execution_and_leading_MOFid_NA_placeholders",
+            ),
+        )
+        self.assertFalse(inherited["v11_refcode_edges_are_database_namespaced"])
+        self.assertIn(
+            "no_CIF_coordinate_canonicalization", canonical["excluded_operations"]
+        )
+        self.assertIn(
+            "whole_field_asterisk",
+            inherited["additional_rejected_placeholders"],
+        )
+
+    def test_optional_prefix_contracts_define_meaning_and_failure_behavior(self):
+        expected = {
+            "rac5_topology": "RT-",
+            "mofid_v2_topology": "M2T-",
+            "structure_matcher_strict": "SM-",
+        }
+        for method, prefix in expected.items():
+            with self.subTest(method=method):
+                definition = parent_method_definition(method)
+                self.assertIn(prefix, definition["group_prefix_meaning"])
+                self.assertTrue(definition["missing_behavior"])
+                self.assertIn("excluded", definition["relation_to_other_terms"])
+        topology = parent_method_definition("rac5_topology")["topology_fingerprint"]
+        self.assertEqual(topology, CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION)
+        for field in (
+            "network_dimension",
+            "catenation_degree",
+            "single_node_net",
+            "all_node_net",
+            "for_each_subnet_SingleNodes_status_dimension_topology_key_topology_name_"
+            "topological_genome",
+        ):
+            self.assertIn(field, topology["included_fields"])
+        self.assertIn("runtime_seconds", topology["excluded_fields"])
+        self.assertTrue(topology["not_a_topology_similarity_tolerance"])
+        matcher = parent_method_definition("structure_matcher_strict")
+        self.assertIn("forward and reverse", matcher["release_relation"])
+        self.assertIn("not assert", matcher["group_prefix_meaning"])
+        strict = matcher["strict_method"]
+        self.assertEqual(strict, STRICT_STRUCTURE_MATCHER_DEFINITION)
+        self.assertEqual(strict["software"]["pymatgen"], "2024.2.8")
+        self.assertEqual(strict["software"]["numpy"], "1.26.4")
+        self.assertEqual(strict["parser"]["site_tolerance"], 0.0001)
+        self.assertEqual(strict["parser"]["frac_tolerance"], 0.0001)
+        self.assertEqual(
+            strict["candidate_pairs"]["blocking_key"],
+            "ElementComparator_fractional_composition_hash_of_the_parsed_structure",
+        )
+        settings = strict["matcher_settings"]
+        self.assertEqual(settings["ltol"], 0.001)
+        self.assertEqual(settings["stol"], 0.001)
+        self.assertEqual(settings["angle_tol"], 0.01)
+        self.assertTrue(settings["fit_symmetric_argument"])
+        self.assertEqual(settings["supercell_size"], "num_sites")
+        self.assertIn("(V/Nsites)^(1/3)", strict["displacement_diagnostics"]["normalization"])
+        self.assertEqual(strict["displacement_diagnostics"]["units"], "dimensionless")
+        self.assertFalse(strict["displacement_diagnostics"]["is_angstrom_RMSD"])
+
+    def test_parent_triad_numeric_and_current_topology_contracts_are_source_exact(self):
+        triad = PARENT_GROUP_TRIAD_DEFINITION
+        self.assertIn("size_at_least_2", triad["status_semantics"]["MATCHED"])
+        self.assertIn("size_exactly_1", triad["status_semantics"]["UNMATCHED"])
+        self.assertIn("no_scientific_edge", triad["status_semantics"]["NOT_AVAILABLE"])
+        self.assertIn("passes loader validation", triad["release_authorized_meaning"])
+
+        rac = parent_method_definition("rac5")["rac5_fingerprint"]
+        self.assertEqual(rac, RAC5_NUMERIC_FINGERPRINT_DEFINITION)
+        self.assertIn("IEEE754_binary64", rac["value_conversion"])
+        self.assertIn("negative_zero_to_positive_zero", rac["value_conversion"])
+        self.assertIn("Python_float.hex", rac["value_conversion"])
+        self.assertIn("rtol_0_and_atol_0", rac["comparison"])
+
+        zeo = parent_method_definition("zeo")["zeo_fingerprint"]
+        self.assertEqual(zeo, ZEO_NUMERIC_FINGERPRINT_DEFINITION)
+        self.assertEqual(len(zeo["numeric_fields"]), 13)
+        self.assertEqual(dict(zeo["probe_radii_A"]), {"N2": 1.655, "He": 1.32})
+        self.assertIn(
+            "periodicity_available_true_for_both_rows", zeo["hard_gates"]
+        )
+
+        topology = CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION
+        self.assertIn("loaded_release", topology["current_meaning"])
+        self.assertIn("equals_the_observed_subnet_count", topology["field_validation"]["count_fields"])
+        self.assertIn("may_be_null", topology["field_validation"]["top_level_net_and_agreement"])
+        self.assertIn("topology_name_and_topological_genome_may_be_null", topology["field_validation"]["subnet_nodes"])
+
+        priority_inputs = PRIORITY_MAIN_DEFINITION["input_fields"]
+        self.assertEqual(priority_inputs["rac5"][-1], "parent_groups.rac_size")
+        self.assertEqual(priority_inputs["mofid_v2"][-1], "parent_groups.mofid2_size")
+        self.assertEqual(priority_inputs["mofid_v1"][-1], "parent_groups.mofid1_size")
 
     def test_auto_guard_lookup_and_resolution_are_explicit(self):
         definition = leakage_guard_definition("auto")
@@ -155,6 +373,22 @@ class ParentResolverTests(unittest.TestCase):
             ("cif_sha256", "source_id", "rac5", "mofid_v2", "mofid_v1"),
         )
         self.assertTrue(definition["edge_sources"][0]["required_for_every_structure"])
+        self.assertEqual(
+            definition["input_fields"]["source_siblings"][:3],
+            (
+                "parent_groups.source_status",
+                "parent_groups.source_group",
+                "parent_groups.source_size",
+            ),
+        )
+        fallback = definition["compatibility_source_fallback"]
+        self.assertIn("manually_constructed_dataset", fallback["scope"])
+        self.assertFalse(fallback["Unicode_NFKC_applied"])
+        self.assertFalse(fallback["nonblank_placeholder_rejection_applied"])
+        self.assertEqual(
+            fallback["explicit_NOT_AVAILABLE_behavior"],
+            "do_not_fallback_and_add_no_source_edge",
+        )
         self.assertNotIn(
             "structure_matcher_strict",
             tuple(edge["criterion"] for edge in definition["edge_sources"]),

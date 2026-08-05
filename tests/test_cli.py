@@ -16,14 +16,38 @@ class CliTests(unittest.TestCase):
         with redirect_stdout(output), self.assertRaises(SystemExit) as raised:
             main(["split", "--help"])
         self.assertEqual(raised.exception.code, 0)
-        help_text = " ".join(output.getvalue().split())
+        help_text = " ".join(output.getvalue().split()).replace(
+            "project- defined", "project-defined"
+        )
         self.assertIn("priority_main is the project-defined", help_text)
         self.assertIn("RAC5 then MOFid v2 then MOFid v1", help_text)
         self.assertIn("not a row-wise first-nonmissing fallback", help_text)
-        self.assertIn("auto is the project-defined selector", help_text)
+        self.assertIn("identity_union selects the separate project-defined", help_text)
+        self.assertIn("source-ID/MOFid transitive groups", help_text)
+        self.assertIn("identity_size count one transitive connected component", help_text)
+        self.assertIn("Unicode NFKC and casefold", help_text)
+        self.assertIn("rac5_topology (RT-)", help_text)
+        self.assertIn("mofid_v2_topology (M2T-)", help_text)
+        self.assertIn("structure_matcher_strict (SM-)", help_text)
+        self.assertIn("main_union is the project-defined leakage guard", help_text)
+        self.assertIn("parent_only is the project-defined guard", help_text)
+        self.assertIn("auto is only a project-defined selector", help_text)
         self.assertIn("main_union for priority_main", help_text)
-        self.assertIn("full-release transitive union", help_text)
-        self.assertIn("constructed before filters", help_text)
+        self.assertIn("transitive union over the complete release", help_text)
+        self.assertIn("before filters", help_text)
+        self.assertIn("missing CIF hashes fail", help_text)
+        self.assertIn("adds no cross-method edge", help_text)
+        self.assertIn("MATCHED means available size>=2", help_text)
+        self.assertIn("NOT_AVAILABLE supplies no edge", help_text)
+        self.assertIn("all 264 finite binary64 values", help_text)
+        self.assertIn("float.hex with rtol=atol=0", help_text)
+        self.assertIn("not proof of structural identity", help_text)
+        self.assertIn("(V/Nsites)^(1/3) is dimensionless", help_text)
+        self.assertIn("manual compatibility object", help_text)
+        for choice in SELECTABLE_PARENT_METHODS:
+            self.assertIn(choice, help_text)
+        for guard in LEAKAGE_GUARD_CHOICES:
+            self.assertIn(guard, help_text)
 
     def test_split_parser_exposes_every_defined_parent_and_guard_choice(self):
         parser = build_parser()

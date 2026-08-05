@@ -669,7 +669,23 @@ def make_parent_aware_split(
     random_state: int = 42,
     stratify_by: Sequence[str] = ("label",),
 ):
-    """Split only ranked candidates while retaining full-universe leakage edges."""
+    """Split ranked candidates with explicitly defined parent and leakage policies.
+
+    The default ``priority_main`` is a conflict-aware hierarchy over exact RAC5,
+    then complete MOFid-v2, then complete MOFid-v1 release triads.  A lower group
+    never merges two stronger components: it records ``PARENT_METHOD_CONFLICT``.
+    Missing evidence becomes a singleton unless exclusion is requested.  Zeo++,
+    topology, source IDs, common names, CIF hashes, provisional source-ID/MOFid
+    transitive groups,
+    and StructureMatcher evidence do not enter that explanatory hierarchy.
+
+    ``leakage_guard="auto"`` selects ``main_union`` for ``priority_main`` and
+    ``parent_only`` otherwise.  ``main_union`` is a full-release transitive
+    leakage block over exact CIF SHA-256, source sibling, RAC5, MOFid-v2, and
+    MOFid-v1 relations before candidate filtering; it is not an explanatory
+    parent claim or proof of structural identity. ``parent_only`` uses only the
+    selected parent method's groups as split blocks.
+    """
 
     filters = result.filters
     return result.classified_dataset.train_valid_test_split(
@@ -1457,11 +1473,67 @@ def build_parser() -> argparse.ArgumentParser:
         choices=SELECTABLE_PARENT_METHODS,
         default="priority_main",
         help=(
-            "explanatory parent relation for --split. priority_main is the "
-            "project-defined, conflict-aware hierarchy RAC5 then MOFid v2 then "
-            "MOFid v1; lower evidence may attach to one stronger component but "
-            "never merges multiple stronger components. It does not simply choose "
-            "the first available value on each row (default: priority_main)"
+            "explanatory relation for --split. Each non-control choice reads a "
+            "validated status/group/size triad: MATCHED means available size>=2, "
+            "UNMATCHED available size=1, and NOT_AVAILABLE no edge; nulls never match. "
+            "priority_main is the project-defined full-release hierarchy over rac, "
+            "mofid2, and mofid1 triads: RAC5 anchors, then MOFid v2, then MOFid v1; a lower "
+            "group attaches unresolved rows to at most one stronger component, never "
+            "merges multiple stronger components, and records PARENT_METHOD_CONFLICT. "
+            "Missing evidence is a unique singleton or explicit exclusion; Zeo++, "
+            "topology, source ID, common name, CIF hash, provisional "
+            "source-ID/MOFid transitive groups, and "
+            "StructureMatcher are excluded. rac5 uses all 264 finite binary64 values "
+            "after -0.0 to +0.0 and float.hex with rtol=atol=0; mofid_v2/mofid_v1 "
+            "compare complete canonicalized strings. rac5_zeo combines RAC5 and zeo; "
+            "zeo uses exact float.hex equality for 13 intensive N2/He fields (radii "
+            "1.655/1.32 A), equal N2 channel dimension, and available equal framework "
+            "periodic dimension. source_id uses the namespaced database/ID pair, "
+            "common_name exact canonicalized text, and none one singleton per row. "
+            "identity_union selects the separate project-defined provisional "
+            "source-ID/MOFid transitive groups read from identity "
+            "status/group/size: "
+            "v26.0.2 preserves audited v26.0.1 components then transitively unions "
+            "exact database-namespaced source ID, complete MOFid-v2, or complete "
+            "MOFid-v1 text edges with no precedence. Each group and identity_size count "
+            "one transitive connected component of structures, not edges or identifiers. "
+            "Missing identifiers add no edge. "
+            "It is not proof of structural identity and does not enter main_union. "
+            "Canonicalized text means convert to text, collapse Unicode whitespace, "
+            "trim, reject case-insensitive empty, -, nan, none, null, n/a, na, "
+            "unknown, missing, timeout, timed out, error, failed, fail, fail process, "
+            "failed process, or process failed whole fields, then apply Unicode NFKC and casefold, "
+            "with no fuzzy match. This text processing only compares identifiers and "
+            "does not modify a CIF, atom, bond, occupancy, coordinate, chemistry, or "
+            "unit cell. The preserved v26.0.1 seed applies "
+            "its v11-only refcode steps: semicolon removal, slash/path/CIF stripping, "
+            "trim, all-whitespace deletion, casefold without NFKC, placeholder check, "
+            "one terminal _ASR_pacman/_FSR_pacman/_ION_pacman/_ION_ASR_pacman/"
+            "_ION_FSR_pacman removal, and recheck; those refcode edges had no database "
+            "namespace. Its v11 MOFid steps are semicolon removal/trim, literal "
+            "MOFidv2. repair, whitespace collapse/casefold without NFKC, terminal-v1 "
+            ".no_ref removal, then execution/leading-NA rejection. "
+            "rac5_topology (RT-) and "
+            "mofid_v2_topology (M2T-) require exact complete RAC5/MOFid plus successful "
+            "release-authorized current CrystalNets network/count/net/agreement and "
+            "every subnet node status/dimension/key/name/genome field; counts equal "
+            "subnet count and valid heterogeneous summary nulls are retained. M2T is "
+            "provisional whenever MOFid-v2 is. structure_matcher_strict (SM-) is a "
+            "Python 3.9/pymatgen 2024.2.8/NumPy 1.26.4 component view of pairs "
+            "exhaustively blocked by parsed ElementComparator "
+            "fractional composition and tested in both directions with "
+            "pymatgen ElementComparator fits with ltol=stol=0.001, angle_tol=0.01, "
+            "primitive_cell/attempt_supercell true, scale/allow_subset false, "
+            "supercell_size=num_sites, no ignored species, and symmetric=true. Its "
+            "parser expands symmetry, uses site/frac tolerances 1e-4, checks occupancy, "
+            "sorts, and preserves disorder without manual repair, occupancy selection, "
+            "atom deletion, or chemistry editing; parser, timeout, OOM, matcher, and "
+            "asymmetric cases are unavailable. Directional "
+            "displacement/(V/Nsites)^(1/3) is dimensionless, not angstrom RMSD; SM is "
+            "not an all-pairs claim and direct edges are authoritative. RT/M2T/SM "
+            "prefix digests are criterion-bound length-delimited UTF-8 SHA-256 with "
+            "at least eight uppercase hex characters, extended only on collision. Receipts "
+            "store exact per-method semantics (default: priority_main)"
         ),
     )
     parser.add_argument(
@@ -1469,15 +1541,30 @@ def build_parser() -> argparse.ArgumentParser:
         choices=LEAKAGE_GUARD_CHOICES,
         default="auto",
         help=(
-            "split-block policy. auto becomes main_union for priority_main and "
-            "parent_only otherwise. main_union is the full-release transitive "
-            "union of exact CIF SHA-256, database-namespaced source sibling, "
-            "RAC5, MOFid v2, and MOFid v1 relations constructed before filters; "
-            "parent_only uses only explanatory parent groups (default: auto)"
+            "split-block policy. main_union is the project-defined leakage guard, not "
+            "an explanatory parent relation or proof of structural identity. It is a "
+            "transitive union "
+            "over the complete release of full manifest CIF SHA-256 and parent-table "
+            "source-sibling/RAC5/MOFid-v2/MOFid-v1 relations before filters; missing "
+            "CIF hashes fail, missing optional evidence adds no edge, and all edges "
+            "have equal union status. Loaded releases require the source triad; only a "
+            "manual object lacking it uses strip/upper database plus strip/casefold/"
+            "whitespace-collapse source-ID fallback without NFKC. parent_only is the project-defined narrow guard "
+            "that uses only selected explanatory groups and adds no cross-method edge. "
+            "auto is only a selector: main_union for priority_main, parent_only "
+            "otherwise. A priority conflict is excluded under parent_only but may remain "
+            "assigned and diagnosed under main_union (default: auto)"
         ),
     )
     parser.add_argument(
-        "--missing-parent", choices=("singleton", "exclude"), default="singleton"
+        "--missing-parent",
+        choices=("singleton", "exclude"),
+        default="singleton",
+        help=(
+            "unavailable parent evidence: singleton creates one unique "
+            "SINGLETON:<structure_id>; exclude records MISSING_PARENT_EVIDENCE and "
+            "assigns no partition (default: singleton)"
+        ),
     )
     parser.add_argument(
         "--fractions", type=float, nargs=3, default=(0.8, 0.1, 0.1)

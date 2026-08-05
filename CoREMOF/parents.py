@@ -98,8 +98,30 @@ _RELEASE_BASE = {
 _MISSING_TEXT = {"", "NA", "N/A", "NONE", "NULL", "NOT_AVAILABLE", "UNAVAILABLE"}
 
 
-PARENT_METHOD_CONTRACT_VERSION = "coremof-parent-method/1.0"
+PARENT_METHOD_CONTRACT_VERSION = "coremof-parent-method/1.1"
 LEAKAGE_GUARD_CHOICES = ("auto", "main_union", "parent_only")
+
+_PARENT_METHOD_DISPLAY_NAMES = {
+    "priority_main": "conflict-aware RAC5-first parent components",
+    "rac5": "exact RAC5 groups",
+    "mofid_v2": "exact MOFid-v2 groups",
+    "mofid_v1": "exact MOFid-v1 groups",
+    "rac5_zeo": "exact RAC5-plus-Zeo++ groups",
+    "rac5_topology": "exact RAC5-plus-CrystalNets groups",
+    "mofid_v2_topology": "exact MOFid-v2-plus-CrystalNets groups",
+    "structure_matcher_strict": "strict StructureMatcher component view",
+    "zeo": "exact selected-Zeo++ groups",
+    "source_id": "exact namespaced source-ID groups",
+    "common_name": "exact canonicalized common-name groups",
+    "identity_union": "provisional source-ID/MOFid transitive groups",
+    "none": "independent-structure singleton control",
+}
+
+_LEAKAGE_GUARD_DISPLAY_NAMES = {
+    "auto": "parent-method-aware leakage-guard selector",
+    "main_union": "full-release main leakage components",
+    "parent_only": "selected-parent-only leakage blocks",
+}
 
 
 def _freeze_contract(value):
@@ -114,10 +136,427 @@ def _freeze_contract(value):
     return value
 
 
+CANONICALIZED_IDENTIFIER_TEXT_DEFINITION = _freeze_contract(
+    {
+        "term": "canonicalized_identifier_text",
+        "display_name": "canonicalized identifier text",
+        "project_defined_term": True,
+        "purpose": (
+            "Make already published identifier text comparable by exact equality; "
+            "this is text cleanup only, not crystal-structure normalization."
+        ),
+        "current_release_text_steps_in_order": (
+            "convert_the_published_value_to_text",
+            "collapse_each_Unicode_whitespace_run_to_one_ASCII_space",
+            "trim_leading_and_trailing_whitespace",
+            "reject_a_whole_field_missing_or_execution_placeholder",
+            "apply_Unicode_NFKC",
+            "apply_Unicode_default_casefold",
+        ),
+        "current_release_case_insensitive_whole_field_placeholders": (
+            "",
+            "-",
+            "nan",
+            "none",
+            "null",
+            "n/a",
+            "na",
+            "unknown",
+            "missing",
+            "timeout",
+            "timed out",
+            "error",
+            "failed",
+            "fail",
+            "fail process",
+            "failed process",
+            "process failed",
+        ),
+        "source_key": {
+            "input_fields": ("metadata.source_database", "metadata.source_id"),
+            "algorithm": (
+                "canonicalize_each_field_separately_then_compare_the_ordered_"
+                "source_database_source_id_pair_by_exact_equality"
+            ),
+            "database_namespace_prevents_cross_database_ID_matches": True,
+            "scope": (
+                "current_release_source_keys_only; the preserved v26.0.1 seed "
+                "uses the separately recorded v11 refcode procedure below"
+            ),
+        },
+        "mofid_key": {
+            "input_fields": ("metadata.mofid_v2", "metadata.mofid_v1"),
+            "algorithm": (
+                "canonicalize_the_complete_published_MOFid_string_then_compare_"
+                "by_exact_equality"
+            ),
+            "fuzzy_or_partial_string_matching": False,
+        },
+        "inherited_v2601_identity_component_cleanup": {
+            "scope": (
+                "only_the_already_audited_v26.0.1_components_preserved_by_"
+                "identity_union"
+            ),
+            "record_or_source_ID_steps": (
+                "convert_the_v11_value_to_text",
+                "remove_everything_from_the_first_semicolon_record_suffix_onward",
+                "replace_backslashes_with_forward_slashes",
+                "remove_any_directory_path",
+                "remove_one_terminal_.cif_or_.cif.gz_case_insensitively",
+                "trim_leading_and_trailing_whitespace",
+                "delete_every_Unicode_whitespace_character",
+                "apply_Unicode_default_casefold_without_NFKC",
+                "reject_a_whole_field_literal_placeholder",
+                "remove_only_one_recognized_terminal_processing_bundle_"
+                "ASR_pacman_FSR_pacman_ION_pacman_ION_ASR_pacman_or_ION_FSR_pacman",
+                "reject_an_empty_or_whole_field_literal_placeholder_again",
+            ),
+            "mofid_steps": (
+                "convert_the_v11_value_to_text",
+                "remove_the_semicolon_record_ID_suffix",
+                "trim_leading_and_trailing_whitespace",
+                "rewrite_only_the_literal_MOFidv2._marker_as_MOFid-v2.",
+                "collapse_each_Unicode_whitespace_run_to_one_ASCII_space",
+                "trim_leading_and_trailing_whitespace_again",
+                "apply_Unicode_default_casefold_without_NFKC",
+                "remove_terminal_.no_ref_only_from_a_MOFid-v1_value",
+                "reject_literal_execution_and_leading_MOFid_NA_placeholders",
+            ),
+            "v11_refcode_edges_are_database_namespaced": False,
+            "v11_refcode_namespace_note": (
+                "the preserved audited seed compared its cleaned v11 refcode key "
+                "without adding source_database; v26.0.2 adds new source-ID edges "
+                "only with the database namespace retained"
+            ),
+            "additional_rejected_placeholders": (
+                "whole_field_asterisk",
+                "leading_MOFid-v1.NA_family",
+                "leading_MOFid-v2.NA_family",
+            ),
+        },
+        "missing_behavior": (
+            "a_null_or_rejected_whole-field_placeholder_supplies_no_equality_edge; "
+            "two missing values never match"
+        ),
+        "excluded_operations": (
+            "no_atom_bond_occupancy_coordinate_or_unit_cell_change",
+            "no_CIF_coordinate_canonicalization",
+            "no_general_chemical_punctuation_rewrite",
+            "no_fuzzy_matching",
+            "no_similarity_tolerance",
+        ),
+        "performed_by": (
+            "the_release_builder; CoREMOF-tools consumes the release-authorized "
+            "group/status/size columns and does not recalculate these text keys; "
+            "the resolver's compatibility source fallback has its own narrower "
+            "algorithm in the main_union definition"
+        ),
+    }
+)
+
+
+PARENT_GROUP_TRIAD_DEFINITION = _freeze_contract(
+    {
+        "term": "release_authorized_parent_group_triad",
+        "display_name": "release-authorized parent status/group/size triad",
+        "project_defined_term": True,
+        "purpose": (
+            "Expose one release-builder criterion without making CoREMOF-tools "
+            "recalculate the underlying descriptor or identifier relation."
+        ),
+        "fields": ("<prefix>_status", "<prefix>_group", "<prefix>_size"),
+        "status_semantics": {
+            "MATCHED": "criterion_available_and_observed_group_size_at_least_2",
+            "UNMATCHED": "criterion_available_and_observed_group_size_exactly_1",
+            "NOT_AVAILABLE": (
+                "criterion_unavailable; release_assigns_a_structure_specific_size_1_"
+                "group_only_for_table_shape_and_it_supplies_no_scientific_edge"
+            ),
+        },
+        "validation": (
+            "status_must_be_MATCHED_UNMATCHED_or_NOT_AVAILABLE; group_must_be_nonblank; "
+            "size_must_be_a_positive_integer_equal_to_the_number_of_release_rows_with_"
+            "that_group; MATCHED_requires_size_at_least_2; UNMATCHED_and_NOT_AVAILABLE_"
+            "require_size_1"
+        ),
+        "availability_rule": (
+            "MATCHED_and_UNMATCHED_are_available; NOT_AVAILABLE_is_missing_evidence"
+        ),
+        "missing_rule": (
+            "NOT_AVAILABLE_never_matches_another_NOT_AVAILABLE_row_and_is_projected_"
+            "to_a_unique_SINGLETON_structure_id_or_explicit_exclusion"
+        ),
+        "release_authorized_meaning": (
+            "the triad is declared by parent_groups/parent_group_methods.json, appears "
+            "in parent_groups/parent_groups.csv, and passes loader validation"
+        ),
+    }
+)
+
+
+RAC5_NUMERIC_FINGERPRINT_DEFINITION = _freeze_contract(
+    {
+        "term": "exact_RAC5_fingerprint",
+        "display_name": "exact 264-value depth-5 RAC fingerprint",
+        "purpose": "Compare the complete release-authorized RAC5 vector.",
+        "input": (
+            "all_264_ordered_descriptor_names_from_"
+            "parent_group_methods.criteria.rac5.ordered_descriptors"
+        ),
+        "value_conversion": (
+            "parse_each_trimmed_value_as_IEEE754_binary64; reject_nonfinite_or_"
+            "unparseable_values; map_negative_zero_to_positive_zero; serialize_with_"
+            "Python_float.hex"
+        ),
+        "comparison": (
+            "exact_ordered_token_equality_with_rtol_0_and_atol_0; no_scaling_"
+            "feature_deletion_imputation_rounding_or_similarity_tolerance"
+        ),
+        "missing_behavior": "one_missing_or_invalid_value_makes_RAC5_unavailable",
+        "performed_by": (
+            "the_release_builder; the_package_reads_the_validated_rac_status_group_size_"
+            "triad"
+        ),
+    }
+)
+
+
+ZEO_NUMERIC_FINGERPRINT_DEFINITION = _freeze_contract(
+    {
+        "term": "exact_selected_Zeo_fingerprint",
+        "display_name": "exact selected N2/He Zeo++ fingerprint",
+        "purpose": "Compare the release-selected intensive pore geometry.",
+        "probe_radii_A": {"N2": 1.655, "He": 1.32},
+        "numeric_fields": (
+            "density_g_cm3",
+            "largest_cavity_diameter_A",
+            "pore_limiting_diameter_A",
+            "largest_free_path_diameter_A",
+            "n2_accessible_surface_area_m2_cm3",
+            "n2_accessible_surface_area_m2_g",
+            "n2_nonaccessible_surface_area_m2_cm3",
+            "n2_nonaccessible_surface_area_m2_g",
+            "n2_accessible_volume_cm3_g",
+            "n2_accessible_volume_fraction",
+            "n2_nonaccessible_volume_cm3_g",
+            "n2_nonaccessible_volume_fraction",
+            "he_void_fraction",
+        ),
+        "hard_gates": (
+            "n2_channel_dimension_exact_integer_equality",
+            "periodicity_available_true_for_both_rows",
+            "structure_periodic_dimension_exact_integer_equality",
+        ),
+        "value_conversion": (
+            "parse_each_trimmed_numeric_value_as_IEEE754_binary64; reject_nonfinite_or_"
+            "unparseable_values; map_negative_zero_to_positive_zero; serialize_with_"
+            "Python_float.hex"
+        ),
+        "comparison": (
+            "exact_ordered_token_and_hard_gate_equality_with_rtol_0_and_atol_0; "
+            "no_scaling_imputation_rounding_or_similarity_tolerance"
+        ),
+        "missing_behavior": (
+            "one_missing_or_invalid_numeric_value_or_hard_gate_makes_Zeo_unavailable"
+        ),
+        "excluded_fields": (
+            "unit_cell_extensive_surface_areas_A2",
+            "unit_cell_extensive_volumes_A3",
+            "open_metal_sites",
+            "topology_labels",
+            "framework_component_counts",
+            "zero_probe_properties",
+        ),
+        "performed_by": (
+            "the_release_builder; the_package_reads_the_validated_zeo_status_group_size_"
+            "triad"
+        ),
+    }
+)
+
+
+CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION = _freeze_contract(
+    {
+        "term": "current_CrystalNets_scientific_fingerprint",
+        "display_name": "current CrystalNets scientific fingerprint",
+        "project_defined_term": True,
+        "purpose": (
+            "Compare complete successful current CrystalNets results without using "
+            "runtime, file, or diagnostic metadata."
+        ),
+        "current_meaning": (
+            "the_current-result_topology_evidence_authorized_by_the_loaded_release_"
+            "parent-method_file; the_package_does_not_search_for_a_newer_runtime_result"
+        ),
+        "performed_by": (
+            "the_release_builder; the_package_reads_only_the_validated_optional_"
+            "status_group_size_triad"
+        ),
+        "availability_gate": (
+            "execution_status_SUCCESS_topology_available_true_error_null_and_nonempty_"
+            "complete_SingleNodes_and_AllNodes_subnets"
+        ),
+        "included_fields": (
+            "network_dimension",
+            "interpenetrated_subnet_count",
+            "catenation_degree",
+            "subnet_count",
+            "single_node_net",
+            "all_node_net",
+            "single_all_agree",
+            "for_each_subnet_single_all_agree",
+            "for_each_subnet_SingleNodes_status_dimension_topology_key_topology_name_"
+            "topological_genome",
+            "for_each_subnet_AllNodes_status_dimension_topology_key_topology_name_"
+            "topological_genome",
+        ),
+        "canonicalization": (
+            "canonical_JSON_with_sorted_object_keys; sort_complete_subnet_projections_"
+            "by_their_canonical_JSON; retain_duplicate_subnets; hash_with_SHA256"
+        ),
+        "field_validation": {
+            "count_fields": (
+                "interpenetrated_subnet_count_and_catenation_degree_are_integers_"
+                "at_least_1_and_each_equals_the_observed_subnet_count"
+            ),
+            "network_dimension": "null_or_one_of_0_1_2_3",
+            "top_level_net_and_agreement": (
+                "single_node_net_all_node_net_and_single_all_agree_may_be_null_for_"
+                "heterogeneous_subnets_and_that_null_is_retained_as_scientific_data"
+            ),
+            "subnet_nodes": (
+                "each_SingleNodes_and_AllNodes_view_has_status_SUCCESS_dimension_0_to_3_"
+                "and_nonblank_topology_key; topology_name_and_topological_genome_may_"
+                "be_null"
+            ),
+            "subnet_indices": "unique_contiguous_1_through_subnet_count_before_sorting",
+        },
+        "missing_behavior": (
+            "an_incomplete_or_unsuccessful_result_supplies_no_topology_group_edge"
+        ),
+        "excluded_fields": (
+            "runtime_seconds",
+            "CIF_paths_or_hashes",
+            "errors_or_diagnostics",
+            "software_or_method_boilerplate",
+            "original_subnet_index_or_order",
+        ),
+        "not_a_topology_similarity_tolerance": True,
+    }
+)
+
+
+STRICT_STRUCTURE_MATCHER_DEFINITION = _freeze_contract(
+    {
+        "term": "pymatgen_structure_matcher_strict_v2",
+        "display_name": "strict symmetric pymatgen StructureMatcher evidence",
+        "project_defined_term": True,
+        "purpose": (
+            "Provide optional coordinate-and-lattice duplicate evidence as an audited "
+            "direct pair-edge ledger and a non-transitive component view."
+        ),
+        "software": {
+            "python": "3.9",
+            "pymatgen": "2024.2.8",
+            "numpy": "1.26.4",
+        },
+        "parser": {
+            "implementation": "direct_pinned_pymatgen_CifParser",
+            "site_tolerance": 0.0001,
+            "frac_tolerance": 0.0001,
+            "operations": (
+                "expand_declared_symmetry_operations",
+                "merge_generated_sites_within_site_tolerance",
+                "round_fractional_coordinates_near_one_third_or_two_thirds_within_"
+                "frac_tolerance",
+                "check_occupancy",
+                "sort_the_periodic_Structure",
+            ),
+            "disorder_policy": "preserve_disorder_natively",
+            "forbidden_repairs": (
+                "manual_CIF_repair",
+                "occupancy_selection",
+                "atom_deletion",
+                "chemistry_edit",
+            ),
+        },
+        "candidate_pairs": {
+            "blocking_key": (
+                "ElementComparator_fractional_composition_hash_of_the_parsed_structure"
+            ),
+            "enumeration": "all_pairs_within_each_equal_block_are_attempted",
+            "not_exclusionary_blocks": (
+                "routine_formula",
+                "DOI",
+                "source_database_or_source_id",
+                "RAC5",
+                "topology",
+                "site_count",
+                "cell_volume",
+            ),
+        },
+        "matcher_settings": {
+            "comparator": "ElementComparator",
+            "ltol": 0.001,
+            "stol": 0.001,
+            "angle_tol": 0.01,
+            "primitive_cell": True,
+            "scale": False,
+            "attempt_supercell": True,
+            "allow_subset": False,
+            "supercell_size": "num_sites",
+            "ignored_species": (),
+            "fit_symmetric_argument": True,
+        },
+        "direct_edge_rule": (
+            "record_forward_and_reverse_fit_calls_with_symmetric_true; add_one_"
+            "undirected_edge_only_when_both_directional_fits_succeed"
+        ),
+        "displacement_diagnostics": {
+            "reported_values": (
+                "forward_normalized_rms",
+                "forward_normalized_max_displacement",
+                "reverse_normalized_rms",
+                "reverse_normalized_max_displacement",
+            ),
+            "normalization": (
+                "periodic_site_displacement_divided_by_(V/Nsites)^(1/3)_for_the_"
+                "corresponding_direction"
+            ),
+            "units": "dimensionless",
+            "is_angstrom_RMSD": False,
+            "uses_charnley_rmsd_Kabsch_package": False,
+        },
+        "failure_behavior": {
+            "directional_disagreement": "ASYMMETRIC_RESULT_no_edge_and_unavailable",
+            "parser_timeout_OOM_or_matcher_error": "NOT_AVAILABLE_not_unmatched",
+            "incomplete_component": (
+                "project_every_touched_structure_to_a_structure_specific_"
+                "NOT_AVAILABLE_singleton"
+            ),
+        },
+        "component_semantics": (
+            "SM-_groups_are_connected_components_of_direct_edges_for_convenience; "
+            "tolerance_matching_is_not_transitive_so_direct_edges_are_authoritative_"
+            "and_component_degree_edge_count_possible_edge_count_completeness_and_"
+            "clique_status_must_be_retained"
+        ),
+        "scope": (
+            "optional_reference_only; excluded_from_priority_main_and_main_union"
+        ),
+        "excluded_method": (
+            "the_historical_ltol_0.2_stol_0.3_angle_tol_5_scale_true_profile_is_"
+            "documentation_only_and_is_neither_executed_nor_exposed"
+        ),
+    }
+)
+
+
 PRIORITY_MAIN_DEFINITION = _freeze_contract(
     {
         "schema_version": PARENT_METHOD_CONTRACT_VERSION,
         "identifier": "priority_main",
+        "display_name": _PARENT_METHOD_DISPLAY_NAMES["priority_main"],
         "project_defined_identifier": True,
         "role": "explanatory_parent_resolution",
         "purpose": (
@@ -129,8 +568,31 @@ PRIORITY_MAIN_DEFINITION = _freeze_contract(
             "and MOFid v1 parent groups; it is not a row-by-row first-nonmissing "
             "fallback and it is separate from the leakage guard."
         ),
+        "input_fields": {
+            "rac5": (
+                "parent_groups.rac_status",
+                "parent_groups.rac_group",
+                "parent_groups.rac_size",
+            ),
+            "mofid_v2": (
+                "parent_groups.mofid2_status",
+                "parent_groups.mofid2_group",
+                "parent_groups.mofid2_size",
+            ),
+            "mofid_v1": (
+                "parent_groups.mofid1_status",
+                "parent_groups.mofid1_group",
+                "parent_groups.mofid1_size",
+            ),
+        },
+        "parent_group_triad": PARENT_GROUP_TRIAD_DEFINITION,
         "resolution_scope": "complete_release_before_optional_subset",
         "priority_order": ("rac5", "mofid_v2", "mofid_v1"),
+        "algorithm": (
+            "anchor every available RAC5 group; process MOFid-v2 groups and then "
+            "MOFid-v1 groups against already stronger components; attach unresolved "
+            "members only when the lower group touches at most one stronger component"
+        ),
         "availability_rule": (
             "use_a_nonmissing_release_authorized_group_and_treat_explicit_"
             "NOT_AVAILABLE_as_missing"
@@ -172,11 +634,19 @@ PRIORITY_MAIN_DEFINITION = _freeze_contract(
             ),
             "ledger_is_retained_even_without_unresolved_members": True,
         },
+        "conflict_behavior": (
+            "never_merge_multiple_stronger_components_record_PARENT_METHOD_CONFLICT_"
+            "and_leave_lower_only_members_unresolved"
+        ),
         "missing_evidence": {
             "singleton": "assign_unique_SINGLETON_structure_id_group",
             "exclude": "exclude_as_MISSING_PARENT_EVIDENCE",
             "common_nulls_are_grouped": False,
         },
+        "missing_behavior": (
+            "unique_per_structure_singleton_by_default_or_explicit_"
+            "MISSING_PARENT_EVIDENCE_exclusion"
+        ),
         "output_group_ids": {
             "rac5_anchor": "RAC5:<published_rac5_group>",
             "mofid_v2_component": "MOFID_V2:<published_mofid_v2_group>",
@@ -198,6 +668,10 @@ PRIORITY_MAIN_DEFINITION = _freeze_contract(
             "cif_sha256",
         ),
         "recommended_leakage_guard": "main_union",
+        "relation_to_other_terms": (
+            "explains_one_parent_component_per_resolved_row; main_union is the "
+            "separate broader partition-leakage graph and auto selects that graph"
+        ),
     }
 )
 
@@ -206,6 +680,7 @@ MAIN_UNION_DEFINITION = _freeze_contract(
     {
         "schema_version": PARENT_METHOD_CONTRACT_VERSION,
         "identifier": "main_union",
+        "display_name": _LEAKAGE_GUARD_DISPLAY_NAMES["main_union"],
         "project_defined_identifier": True,
         "role": "leakage_guard",
         "purpose": (
@@ -217,6 +692,59 @@ MAIN_UNION_DEFINITION = _freeze_contract(
             "split block; it is deliberately broader than priority_main and is not "
             "the explanatory parent assignment."
         ),
+        "input_fields": {
+            "cif_identity": "manifests/cif_manifest.csv.sha256",
+            "source_siblings": (
+                "parent_groups.source_status",
+                "parent_groups.source_group",
+                "parent_groups.source_size",
+                "fallback_metadata.source_database",
+                "fallback_metadata.source_id",
+            ),
+            "rac5": (
+                "parent_groups.rac_status",
+                "parent_groups.rac_group",
+                "parent_groups.rac_size",
+            ),
+            "mofid_v2": (
+                "parent_groups.mofid2_status",
+                "parent_groups.mofid2_group",
+                "parent_groups.mofid2_size",
+            ),
+            "mofid_v1": (
+                "parent_groups.mofid1_status",
+                "parent_groups.mofid1_group",
+                "parent_groups.mofid1_size",
+            ),
+        },
+        "parent_group_triad": PARENT_GROUP_TRIAD_DEFINITION,
+        "normal_release_source_rule": (
+            "a_loaded_release_must_supply_the_source_status_group_size_triad; the_"
+            "resolver_uses_its_validated_group_and_does_not_recanonicalize_metadata"
+        ),
+        "compatibility_source_fallback": {
+            "scope": (
+                "only_a_manually_constructed_dataset_object_with_no_source_criterion_"
+                "fields_for_that_structure; a_loaded_release_never_uses_this_path"
+            ),
+            "source_database_steps": (
+                "convert_to_text",
+                "trim_whitespace",
+                "apply_upper",
+                "use_UNKNOWN_only_if_the_result_is_empty",
+            ),
+            "source_id_steps": (
+                "convert_to_text",
+                "trim_whitespace",
+                "return_missing_if_empty",
+                "apply_casefold",
+                "split_on_Unicode_whitespace_and_join_with_one_ASCII_space",
+            ),
+            "database_namespace_retained": True,
+            "Unicode_NFKC_applied": False,
+            "nonblank_placeholder_rejection_applied": False,
+            "explicit_NOT_AVAILABLE_behavior": "do_not_fallback_and_add_no_source_edge",
+        },
         "explanatory_parent_method": False,
         "universe": "complete_unfiltered_release",
         "construction_order": "construct_before_all_label_identity_and_target_filters",
@@ -232,8 +760,8 @@ MAIN_UNION_DEFINITION = _freeze_contract(
                 "relation": "same_database_namespaced_source_sibling_group",
                 "required_for_every_structure": False,
                 "fallback": (
-                    "normalized_metadata_source_id_only_when_release_source_criterion_"
-                    "is_not_explicitly_NOT_AVAILABLE"
+                    "the_exact_compatibility_source_fallback_above_only_when_the_"
+                    "source_criterion_is_absent; never_when_it_is_NOT_AVAILABLE"
                 ),
             },
             {
@@ -253,8 +781,22 @@ MAIN_UNION_DEFINITION = _freeze_contract(
             },
         ),
         "graph_rule": "connected_components_of_the_transitive_union_of_all_edges",
+        "algorithm": "connected_components_of_the_transitive_union_of_all_five_exact_edge_types",
         "priority_or_conflict_resolution": "none_all_listed_edges_are_union_edges",
+        "conflict_behavior": "none_all_available_listed_edges_are_unioned_with_equal_status",
+        "missing_behavior": (
+            "missing_full_CIF_SHA256_fails_closed; each_missing_optional_relation_adds_"
+            "no_edge; common_nulls_never_match"
+        ),
         "filtered_rows_can_bridge_selected_rows": True,
+        "missing_and_conflict_behavior": {
+            "missing_cif_sha256": "fail_closed_before_splitting",
+            "missing_optional_relation": "add_no_edge_for_that_relation",
+            "priority_conflicts": (
+                "irrelevant_to_union_construction_all_available_listed_edges_are_added"
+            ),
+            "common_nulls_are_grouped": False,
+        },
         "group_name": "MAIN_plus_deterministic_sha256_of_sorted_component_members",
         "output_group_id": {
             "grammar": "MAIN-<lowercase_sha256_prefix>",
@@ -280,6 +822,11 @@ MAIN_UNION_DEFINITION = _freeze_contract(
         "relation_to_priority_main": (
             "priority_main_explains_parentage_main_union_only_constrains_partitioning"
         ),
+        "relation_to_other_terms": (
+            "broader_partition_guard_selected_by_auto_for_priority_main; not_an_"
+            "explanatory_parent_method"
+        ),
+        "release_source_key_canonicalization": CANONICALIZED_IDENTIFIER_TEXT_DEFINITION,
     }
 )
 
@@ -288,6 +835,7 @@ PARENT_ONLY_DEFINITION = _freeze_contract(
     {
         "schema_version": PARENT_METHOD_CONTRACT_VERSION,
         "identifier": "parent_only",
+        "display_name": _LEAKAGE_GUARD_DISPLAY_NAMES["parent_only"],
         "project_defined_identifier": True,
         "role": "leakage_guard",
         "purpose": "Use no leakage relation beyond the selected parent method.",
@@ -295,9 +843,23 @@ PARENT_ONLY_DEFINITION = _freeze_contract(
             "Use the selected explanatory parent groups themselves as split blocks; "
             "do not add the broader main_union relations."
         ),
+        "input_fields": "resolved_selected_parent_method.group_by_id",
+        "algorithm": "use_each_resolved_selected_parent_group_as_one_split_block",
         "block_source": "resolved_selected_parent_method",
         "full_release_transitive_union_applied": False,
         "priority_main_conflict_members_without_a_parent_group": "excluded",
+        "conflict_behavior": (
+            "an_unresolved_priority_main_conflict_has_no_parent_block_and_is_excluded"
+        ),
+        "missing_behavior": (
+            "follow_the_selected_parent_methods_singleton_or_exclude_policy"
+        ),
+        "excluded_inputs": (
+            "all_relations_not_already_present_in_the_selected_parent_method",
+        ),
+        "relation_to_other_terms": (
+            "narrow_sensitivity_guard; unlike_main_union_it_adds_no_cross_method_edges"
+        ),
     }
 )
 
@@ -306,6 +868,7 @@ AUTO_LEAKAGE_GUARD_DEFINITION = _freeze_contract(
     {
         "schema_version": PARENT_METHOD_CONTRACT_VERSION,
         "identifier": "auto",
+        "display_name": _LEAKAGE_GUARD_DISPLAY_NAMES["auto"],
         "project_defined_identifier": True,
         "role": "leakage_guard_selector",
         "purpose": (
@@ -327,12 +890,318 @@ AUTO_LEAKAGE_GUARD_DEFINITION = _freeze_contract(
             },
         ),
         "resolution_time": "splitter_construction_before_parent_resolution",
+        "input_fields": ("requested_parent_method",),
+        "algorithm": (
+            "if_parent_method_is_priority_main_select_main_union_else_select_parent_only"
+        ),
+        "missing_or_unknown_parent_method_behavior": "fail_validation",
+        "missing_behavior": "a_missing_or_unknown_parent_method_fails_validation",
+        "conflict_behavior": "does_not_resolve_parent_evidence_conflicts",
+        "excluded_inputs": "does_not_read_scientific_evidence_or_construct_edges",
+        "relation_to_other_terms": (
+            "selector_only; the resolved main_union or parent_only definition controls blocks"
+        ),
         "receipt_policy": (
             "record_auto_as_requested_guard_and_record_the_concrete_guard_separately"
         ),
         "does_not_construct_groups_itself": True,
     }
 )
+
+
+_PUBLISHED_METHOD_DETAILS = {
+    "rac5": {
+        "purpose": "Use exact depth-5 RAC fingerprint groups as the explanation.",
+        "package_input_fields": (
+            "parent_groups.rac_status",
+            "parent_groups.rac_group",
+            "parent_groups.rac_size",
+        ),
+        "release_relation": (
+            "exact equality of all 264 ordered finite depth-5 RAC descriptors; "
+            "IEEE-754 binary64 values are compared through float.hex after mapping "
+            "negative zero to positive zero; rtol=0 and atol=0"
+        ),
+        "rac5_fingerprint": RAC5_NUMERIC_FINGERPRINT_DEFINITION,
+        "excluded_inputs": "all_non_RAC5_evidence",
+        "relation_to_default_methods": (
+            "strongest anchor inside priority_main and one edge source inside main_union"
+        ),
+    },
+    "mofid_v2": {
+        "purpose": "Use exact published MOFid-v2 identifier groups as the explanation.",
+        "package_input_fields": (
+            "parent_groups.mofid2_status",
+            "parent_groups.mofid2_group",
+            "parent_groups.mofid2_size",
+        ),
+        "release_relation": "exact equality of complete canonicalized MOFid-v2 text",
+        "canonicalized_identifier_text": CANONICALIZED_IDENTIFIER_TEXT_DEFINITION,
+        "excluded_inputs": "all_non_MOFid-v2_evidence",
+        "relation_to_default_methods": (
+            "second evidence level inside priority_main and one edge source inside main_union"
+        ),
+    },
+    "mofid_v1": {
+        "purpose": "Use exact published MOFid-v1 identifier groups as the explanation.",
+        "package_input_fields": (
+            "parent_groups.mofid1_status",
+            "parent_groups.mofid1_group",
+            "parent_groups.mofid1_size",
+        ),
+        "release_relation": "exact equality of complete canonicalized MOFid-v1 text",
+        "canonicalized_identifier_text": CANONICALIZED_IDENTIFIER_TEXT_DEFINITION,
+        "excluded_inputs": "all_non_MOFid-v1_evidence",
+        "relation_to_default_methods": (
+            "last evidence level inside priority_main and one edge source inside main_union"
+        ),
+    },
+    "rac5_zeo": {
+        "purpose": "Inspect exact agreement of both RAC5 and selected Zeo++ fingerprints.",
+        "package_input_fields": (
+            "parent_groups.rac_zeo_status",
+            "parent_groups.rac_zeo_group",
+            "parent_groups.rac_zeo_size",
+        ),
+        "release_relation": (
+            "exact equality of all 264 RAC5 descriptors and the complete authorized "
+            "13-field intensive N2/He Zeo++ fingerprint, with equal N2 channel "
+            "dimension and bonded-framework periodic dimension; both numeric vectors "
+            "use binary64 float.hex after mapping negative zero to positive zero"
+        ),
+        "rac5_fingerprint": RAC5_NUMERIC_FINGERPRINT_DEFINITION,
+        "zeo_fingerprint": ZEO_NUMERIC_FINGERPRINT_DEFINITION,
+        "excluded_inputs": (
+            "unit_cell_extensive_areas_or_volumes",
+            "open_metal_sites",
+            "topology",
+            "framework_component_counts",
+        ),
+        "relation_to_default_methods": (
+            "reference_sensitivity_only; excluded_from_priority_main_and_main_union"
+        ),
+    },
+    "zeo": {
+        "purpose": "Inspect exact agreement of the selected pore-geometry fingerprint.",
+        "package_input_fields": (
+            "parent_groups.zeo_status",
+            "parent_groups.zeo_group",
+            "parent_groups.zeo_size",
+        ),
+        "release_relation": (
+            "exact equality of 13 finite intensive N2/He Zeo++ fields calculated "
+            "with N2 radius 1.655 A and He radius 1.32 A, plus equal N2 channel "
+            "dimension and bonded-framework periodic dimension; binary64 values use "
+            "float.hex after mapping negative zero to positive zero with rtol=atol=0"
+        ),
+        "zeo_fingerprint": ZEO_NUMERIC_FINGERPRINT_DEFINITION,
+        "excluded_inputs": (
+            "RAC5",
+            "unit_cell_extensive_areas_or_volumes",
+            "open_metal_sites",
+            "topology",
+        ),
+        "relation_to_default_methods": (
+            "reference_sensitivity_only; excluded_from_priority_main_and_main_union"
+        ),
+    },
+    "source_id": {
+        "purpose": "Inspect source-database sibling records with the same source identifier.",
+        "package_input_fields": (
+            "parent_groups.source_status",
+            "parent_groups.source_group",
+            "parent_groups.source_size",
+        ),
+        "release_relation": (
+            "exact equality of the ordered canonicalized source_database and source_id pair"
+        ),
+        "canonicalized_identifier_text": CANONICALIZED_IDENTIFIER_TEXT_DEFINITION,
+        "excluded_inputs": "all_structural_and_descriptor_evidence",
+        "relation_to_default_methods": (
+            "reference explanation excluded from priority_main; source siblings are a "
+            "separate edge source inside main_union"
+        ),
+    },
+    "common_name": {
+        "purpose": "Inspect records with the same canonicalized published common name.",
+        "package_input_fields": (
+            "parent_groups.name_status",
+            "parent_groups.name_group",
+            "parent_groups.name_size",
+        ),
+        "release_relation": (
+            "exact equality after whitespace collapse, Unicode NFKC, and casefold"
+        ),
+        "canonicalized_identifier_text": CANONICALIZED_IDENTIFIER_TEXT_DEFINITION,
+        "excluded_inputs": "all_structural_and_descriptor_evidence",
+        "relation_to_default_methods": (
+            "sparse_nonunique_reference_only; excluded_from_priority_main_and_main_union"
+        ),
+    },
+    "rac5_topology": {
+        "purpose": "Inspect exact RAC5 plus current CrystalNets topology agreement.",
+        "package_input_fields": (
+            "parent_groups.rac_topology_status",
+            "parent_groups.rac_topology_group",
+            "parent_groups.rac_topology_size",
+        ),
+        "release_relation": (
+            "exact equality of all 264 finite RAC5 descriptors plus a complete "
+            "successful current CrystalNets scientific fingerprint"
+        ),
+        "rac5_fingerprint": RAC5_NUMERIC_FINGERPRINT_DEFINITION,
+        "topology_fingerprint": CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION,
+        "group_prefix_meaning": (
+            "RT- identifies this RAC5-plus-topology criterion; the following compact "
+            "digest labels a group and is not a topology name"
+        ),
+        "missing_behavior": (
+            "any missing_or_nonfinite_RAC5_value_or_incomplete_unsuccessful_topology_"
+            "supplies_no_group_evidence"
+        ),
+        "excluded_inputs": (
+            "MOFid",
+            "Zeo++",
+            "source_ID",
+            "StructureMatcher",
+        ),
+        "relation_to_default_methods": (
+            "optional_reference_only; excluded_from_priority_main_and_main_union"
+        ),
+    },
+    "mofid_v2_topology": {
+        "purpose": "Inspect exact MOFid-v2 plus current CrystalNets topology agreement.",
+        "package_input_fields": (
+            "parent_groups.mofid2_topology_status",
+            "parent_groups.mofid2_topology_group",
+            "parent_groups.mofid2_topology_size",
+        ),
+        "release_relation": (
+            "exact equality of complete canonicalized MOFid-v2 text plus a complete "
+            "successful current CrystalNets scientific fingerprint"
+        ),
+        "canonicalized_identifier_text": CANONICALIZED_IDENTIFIER_TEXT_DEFINITION,
+        "topology_fingerprint": CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION,
+        "group_prefix_meaning": (
+            "M2T- identifies this MOFid-v2-plus-topology criterion; the following "
+            "compact digest labels a group and is not a topology name"
+        ),
+        "missing_behavior": (
+            "missing_MOFid-v2_or_incomplete_unsuccessful_topology_supplies_no_group_evidence"
+        ),
+        "excluded_inputs": ("RAC5", "Zeo++", "source_ID", "StructureMatcher"),
+        "relation_to_default_methods": (
+            "optional_reference_only; excluded_from_priority_main_and_main_union; "
+            "provisional_whenever_the_release-authorized_MOFid-v2_input_is_provisional"
+        ),
+        "provisional_scope": (
+            "the_current_v26_method_remains_provisional_until_the_pinned_MOFid-v2_"
+            "bundle_is_promoted_and_the_parent_table_is_rebuilt"
+        ),
+    },
+    "structure_matcher_strict": {
+        "purpose": (
+            "Inspect connected components formed from audited direct symmetric strict "
+            "pymatgen StructureMatcher pair edges."
+        ),
+        "package_input_fields": (
+            "parent_groups.sm_status",
+            "parent_groups.sm_group",
+            "parent_groups.sm_size",
+            "parent_group_methods.criteria.structure_matcher_strict",
+            "parent_groups/structure_matcher_strict_evidence_receipt.json",
+        ),
+        "release_relation": (
+            "add an undirected edge only for an audited pair whose forward and reverse "
+            "strict fits both succeed, then report graph connected components"
+        ),
+        "strict_method": STRICT_STRUCTURE_MATCHER_DEFINITION,
+        "strict_matcher_settings": STRICT_STRUCTURE_MATCHER_DEFINITION[
+            "matcher_settings"
+        ],
+        "group_prefix_meaning": (
+            "SM- identifies a connected-component convenience view; it does not assert "
+            "that every member pair directly matches"
+        ),
+        "conflict_behavior": (
+            "directional_fit_disagreement_or_unresolved_pair_creates_no_edge; any "
+            "incomplete_component_is_projected_to_structure_specific_NOT_AVAILABLE_singletons"
+        ),
+        "missing_behavior": "unavailable evidence follows the selected singleton_or_exclude policy",
+        "excluded_inputs": "historical_relaxed_StructureMatcher_evidence",
+        "relation_to_default_methods": (
+            "optional_reference_only; direct_edge_ledger_is_authoritative_and_the_method_"
+            "is_excluded_from_priority_main_and_main_union"
+        ),
+    },
+    "identity_union": {
+        "display_name": "provisional source-ID/MOFid transitive groups",
+        "purpose": (
+            "Provide a broad provisional screening relation for records connected by "
+            "source-ID or MOFid identifier evidence."
+        ),
+        "package_input_fields": (
+            "parent_groups.identity_status",
+            "parent_groups.identity_group",
+            "parent_groups.identity_size",
+        ),
+        "release_construction": {
+            "v26.0.1": (
+                "project the audited full-universe transitive components formed from "
+                "exact cleaned v11 refcode without a database namespace, MOFid-v2, "
+                "and MOFid-v1 keys"
+            ),
+            "v26.0.2": (
+                "seed the audited v26.0.1 identity components, then union every base or "
+                "addition pair sharing an exact canonicalized database-namespaced source "
+                "ID, complete MOFid-v2, or complete MOFid-v1 value"
+            ),
+        },
+        "algorithm": (
+            "take transitive connected components of every available listed equality "
+            "edge; there is no precedence and one criterion may bridge two others"
+        ),
+        "counted_unit": (
+            "identity_size_is_the_number_of_structures_in_one_transitive_connected_"
+            "component_not_a_count_of_edges_or_identifiers"
+        ),
+        "canonicalized_identifier_text": CANONICALIZED_IDENTIFIER_TEXT_DEFINITION,
+        "missing_behavior": (
+            "a missing_or_rejected_identifier_adds_no_edge_and_common_nulls_never_match; "
+            "a release NOT_AVAILABLE row follows the selected singleton_or_exclude policy"
+        ),
+        "conflict_behavior": "none_all_available_listed_edges_are_unioned_transitively",
+        "excluded_inputs": (
+            "RAC5",
+            "Zeo++",
+            "CrystalNets_topology",
+            "CIF_hash",
+            "common_name",
+            "StructureMatcher",
+        ),
+        "relation_to_default_methods": (
+            "reference_screening_relation_only; it is not proof of structural identity "
+            "and is excluded as an edge source from both priority_main and main_union; "
+            "it_remains_provisional_until_the_pinned_MOFid_bundle_is_promoted_and_the_"
+            "parent_table_is_rebuilt"
+        ),
+        "provisional_scope": (
+            "current_v26_identity_components_are_provisional_while_their_MOFid_"
+            "dependent_edges_use_unpromoted_input"
+        ),
+    },
+    "none": {
+        "purpose": "Run a control with one explanatory singleton per structure.",
+        "package_input_fields": (),
+        "release_relation": "no_equality_or_similarity_relation_is_read",
+        "missing_behavior": "not_applicable_every_structure_is_available_as_its_own_singleton",
+        "conflict_behavior": "none",
+        "excluded_inputs": "all_parent_and_duplicate_evidence",
+        "relation_to_default_methods": (
+            "control_only; auto pairs it with parent_only so no broader edge is added"
+        ),
+    },
+}
 
 
 def parent_method_definition(method: str) -> Mapping[str, object]:
@@ -345,25 +1214,44 @@ def parent_method_definition(method: str) -> Mapping[str, object]:
         raise ValueError("%r is not an explanatory parent method" % method)
     if method == "priority_main":
         return PRIORITY_MAIN_DEFINITION
-    if method == "none":
-        summary = "Treat every structure as its own explanatory parent singleton."
-        criterion = None
-    else:
-        summary = (
-            "Use only the available release-authorized %s group; missing values "
-            "follow the selected missing-parent policy." % method
-        )
-        criterion = method
-    return _freeze_contract(
+    details = dict(_PUBLISHED_METHOD_DETAILS[method])
+    details["input_fields"] = details.pop("package_input_fields")
+    details["relation_to_other_terms"] = details.pop(
+        "relation_to_default_methods"
+    )
+    details["parent_group_triad"] = (
+        PARENT_GROUP_TRIAD_DEFINITION
+        if method != "none"
+        else "not_applicable_no_release_parent_criterion_is_read"
+    )
+    details.update(
         {
             "schema_version": PARENT_METHOD_CONTRACT_VERSION,
             "identifier": method,
+            "display_name": _PARENT_METHOD_DISPLAY_NAMES[method],
             "project_defined_identifier": True,
             "role": "explanatory_parent_resolution",
-            "purpose": "Resolve explanatory parent groups for split reporting.",
-            "summary": summary,
-            "criterion": criterion,
+            "summary": details.get("release_relation", details["purpose"]),
+            "criterion": None if method == "none" else method,
             "resolution_scope": "complete_release_before_optional_subset",
+            "algorithm": details.get(
+                "algorithm",
+                (
+                    "use each available release-authorized group exactly as published; "
+                    "do not combine it with another criterion"
+                ),
+            ),
+            "conflict_behavior": details.get(
+                "conflict_behavior",
+                "none_single_criterion_groups_have_no_cross_criterion_precedence",
+            ),
+            "missing_behavior": details.get(
+                "missing_behavior",
+                (
+                    "use_a_unique_per_structure_singleton_by_default_or_explicit_"
+                    "MISSING_PARENT_EVIDENCE_exclusion"
+                ),
+            ),
             "missing_evidence": {
                 "singleton": "assign_unique_SINGLETON_structure_id_group",
                 "exclude": "exclude_as_MISSING_PARENT_EVIDENCE",
@@ -371,6 +1259,7 @@ def parent_method_definition(method: str) -> Mapping[str, object]:
             },
         }
     )
+    return _freeze_contract(details)
 
 
 def leakage_guard_definition(guard: str) -> Mapping[str, object]:
@@ -1035,7 +1924,9 @@ class ParentResolver:
 
 __all__ = [
     "AUTO_LEAKAGE_GUARD_DEFINITION",
+    "CANONICALIZED_IDENTIFIER_TEXT_DEFINITION",
     "COMPUTED_PARENT_METHODS",
+    "CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION",
     "DIRECT_PARENT_METHODS",
     "LEAKAGE_GUARD_CHOICES",
     "MAIN_UNION_DEFINITION",
@@ -1043,10 +1934,14 @@ __all__ = [
     "OPTIONAL_TOPOLOGY_PARENT_METHODS",
     "PARENT_METHODS",
     "PARENT_METHOD_CONTRACT_VERSION",
+    "PARENT_GROUP_TRIAD_DEFINITION",
     "PARENT_ONLY_DEFINITION",
     "PRIORITY_MAIN_DEFINITION",
+    "RAC5_NUMERIC_FINGERPRINT_DEFINITION",
     "REFERENCE_PARENT_METHODS",
     "SELECTABLE_PARENT_METHODS",
+    "STRICT_STRUCTURE_MATCHER_DEFINITION",
+    "ZEO_NUMERIC_FINGERPRINT_DEFINITION",
     "ParentConflict",
     "ParentResolution",
     "ParentResolver",

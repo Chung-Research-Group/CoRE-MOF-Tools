@@ -18,30 +18,72 @@ RAC, MOFid, or Zeo++ result.
 Project-defined split identifiers
 ---------------------------------
 
-``priority_main`` and ``main_union`` are CoREMOF-tools API identifiers, not
-community-standard crystallographic terms.
+``priority_main``, ``main_union``, ``auto``, and ``parent_only`` are
+CoREMOF-tools API identifiers, not community-standard crystallographic terms.
+``parent_only`` means that the selected parent method's resolved groups alone
+form the split blocks; it adds no relationship from any other method.
+
+At first use here, **release-authorized and available** mean that a criterion's
+``status/group/size`` triad is declared in ``parent_group_methods.json``,
+stored in ``parent_groups.csv``, and validated by the loader. ``MATCHED``
+means available with an observed group size of at least two; ``UNMATCHED``
+means available with size one; ``NOT_AVAILABLE`` supplies no edge and its
+size-one group only preserves the table shape. The size must equal the number
+of release rows carrying that group. Unavailable rows never match and become
+unique singletons or explicit exclusions.
+
+At first use here, **exact RAC5** means equality of all 264 ordered finite
+values after IEEE-754 binary64 parsing, mapping ``-0.0`` to ``+0.0``, and
+``float.hex()`` serialization, with ``rtol=atol=0`` and no scaling, deletion,
+imputation, or rounding. **Exact MOFid** means equality of the complete
+published string after converting to text; collapsing each Unicode-whitespace
+run to one ASCII space; trimming; case-insensitively rejecting an empty field
+or ``-``, ``nan``, ``none``, ``null``, ``n/a``, ``na``, ``unknown``,
+``missing``, ``timeout``, ``timed out``, ``error``, ``failed``, ``fail``,
+``fail process``, ``failed process``, or ``process failed``; applying Unicode
+NFKC; and case-folding, in that order. It is not partial/fuzzy matching and
+does not change CIF bytes, atoms, bonds, occupancies, coordinates, chemistry,
+or unit cells.
 
 ``priority_main`` is the explanatory parent hierarchy. It is computed over the
-complete release by seeding components from every available release-authorized
-exact RAC5 group, then processing exact MOFid-v2 groups, and finally processing
-exact MOFid-v1 groups. At each lower step, a group touching no stronger
+complete release from ``rac_status/rac_group/rac_size``,
+``mofid2_status/mofid2_group/mofid2_size``, and
+``mofid1_status/mofid1_group/mofid1_size`` in
+``parent_groups/parent_groups.csv``. It seeds components from every available
+release-authorized exact RAC5 group, then processes exact MOFid-v2 groups, and
+finally processes exact MOFid-v1 groups. At each lower step, a group touching no stronger
 component creates a component; one touching exactly one stronger component
 attaches only its unresolved rows; and one touching two or more stronger
 components never merges them, records ``PARENT_METHOD_CONFLICT``, and leaves
 lower-only rows unresolved. A structure with none of the three inputs becomes
 a unique singleton unless explicit exclusion is requested. This is not a
 row-wise first-nonmissing fallback. Zeo++, CrystalNets, source ID, common name,
-CIF hash, and StructureMatcher do not enter this hierarchy.
+CIF hash, provisional source-ID/MOFid transitive groups, and
+StructureMatcher do not enter this hierarchy.
 
 ``main_union`` is a separate conservative leakage guard, not an explanatory
-parent claim. It forms full-release transitive connected components from exact
-full CIF SHA-256, database-namespaced source-sibling, RAC5, MOFid-v2, and
-MOFid-v1 edges before any experiment filter. ``leakage_guard="auto"`` selects
+parent claim. It reads full hashes from ``manifests/cif_manifest.csv`` and the
+source/RAC5/MOFid status, group, and size columns from the parent table. It forms
+full-release transitive connected components from exact full CIF SHA-256,
+source-sibling, RAC5, MOFid-v2, and MOFid-v1 edges before any experiment
+filter. A missing CIF SHA-256 fails closed; missing optional evidence adds no
+edge; nulls never match; and all available edges are unioned without
+precedence. The source group compares the ordered ``(source_database,
+source_id)`` pair after applying the text procedure above to each field, so
+equal IDs in different databases never match. Normal release loading requires
+that triad and never uses metadata fallback. A manually constructed object
+with no source-criterion fields instead strips and uppercases the database
+(``UNKNOWN`` only if blank), and strips, case-folds,
+Unicode-whitespace-splits, and ASCII-space-joins the source ID; that fallback
+does not apply NFKC or reject nonblank placeholders, and explicit
+``NOT_AVAILABLE`` never falls back. ``leakage_guard="auto"`` is only a selector: it chooses
 ``main_union`` for ``priority_main`` and ``parent_only`` for an explicitly
-selected direct/reference method; ``parent_only`` uses only that selected
-explanatory grouping as split blocks. Consequently, two different explanatory
-groups may share one ``main_union`` block without being labelled the same
-parent.
+selected direct/reference method. ``parent_only`` uses only that selected
+explanatory grouping as blocks and adds no cross-method edge. An unresolved
+``priority_main`` conflict is excluded under ``parent_only`` but may remain
+safely assigned and diagnosed under ``main_union``. Consequently, two
+different explanatory groups may share one ``main_union`` block without being
+labelled the same parent.
 
 Quick example
 -------------
@@ -188,7 +230,76 @@ the 5-checker view.
 Parent methods
 --------------
 
-Use the canonical method names below.
+Use the exact API keys below.
+
+Here **canonicalized identifier text** has a narrow release-defined meaning:
+convert the published value to text, collapse every Unicode-whitespace run to
+one ASCII space, trim it, reject a whole-field missing/execution
+placeholder, apply Unicode NFKC, and apply Unicode case-folding, in that
+order. Rejected case-insensitive whole fields are empty text, ``-``, ``nan``,
+``none``, ``null``, ``n/a``, ``na``, ``unknown``, ``missing``,
+``timeout``, ``timed out``, ``error``, ``failed``, ``fail``, ``fail process``,
+``failed process``, and ``process failed``. Inherited v26.0.1 cleanup
+additionally rejects a whole-field ``*`` and leading ``MOFid-v1.NA...`` and
+``MOFid-v2.NA...`` placeholder families. A source key is the exact ordered pair of separately canonicalized
+``source_database`` and ``source_id``. A MOFid key is the complete
+canonicalized published MOFid string, never a prefix or fuzzy match.
+This text processing does not change or modify CIF bytes, atoms, bonds,
+occupancies, coordinates, chemistry, or unit cells.
+
+The audited v26.0.1 identity components retained in v26.0.2 used a narrow v11
+cleanup. For a v11 refcode, it converts to text; removes the first semicolon
+and everything after it; changes backslashes to ``/``; removes the path and
+one terminal ``.cif``/``.cif.gz``; trims; deletes every Unicode whitespace
+character; case-folds without NFKC; rejects literal placeholders; removes one
+terminal ``_ASR_pacman``, ``_FSR_pacman``, ``_ION_pacman``,
+``_ION_ASR_pacman``, or ``_ION_FSR_pacman``; and rechecks the result. Those
+preserved v11 refcode edges did not add a database namespace; new v26.0.2
+source-ID edges do.
+
+For a v11 MOFid, the seed removes the first semicolon record suffix and trims;
+rewrites only literal ``MOFidv2.`` to ``MOFid-v2.``; collapses whitespace,
+trims, and case-folds without NFKC; removes terminal ``.no_ref`` only when a
+MOFid-v1 marker is present; then rejects literal execution placeholders and
+the leading ``MOFid-v1.NA...``/``MOFid-v2.NA...`` families. No step modifies
+an atom, bond, occupancy, coordinate, unit cell, general chemical punctuation,
+or CIF byte. The splitter consumes the release-authorized group/status/size
+columns and does not rerun this cleanup.
+
+The **RAC5 fingerprint** is exact equality of all 264 finite descriptor
+columns listed in order at ``criteria.rac5.ordered_descriptors`` in
+``parent_group_methods.json``. It uses no scaling, feature deletion,
+imputation, or tolerance: every value is parsed as finite binary64, ``-0.0`` is
+mapped to ``+0.0``, and ``float.hex()`` tokens are compared in order with
+``rtol=atol=0``. The **selected Zeo++ fingerprint** is exact equality
+of ``density_g_cm3``, largest cavity, pore-limiting, and largest-free-path
+diameters; accessible and nonaccessible N2 surface areas in m2/cm3 and m2/g;
+accessible and nonaccessible N2 volumes in cm3/g and as fractions; and
+``he_void_fraction``, plus exact N2 channel dimension and available
+bonded-framework periodic dimension. Its 13 numbers use the same finite
+binary64, negative-zero, and ``float.hex()`` procedure; its numeric tolerance
+is zero and N2/He probe radii are 1.655/1.32 A. One invalid number or hard gate
+makes the fingerprint unavailable. Unit-cell-extensive areas/volumes, OMS,
+topology labels, and framework-component counts are excluded.
+
+The **current CrystalNets scientific fingerprint**, where current means the
+topology evidence authorized by the loaded release rather than a runtime
+search for newer output, requires ``SUCCESS``,
+``topology_available=true``, ``error=null``, and nonempty complete SingleNodes
+and AllNodes subnets. It includes network dimension, interpenetrated-subnet
+count, catenation degree, subnet count, top-level single-node/all-node nets and
+agreement, and, for every canonically sorted subnet, single/all agreement plus
+each node view's status, dimension, topology key, topology name, and
+topological genome. Canonical sorted-key JSON is used; complete subnet
+projections are sorted, duplicates are retained, and the result is SHA-256
+hashed. Runtime, CIF paths/hashes, diagnostics, software boilerplate, and
+original subnet order are excluded. Both count fields must be integers at
+least one and equal the subnet count; subnet indices must be unique/contiguous
+before sorting. Top-level dimension, nets, and agreement may be null for
+heterogeneous subnets and remain part of the fingerprint. Each node view must
+have ``SUCCESS``, dimension 0--3, and a nonblank topology key; topology name
+and genome may be null. An incomplete/unsuccessful result adds no
+edge; this is exact fingerprint equality, not a topology-similarity tolerance.
 
 .. list-table::
    :header-rows: 1
@@ -205,34 +316,34 @@ Use the canonical method names below.
      - Exact equality of every validated depth-5 RAC descriptor
    * - ``mofid_v2``
      - Main/direct
-     - Exact normalized pinned MOFid v2 when available
+     - Exact equality of complete canonicalized release-authorized MOFid v2 text; missing values never match; current v26 input remains provisional until pinned-result promotion
    * - ``mofid_v1``
      - Main/direct
-     - Exact normalized MOFid v1 when available
+     - Exact equality of complete canonicalized MOFid v1 text; missing values never match
    * - ``rac5_zeo``
      - Reference
      - Exact combined RAC5 and release-selected Zeo++ fingerprint
    * - ``rac5_topology``
      - Optional reference
-     - Exact RAC5 fingerprint plus a complete successful current CrystalNets fingerprint
+     - ``RT-`` group: exact 264-value RAC5 plus a complete successful current CrystalNets scientific fingerprint
    * - ``mofid_v2_topology``
      - Optional reference
-     - Exact normalized MOFid v2 plus a complete successful current CrystalNets fingerprint
+     - ``M2T-`` group: exact complete canonicalized MOFid v2 plus that CrystalNets fingerprint; provisional whenever its MOFid-v2 input is provisional
    * - ``structure_matcher_strict``
      - Optional reference
-     - Connected component of direct symmetric strict pymatgen StructureMatcher edges
+     - ``SM-`` connected component of exhaustive composition-compatible pairs whose forward/reverse pymatgen 2024.2.8 ElementComparator fits pass with ltol=stol=0.001, angle_tol=0.01, primitive_cell/attempt_supercell true, scale/allow_subset false, supercell_size=num_sites, and no ignored species
    * - ``zeo``
      - Reference
      - Exact release-selected Zeo++ fingerprint
    * - ``source_id``
      - Reference
-     - Normalized, database-namespaced source sibling
+     - Exact canonicalized ``(source_database, source_id)`` sibling key; no cross-database match
    * - ``common_name``
      - Reference
-     - Normalized common name
+     - Exact NFKC/whitespace/case-folded common name; sparse and non-unique
    * - ``identity_union``
      - Reference
-     - Audited identity-union screening relation
+     - Provisional source-ID/MOFid transitive groups: preserve audited v26.0.1 components, then union exact canonicalized source-ID, MOFid-v2, or MOFid-v1 edges; no structural descriptor input
    * - ``none``
      - Control
      - One independent singleton per structure
@@ -242,21 +353,66 @@ The recommended direct sensitivity analyses are ``rac5``, then
 they should not be interpreted as interchangeable proofs of parentage.
 
 Exact RAC or RAC/Zeo equality is fingerprint equivalence, not proof of a
-shared synthetic parent. ``identity_union`` is a screening relation and may
-contain transitive links from several evidence sources.
+shared synthetic parent. The project-defined ``identity_union`` key means
+exactly the provisional source-ID/MOFid transitive groups stated above. Each
+group, and therefore each value counted by ``identity_size``, is one
+transitive connected component of structures joined by those
+identifier-equality edges; it is not a count of edges or identifiers. All
+three edge types are unioned with equal status and no priority or conflict
+rule, so one
+can bridge components made by another. A null or rejected placeholder adds no
+edge and missing identifiers never match. The relation uses no RAC5, Zeo++,
+CrystalNets topology, CIF hash, common name, or StructureMatcher input; it is
+not proof of chemical or geometric identity and is excluded from both
+``priority_main`` and ``main_union``. Current v26 identity groups remain
+provisional until the pinned MOFid bundle is promoted and the parent table is
+rebuilt.
+
+``RT-``, ``M2T-``, and ``SM-`` are criterion prefixes, not scientific
+results. They mean an exact RAC5-plus-current-CrystalNets group, an exact
+MOFid-v2-plus-current-CrystalNets group, and a connected component of strict
+direct StructureMatcher edges, respectively. The following compact digest is
+only a group label, not a topology name, MOFid, RMSD, or similarity score.
+The release builder hashes the criterion name and its complete comparison key
+with length-delimited UTF-8 SHA-256, starts with eight uppercase hexadecimal
+characters after the prefix, and extends every actually colliding prefix one
+character at a time until unique in the v26.0.2 superset.
+Missing or failed RAC5/CrystalNets/MOFid input creates no ``RT-`` or ``M2T-``
+evidence. Directional fit disagreement or an unresolved pair creates no
+strict edge; an incomplete strict component is projected to structure-specific
+``NOT_AVAILABLE`` singletons.
 
 ``structure_matcher_strict`` is accepted only when the release declares its
-audited ``sm_*`` columns. It is a connected-component view over authoritative
-direct match edges. Since a nonzero-tolerance match can be non-transitive, a
-component does not assert that every pair of members directly matches. This
-optional method changes neither ``priority_main`` nor ``main_union``; the
-historical relaxed matcher is not executed or exposed by this release workflow.
-The v2 evidence calls its displacement diagnostics normalized RMS and
-normalized maximum displacement because both are divided by
-``(V/Nsites)^(1/3)``; they are not angstrom-valued RMSD. Directional fit
-disagreement is unresolved and cannot create a direct edge. This is pymatgen's
-periodic lattice/site matcher; it does not call the separate ``charnley/rmsd``
-molecular Kabsch program.
+audited ``sm_*`` columns. The frozen method uses Python 3.9, pymatgen 2024.2.8,
+and NumPy 1.26.4. It blocks candidates by the parsed structure's
+``ElementComparator`` fractional-composition hash and attempts every pair in
+an equal block; routine formula, DOI, source, RAC5, topology, site count, and
+volume are not exclusionary blocks. Each forward/reverse call uses
+``fit(..., symmetric=True)`` with ``ltol=stol=0.001``,
+``angle_tol=0.01``, ``primitive_cell=true``, ``scale=false``,
+``attempt_supercell=true``, ``allow_subset=false``,
+``supercell_size=num_sites``, and no ignored species. An undirected direct edge
+requires both calls to succeed.
+
+The pinned direct ``CifParser`` expands declared symmetry, merges generated
+sites at ``site_tolerance=1e-4``, rounds coordinates near 1/3 or 2/3 at
+``frac_tolerance=1e-4``, checks occupancy, sorts the periodic structure, and
+preserves disorder. It performs no manual repair, occupancy choice, atom
+deletion, or chemistry edit. Parser, timeout, OOM, and matcher failures are
+``NOT_AVAILABLE`` rather than nonmatches; directional disagreement is
+``ASYMMETRIC_RESULT`` and creates no edge.
+
+The group is a convenience connected-component view over authoritative direct
+edges. Since the tolerance relation can be non-transitive, a component does
+not assert that every member pair directly matches; degree, edge count,
+possible-edge count, completeness, clique status, and the direct ledger must
+be consulted. Forward and reverse normalized RMS/maximum displacement divide
+periodic site displacement by the corresponding direction's
+``(V/Nsites)^(1/3)``. They are dimensionless, are not angstrom RMSD, and do not
+come from the separate ``charnley/rmsd`` molecular Kabsch program. This
+optional method changes neither ``priority_main`` nor ``main_union``; the old
+``ltol=0.2``, ``stol=0.3``, ``angle_tol=5``, ``scale=true`` profile is
+documentation-only and is neither executed nor exposed.
 
 The loader accepts ``sm_*`` columns only when
 ``criteria.structure_matcher_strict`` declares the exact
