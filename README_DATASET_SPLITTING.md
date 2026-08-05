@@ -5,6 +5,7 @@ This handbook explains how to use the lightweight CoREMOF-tools API to:
 - load and validate a CoRE-MOF release;
 - obtain CR, NCR, AMBIGUOUS, and UNCHECKED labels from a selected checker set;
 - filter structures by source, variant, metal, label, or public ID;
+- merge one or more target files with current metadata and feature tables;
 - inspect criterion-specific parent groups; and
 - create deterministic, parent-aware train/validation/test splits.
 
@@ -35,16 +36,17 @@ reproducibility receipt.
 8. [Filtering structures](#8-filtering-structures)
 9. [Parent-group criteria](#9-parent-group-criteria)
 10. [Leakage guards](#10-leakage-guards)
-11. [Creating train/validation/test splits](#11-creating-trainvalidationtest-splits)
-12. [Understanding `SplitResult`](#12-understanding-splitresult)
-13. [Writing CSV and JSON outputs](#13-writing-csv-and-json-outputs)
-14. [Command-line usage](#14-command-line-usage)
-15. [Common workflows](#15-common-workflows)
-16. [Reproducibility and scientific interpretation](#16-reproducibility-and-scientific-interpretation)
-17. [Licensing and redistribution](#17-licensing-and-redistribution)
-18. [Troubleshooting](#18-troubleshooting)
-19. [Current validation status and limitations](#19-current-validation-status-and-limitations)
-20. [Developer checks](#20-developer-checks)
+11. [Merging target results with release features](#11-merging-target-results-with-release-features)
+12. [Creating train/validation/test splits](#12-creating-trainvalidationtest-splits)
+13. [Understanding `SplitResult`](#13-understanding-splitresult)
+14. [Writing CSV and JSON outputs](#14-writing-csv-and-json-outputs)
+15. [Command-line usage](#15-command-line-usage)
+16. [Common workflows](#16-common-workflows)
+17. [Reproducibility and scientific interpretation](#17-reproducibility-and-scientific-interpretation)
+18. [Licensing and redistribution](#18-licensing-and-redistribution)
+19. [Troubleshooting](#19-troubleshooting)
+20. [Current validation status and limitations](#20-current-validation-status-and-limitations)
+21. [Developer checks](#21-developer-checks)
 
 ## 1. What the package does
 
@@ -53,13 +55,16 @@ recomputes checker-consensus labels from the public checker status columns and
 uses the release's audited parent-group tables to prevent related structures
 from being separated unintentionally.
 
-It provides two related operations:
+It provides three related operations:
 
 1. **Classification:** decide whether a structure is CR, NCR, AMBIGUOUS, or
    UNCHECKED under a selected checker view.
 2. **Dataset splitting:** place eligible structures in train, validation, and
    test partitions while keeping a selected structural relation—or a broader
    leakage component—inside one partition.
+3. **Target preparation:** join user endpoints and current feature tables,
+   preserve declarations/provenance, and explicitly exclude missing targets
+   before split assignment.
 
 The package does **not**:
 
@@ -73,14 +78,48 @@ The package does **not**:
 These boundaries are intentional. The package consumes validated scientific
 evidence without silently changing the method that produced it.
 
-Keep four choices conceptually separate:
+Keep five choices conceptually separate:
 
 | Choice | Question it answers |
 |---|---|
 | Checker view | How is CR/NCR/AMBIGUOUS/UNCHECKED recomputed? |
 | Parent method | Which relation explains structural grouping? |
 | Leakage guard | Which known relations must not cross partitions? |
+| Required targets | Which rows contain the endpoints needed by this model? |
 | Filters | Which labelled rows are eligible for this experiment? |
+
+### Project-defined identifiers used in this handbook
+
+`priority_main` and `main_union` are CoREMOF-tools API identifiers created for
+this workflow; they are not community-standard crystallographic terms.
+
+`priority_main` is the conflict-aware **explanatory parent hierarchy**. It is
+computed on the complete release in this exact order:
+
+1. every available release-authorized exact RAC5 group seeds a component;
+2. each exact MOFid-v2 group attaches its unresolved rows to zero or one
+   stronger component, or forms a new MOFid-v2 component if it touches none;
+3. exact MOFid-v1 groups apply the same rule last; and
+4. a structure still lacking all three inputs becomes its own unique singleton
+   unless `missing_parent="exclude"` was explicitly selected.
+
+If a MOFid group touches two or more stronger components, those components are
+never merged. The package records `PARENT_METHOD_CONFLICT`; a lower-only row is
+unresolved under the explanatory hierarchy. `priority_main` does **not** use
+Zeo++, CrystalNets topology, source ID, common name, CIF hash, or
+StructureMatcher evidence.
+
+`main_union` is a distinct conservative **leakage guard**, not an explanatory
+parent claim. It forms transitive connected components over the complete
+unfiltered release from exact full CIF SHA-256 equality, database-namespaced
+source siblings, and available release-authorized RAC5, MOFid-v2, and MOFid-v1
+group edges. It can place two different `priority_main` groups in the same
+indivisible split block without claiming they have the same parent.
+`leakage_guard="auto"` chooses `main_union` for `priority_main` and
+`parent_only` for an explicitly selected direct/reference parent method.
+`parent_only` uses only that selected explanatory grouping as split blocks.
+All label, source, variant, metal, ID, and target filters are applied only
+after the full-release grouping step.
 
 ## 2. Installation
 
@@ -165,8 +204,9 @@ The loader requires:
 - `parent_groups/parent_group_methods.json`.
 
 `manifests/cif_manifest.csv` is optional for basic metadata inspection, but it
-is effectively required for the recommended `priority_main` split because the
-default `main_union` leakage guard uses full CIF SHA-256 identity.
+is effectively required for the recommended project-defined `priority_main`
+split because its automatic project-defined `main_union` leakage guard uses
+full CIF SHA-256 identity as one of the five edge types defined above.
 
 The loader validates the exact structure-ID sets across files, naming/source
 consistency, checker label recomputation, parent group status/size consistency,
@@ -518,6 +558,9 @@ independently to every row.
 | `mofid_v2` | Main/direct | Exact normalized release-authorized MOFid v2 group when available |
 | `mofid_v1` | Main/direct | Exact normalized MOFid v1 group when available |
 | `rac5_zeo` | Reference | Exact combined RAC5 and selected Zeo++ fingerprint |
+| `rac5_topology` | Optional reference | Exact RAC5 fingerprint plus a complete successful current CrystalNets fingerprint |
+| `mofid_v2_topology` | Optional reference | Exact normalized MOFid v2 plus a complete successful current CrystalNets fingerprint |
+| `structure_matcher_strict` | Optional reference | Connected component of direct symmetric strict pymatgen StructureMatcher edges |
 | `zeo` | Reference | Exact selected Zeo++ fingerprint |
 | `source_id` | Reference | Normalized, database-namespaced source sibling |
 | `common_name` | Reference | Normalized common-name match |
@@ -527,6 +570,86 @@ independently to every row.
 RAC/Zeo equality is fingerprint equivalence, not proof of a common synthetic
 parent. `identity_union` is a screening relation, not proof that every member
 is chemically identical.
+
+The optional criteria are accepted only when the release declares and
+validates their columns. They are sensitivity relations and do not alter
+`priority_main` or `main_union`. A missing, partial, timed-out, or failed
+CrystalNets result is not group evidence. `mofid_v2_topology` is also
+provisional whenever its MOFid v2 input bundle is provisional; the release
+method file is authoritative.
+
+`structure_matcher_strict` is derived from an audited direct-pair edge ledger.
+Because a nonzero-tolerance match relation need not be transitive, its group is
+a connected component for inspection or an explicitly requested sensitivity
+split. It is not proof that every member directly matches every other member.
+Consult the release duplicate-evidence ledger for directional normalized RMS
+and maximum displacement values, clique status, parser state, and exact frozen
+matcher settings. The historical relaxed matcher is intentionally not exposed
+as a parent method.
+
+The strict v2 ledger names these values `normalized_rms` and
+`normalized_max_displacement`; they are divided by `(V/Nsites)^(1/3)` and are
+not distances in angstroms. This is pymatgen's periodic lattice/site matcher;
+it does not call the separate `charnley/rmsd` molecular Kabsch program. Its
+pinned CIF parser also records symmetry expansion, 1e-4 site merging, and 1e-4
+ideal-fraction rounding explicitly. A directional fit disagreement remains
+unresolved and cannot create an edge.
+
+The loader fails closed on `sm_*` columns unless
+`parent_group_methods.json` contains the exact
+`criteria.structure_matcher_strict` contract. That declaration fixes method
+ID `pymatgen_structure_matcher_strict_v2`, method schema
+`coremof-structure-matcher-method/2.0`, direct symmetric strict-match edges as
+the authoritative evidence, connected components as a non-transitive
+convenience view, and exclusion from both `priority_main` and `main_union`.
+Its public status policy is exactly `MATCHED`, `UNMATCHED`, or
+`NOT_AVAILABLE`; any component touched by an unresolved pair must be projected
+as structure-specific `NOT_AVAILABLE` singletons.
+
+The declaration must bind
+`parent_groups/structure_matcher_strict_evidence_receipt.json` by full
+lowercase SHA-256. The receipt must be a passing
+`coremof-structure-matcher-release-adapter-receipt/1.0` record bound to the
+exact `parent_groups.csv` bytes and a full strict-pair-ledger SHA-256. It also
+records candidate, successful, unresolved, direct-edge, structure, and
+`NOT_AVAILABLE` counts. The receipt and method declaration must both state
+that historical relaxed output was neither executed nor exposed. The verified receipt becomes a
+split input hash, so a split receipt is bound to this optional evidence.
+
+The required criterion object is:
+
+```json
+{
+  "role": "OPTIONAL_REFERENCE",
+  "method_id": "pymatgen_structure_matcher_strict_v2",
+  "method_schema_version": "coremof-structure-matcher-method/2.0",
+  "authoritative_evidence": "DIRECT_SYMMETRIC_STRICT_MATCH_EDGES",
+  "fit_policy": "FIT_SYMMETRIC_TRUE_REQUIRED",
+  "component_semantics": "CONNECTED_COMPONENT_CONVENIENCE_DIRECT_EDGES_AUTHORITATIVE",
+  "component_completeness_policy": "INCOMPLETE_COMPONENTS_NOT_AVAILABLE_UNIQUE_SINGLETON",
+  "public_status_policy": ["MATCHED", "UNMATCHED", "NOT_AVAILABLE"],
+  "included_in_priority_main": false,
+  "included_in_main_union": false,
+  "historical_relaxed_executed": false,
+  "historical_relaxed_exposed": false,
+  "evidence_receipt": {
+    "file": "parent_groups/structure_matcher_strict_evidence_receipt.json",
+    "sha256": "<64 lowercase hexadecimal characters>"
+  }
+}
+```
+
+The bound receipt has schema
+`coremof-structure-matcher-release-adapter-receipt/1.0` and exactly these
+additional fields: `status` (`PASS`), `dataset_version`, `method_id`,
+`method_schema_version`, `parent_groups_sha256`,
+`strict_pair_ledger_sha256`, `structure_count`, `candidate_pair_count`,
+`successful_pair_count`, `unresolved_pair_count`,
+`strict_direct_match_edge_count`, `not_available_structure_count`, and
+`historical_relaxed_executed` (`false`) and
+`historical_relaxed_exposed` (`false`). Counts must be non-negative;
+successful plus unresolved pairs must equal candidate pairs, and the receipt's
+structure and unavailable counts must agree with the release table.
 
 ### 9.3 Directly inspect a parent resolution
 
@@ -635,9 +758,233 @@ rac_only = classified.train_valid_test_split(
 )
 ```
 
-## 11. Creating train/validation/test splits
+## 11. Merging target results with release features
 
-### 11.1 Method on a classified dataset
+Join uptake, selectivity, stability, or another user-supplied endpoint **before**
+creating a split. This makes target availability an explicit eligibility rule
+and avoids assigning rows that cannot be used for the intended model. The
+target layer still builds leakage components from the complete release, so an
+untargeted or filtered structure can remain an invisible bridge between two
+eligible structures.
+
+The target API uses only the standard library and accepts CSV, JSON, and JSONL.
+It can combine multiple files with different target columns:
+
+```python
+from CoREMOF.dataset import CoREMOFDataset
+from CoREMOF.targets import AliasRegistry, TargetSource
+
+dataset = CoREMOFDataset.from_release("/path/to/coremof_v26.0.2")
+
+uptake = TargetSource(
+    "/path/to/uptake.csv",
+    name="xe_uptake_298K_1bar",
+    id_column="structure_name",
+    target_columns=("uptake",),
+    target_names={"uptake": "xe_uptake"},
+    value_types={"xe_uptake": "float"},
+    units={"xe_uptake": "mol/kg"},
+    conditions={
+        "xe_uptake": {"temperature_K": 298, "pressure_bar": 1.0}
+    },
+)
+selectivity = TargetSource(
+    "/path/to/selectivity.jsonl",
+    name="xe_kr_selectivity_298K_1bar",
+    id_column="structure_id",
+    target_columns=("xe_kr_selectivity",),
+    units={"xe_kr_selectivity": "dimensionless"},
+    conditions={
+        "xe_kr_selectivity": {
+            "temperature_K": 298,
+            "pressure_bar": 1.0,
+            "feed": {"Xe": 0.2, "Kr": 0.8},
+        }
+    },
+)
+
+modelling_data = dataset.merge_targets(
+    (uptake, selectivity),
+    feature_tables=("rac5", "zeo", "topology"),
+)
+print(modelling_data.target_columns)
+print(modelling_data.target_values(modelling_data.structure_ids[0]))
+```
+
+`feature_tables` selects current release tables by name. Supported names are
+`rac5`, `zeo`, `zeo_zero_probe`, and `topology`. Historical feature artifacts
+are not selected implicitly. Omitting `feature_tables` joins targets only to
+the main public metadata and avoids loading large descriptor tables.
+
+### 11.1 Identifier matching and earlier database names
+
+Current public IDs are matched exactly after trimming surrounding whitespace.
+There is no fuzzy, case-insensitive, basename, chemical-name, or substring
+matching. Unknown IDs fail the complete merge.
+
+Earlier public IDs, earlier CIF names, or v11 identifiers are accepted only
+through an explicit local alias registry. The user must name the authorized
+alias columns; the package never searches migration fields automatically:
+
+```python
+aliases = AliasRegistry(
+    "/path/to/audited_structure_name_registry.csv",
+    current_id_column="structure_id",
+    alias_columns=("previous_public_id", "v11_structure_id", "v11_cif_file"),
+)
+
+modelling_data = dataset.merge_targets(
+    (uptake, selectivity),
+    alias_registry=aliases,
+    feature_tables=("rac5", "zeo"),
+)
+```
+
+The registry file, selected columns, size, and SHA-256 are bound into the merge
+receipt. If one alias maps to two current IDs—or collides with a different
+current public ID—the merge fails. Output rows use only current public IDs;
+the earlier-ID columns are not copied into the modelling table.
+
+### 11.2 Nulls, types, units, conditions, and duplicate values
+
+- JSON `null` remains Python `None`; an empty CSV cell is null by default.
+- CSV non-null values remain strings unless `value_types` explicitly requests
+  `float`, `int`, `bool`, `string`, or `json` conversion.
+- Declared `json` targets may be JSON scalars, objects, or arrays. Objects and
+  arrays are retained as recursively read-only values in memory, serialized
+  with sorted object keys in CSV/provenance output, and compared for duplicate
+  equality by that canonical JSON representation; object key order therefore
+  does not create a false conflict.
+- `target_names` explicitly maps a generic input column such as `uptake` to a
+  canonical endpoint such as `xe_uptake`; declarations use the canonical name
+  and provenance retains the input column.
+- Units and experimental/simulation conditions are never inferred. Declare
+  them per target, or leave them explicitly unspecified.
+- A target name denotes one endpoint contract. Reusing it with different
+  units, conditions, or declared types fails; use distinct target names for
+  scientifically different endpoints.
+- Equal duplicate non-null observations are accepted and retain both
+  provenance entries. Conflicting non-null values fail the entire merge.
+- A null duplicate does not overwrite a non-null observation. No missing
+  target is imputed or converted to zero.
+
+Every merged dataset retains per-observation provenance: source label, input
+filename and SHA-256, row number, original input identifier, current/alias
+resolution, and supplied value.
+
+Preserve the scientific meaning of each source column. For example, a
+Rosenbluth weight is a dimensionless observation, not a Henry coefficient or
+an uptake. Declare and name it accordingly; the package does not reinterpret
+or convert it:
+
+```python
+rosenbluth = TargetSource(
+    "/path/to/rosenbluth.csv",
+    id_column="structure_name",
+    target_columns=("rosenbluth",),
+    target_names={"rosenbluth": "rosenbluth_weight"},
+    value_types={"rosenbluth_weight": "float"},
+    units={"rosenbluth_weight": "dimensionless"},
+    conditions={"rosenbluth_weight": {"temperature_K": 298}},
+)
+```
+
+If a later workflow derives Henry or uptake values, publish those as separate
+canonical targets with their own method, unit, condition, and provenance.
+
+### 11.3 Require targets before assignment
+
+Classify the merged dataset, then require all selected endpoints:
+
+```python
+classified = modelling_data.classify("5checker")
+split = classified.train_valid_test_split(
+    parent_method="priority_main",
+    leakage_guard="auto",
+    labels=("CR", "NCR"),
+    required_targets=("xe_uptake", "xe_kr_selectivity"),
+    required_target_mode="all",
+    fractions=(0.8, 0.1, 0.1),
+    random_state=42,
+)
+```
+
+Rows lacking at least one required endpoint are written as `EXCLUDED` with
+`MISSING_REQUIRED_TARGET`. Set `required_target_mode="any"` only when a row
+with any one of the listed endpoints is useful. The receipt records each
+target's full-release availability count, the combined eligible count, target
+definitions and source hashes, and confirms that the target filter preceded
+assignment while leakage blocks used the full release universe.
+
+### 11.4 Deterministic merged outputs
+
+Write the modelling table before or alongside the split:
+
+```python
+csv_path, provenance_path, receipt_path = modelling_data.write(
+    "model_inputs",
+    stem="xe_kr_targets",
+)
+```
+
+This creates:
+
+- `xe_kr_targets.csv`: release metadata, requested current feature columns,
+  and every target column for every release structure;
+- `xe_kr_targets.provenance.jsonl`: one record per supplied observation; and
+- `xe_kr_targets.json`: target definitions, source/registry/feature hashes,
+  counts, policies, and the deterministic target-value digest.
+
+### 11.5 Automatic high-throughput candidate screening
+
+The standard-library example
+[`examples/screen_candidates.py`](examples/screen_candidates.py) automates a
+validated screen without changing checker labels or filling missing values:
+
+```bash
+python examples/screen_candidates.py /path/to/coremof_v26.0.2 \
+  --target-config targets.json \
+  --rank-by xe_uptake \
+  --require-target xe_uptake \
+  --checkers 5checker \
+  --label CR \
+  --source COD \
+  --variant ASR \
+  --metal Cu \
+  --order descending \
+  --limit 1000 \
+  --split \
+  --parent-method priority_main \
+  --leakage-guard auto \
+  --output-directory screening/xe_uptake
+```
+
+The operation order is fixed: validate the release, recompute the selected
+checker view, apply identity filters, require declared targets, exclude null,
+non-numeric, and non-finite ranking values, then rank. Equal numeric values
+are ordered by ascending `structure_id`. Integer inputs and decimal text are
+ranked without converting through binary64, so values above `2**53` do not
+collapse into false ties; native Python floats retain their IEEE-754 values.
+Booleans, nulls, NaN, and infinities are never rankable. A non-null string such
+as `NA` remains available according to the declared target contract but is
+excluded if used as a numeric ranking field. Each required target is a flat
+CSV column named `required_target:<target-name>`.
+
+With `--split`, only the emitted candidates receive train/validation/test
+assignments, but leakage components are still constructed from the complete
+release. The output remains exploratory and `official_split=false`. The
+screening receipt hashes the script and exact CoREMOF source closure, embeds
+the target/config/alias/feature receipt, binds release inputs, hashes the
+ranked CSV, and binds both optional split files.
+
+Do not reinterpret a ranking column. In particular, the historical local
+`henry.txt` files contain dimensionless average Rosenbluth weights—not Henry
+coefficients, uptake, or selectivity. Descending Rosenbluth-weight ranking is
+only a workflow demonstration.
+
+## 12. Creating train/validation/test splits
+
+### 12.1 Method on a classified dataset
 
 ```python
 split = classified.train_valid_test_split(
@@ -655,7 +1002,7 @@ split = classified.train_valid_test_split(
 )
 ```
 
-### 11.2 One-call convenience function
+### 12.2 One-call convenience function
 
 ```python
 from CoREMOF.splitters import split_release
@@ -677,7 +1024,7 @@ defaults to `5checker`. For an already classified object, omitted `checkers`
 preserves its existing checker view. An explicitly conflicting checker request
 raises rather than being silently ignored.
 
-### 11.3 Split parameters
+### 12.3 Split parameters
 
 | Parameter | Default | Meaning |
 |---|---|---|
@@ -725,7 +1072,7 @@ train_only = classified.train_valid_test_split(
 )
 ```
 
-### 11.4 Stratification
+### 12.4 Stratification
 
 The default splitter approximately balances checker labels while respecting
 indivisible leakage blocks:
@@ -746,9 +1093,9 @@ Every non-`label` key must exist in the metadata table. More or smaller strata
 can make exact proportions harder to achieve. Leakage protection always takes
 priority over ratio or stratum balance.
 
-## 12. Understanding `SplitResult`
+## 13. Understanding `SplitResult`
 
-### 12.1 IDs and indices
+### 13.1 IDs and indices
 
 ```python
 print(split.train_ids[:5])
@@ -771,7 +1118,7 @@ splitter. The result exposes both index systems:
 Persist structure IDs, not integer positions. Positions can change when the
 view or metadata ordering changes.
 
-### 12.2 Counts and balance
+### 13.2 Counts and balance
 
 ```python
 print(dict(split.counts))
@@ -785,7 +1132,7 @@ row is either assigned or explicitly excluded.
 Exact requested fractions may be impossible when a leakage block is large.
 Inspect the achieved fractions rather than assuming exact 80/10/10 counts.
 
-### 12.3 Leakage audit
+### 13.3 Leakage audit
 
 ```python
 audit = split.leakage_audit
@@ -801,7 +1148,7 @@ The audit reports:
 - maximum assigned block size; and
 - a final pass/fail flag.
 
-### 12.4 Assignments, exclusions, and diagnostics
+### 13.4 Assignments, exclusions, and diagnostics
 
 ```python
 structure_id = split.train_ids[0]
@@ -831,7 +1178,7 @@ With the default `priority_main`/`main_union` combination, an unresolved
 hierarchy conflict can remain assigned safely inside the broader leakage block.
 It then appears in `parent_diagnostics` instead of `exclusions`.
 
-### 12.5 Warnings
+### 13.5 Warnings
 
 ```python
 print(split.warnings)
@@ -848,9 +1195,9 @@ Possible machine-readable warnings include:
 - `PARENT_METHOD_CONFLICTS_GUARDED`; and
 - `PARENT_METHOD_CONFLICT_LEDGER_PRESENT`.
 
-## 13. Writing CSV and JSON outputs
+## 14. Writing CSV and JSON outputs
 
-### 13.1 Write both files transactionally
+### 14.1 Write both files transactionally
 
 ```python
 csv_path, receipt_path = split.write(
@@ -873,14 +1220,14 @@ The pair is staged before publication. If the second render fails, the method
 restores or removes the first output instead of leaving a misleading half-pair.
 The stem must be a simple filename stem and cannot contain directory traversal.
 
-### 13.2 Write files separately
+### 14.2 Write files separately
 
 ```python
 split.to_csv("assignments.csv")
 split.to_json("split_receipt.json")
 ```
 
-### 13.3 Assignment CSV columns
+### 14.3 Assignment CSV columns
 
 The CSV contains one row for every structure in the release:
 
@@ -911,7 +1258,7 @@ with open("model_splits/cod_si_5checker_seed42.csv", newline="") as handle:
 train_ids = [row["structure_id"] for row in rows if row["split"] == "train"]
 ```
 
-### 13.4 JSON receipt
+### 14.4 JSON receipt
 
 The JSON receipt records:
 
@@ -922,7 +1269,9 @@ The JSON receipt records:
 - requested filters, fractions, seed, and stratification;
 - achieved counts and fractions;
 - labels and partition IDs;
-- parent method, leakage guard, conflicts, and diagnostics;
+- parent method plus its machine-readable definition;
+- requested and resolved leakage guard plus its machine-readable definition;
+- parent conflicts and diagnostics;
 - exclusions;
 - assignment digest;
 - CIF verification state;
@@ -936,15 +1285,17 @@ receipt = split.receipt()
 print(receipt["assignment_sha256"])
 print(receipt["checker_view_kind"])
 print(receipt["parent_conflict_count"])
+print(receipt["parent_method_definition"]["summary"])
+print(receipt["requested_leakage_guard"], receipt["leakage_guard"])
 ```
 
 Implementation hashes are frozen when `SplitResult` is constructed. Editing
 source code later cannot silently change the receipt of an already-created
 in-memory result.
 
-## 14. Command-line usage
+## 15. Command-line usage
 
-### 14.1 Help and installation check
+### 15.1 Help and installation check
 
 ```bash
 coremof --version
@@ -952,7 +1303,7 @@ coremof doctor
 coremof split --help
 ```
 
-### 14.2 Recommended COD+SI split
+### 15.2 Recommended COD+SI split
 
 ```bash
 coremof split /path/to/coremof_v26.0.2 \
@@ -970,7 +1321,7 @@ coremof split /path/to/coremof_v26.0.2 \
 The command prints a concise JSON summary to standard output and writes the
 assignment CSV and receipt JSON.
 
-### 14.3 Strict CIF verification from the CLI
+### 15.3 Strict CIF verification from the CLI
 
 ```bash
 coremof split /path/to/coremof_v26.0.2 \
@@ -978,7 +1329,7 @@ coremof split /path/to/coremof_v26.0.2 \
   --output-directory verified_split
 ```
 
-### 14.4 Other useful CLI filters
+### 15.4 Other useful CLI filters
 
 ```bash
 coremof split /path/to/coremof_v26.0.2 \
@@ -991,6 +1342,73 @@ coremof split /path/to/coremof_v26.0.2 \
   --metals Cu Zn \
   --stratify-by label structure_variant \
   --output-directory sensitivity_split
+```
+
+### 15.5 Merge and require targets from a configuration file
+
+Keep multi-file schemas and scientific declarations in JSON. Relative paths
+are resolved beside the configuration file:
+
+```json
+{
+  "sources": [
+    {
+      "path": "results/xe_uptake.csv",
+      "name": "xe_uptake_298K_1bar",
+      "id_column": "structure_name",
+      "target_columns": ["uptake"],
+      "target_names": {"uptake": "xe_uptake"},
+      "value_types": {"xe_uptake": "float"},
+      "units": {"xe_uptake": "mol/kg"},
+      "conditions": {
+        "xe_uptake": {"temperature_K": 298, "pressure_bar": 1.0}
+      }
+    },
+    {
+      "path": "results/xe_kr_selectivity.jsonl",
+      "name": "xe_kr_selectivity_298K_1bar",
+      "id_column": "structure_id",
+      "target_columns": ["selectivity"],
+      "target_names": {"selectivity": "xe_kr_selectivity"},
+      "units": {"xe_kr_selectivity": "dimensionless"},
+      "conditions": {
+        "xe_kr_selectivity": {
+          "temperature_K": 298,
+          "pressure_bar": 1.0,
+          "feed": {"Xe": 0.2, "Kr": 0.8}
+        }
+      }
+    }
+  ],
+  "alias_registry": {
+    "path": "private/audited_structure_name_registry.csv",
+    "current_id_column": "structure_id",
+    "alias_columns": ["previous_public_id", "v11_structure_id"]
+  },
+  "feature_tables": ["rac5", "zeo", "topology"]
+}
+```
+
+Create the joined modelling table:
+
+```bash
+coremof merge-targets /path/to/coremof_v26.0.2 \
+  --config targets.json \
+  --output-directory model_inputs \
+  --stem xe_kr_targets
+```
+
+Or merge and split in one command:
+
+```bash
+coremof split /path/to/coremof_v26.0.2 \
+  --target-config targets.json \
+  --require-target xe_uptake \
+  --require-target xe_kr_selectivity \
+  --required-target-mode all \
+  --parent-method priority_main \
+  --output-directory model_splits \
+  --stem xe_kr_split
 ```
 
 CLI options are:
@@ -1010,6 +1428,9 @@ CLI options are:
 | `--variants ...` | No variant filter |
 | `--metals ...` | No metal filter |
 | `--structure-ids ...` | No exact-ID filter |
+| `--target-config FILE` | No target join; JSON config when supplied |
+| repeatable `--require-target NAME` | No target-availability filter |
+| `--required-target-mode` | `all`; `any` is an explicit alternative |
 | `--stratify-by ...` | `label` |
 | `--stem` | `coremof_split` |
 | `--overwrite` | Permit replacement of the output pair |
@@ -1020,6 +1441,11 @@ CLI validation, missing-path, integrity, and output-collision errors return
 exit code 2 with a concise error message. Existing outputs require either a new
 stem/directory or `--overwrite`.
 
+Target-merge and screening bundles use race-safe create-if-absent publication
+by default. Their explicit overwrite mode is sequential **single-writer**
+replacement: concurrent processes writing the same directory and stem must be
+serialized with an external lock or, preferably, use distinct immutable stems.
+
 The Python API uses `labels=None` to include all labels. The CLI has no null
 value; list all four explicitly:
 
@@ -1027,9 +1453,9 @@ value; list all four explicitly:
 --labels CR NCR AMBIGUOUS UNCHECKED
 ```
 
-## 15. Common workflows
+## 16. Common workflows
 
-### 15.1 Export CR and NCR IDs without splitting
+### 16.1 Export CR and NCR IDs without splitting
 
 ```python
 from pathlib import Path
@@ -1042,7 +1468,7 @@ Path("cod_cr_ids.txt").write_text("\n".join(classified.cr_ids) + "\n")
 Path("cod_ncr_ids.txt").write_text("\n".join(classified.ncr_ids) + "\n")
 ```
 
-### 15.2 Compare the three official checker views
+### 16.2 Compare the three official checker views
 
 ```python
 for view in ("3checker", "4checker", "5checker"):
@@ -1052,7 +1478,7 @@ for view in ("3checker", "4checker", "5checker"):
 
 This compares definitions; it does not overwrite one view with another.
 
-### 15.3 Compare main parent assumptions
+### 16.3 Compare main parent assumptions
 
 ```python
 classified = dataset.classify("5checker")
@@ -1072,7 +1498,7 @@ for method in ("rac5", "mofid_v2", "mofid_v1"):
 These are sensitivity analyses under different scientific relations. They are
 not interchangeable replicas.
 
-### 15.4 Select a metal-containing subset
+### 16.4 Select a metal-containing subset
 
 ```python
 cu_zn = dataset.classify(
@@ -1090,7 +1516,7 @@ split = cu_zn.train_valid_test_split(
 The broader leakage graph is still built from the full release; filtering first
 does not remove hidden bridges.
 
-### 15.5 Split an exact list of structures
+### 16.5 Split an exact list of structures
 
 ```python
 requested = tuple(dataset.structure_ids[:3])
@@ -1104,7 +1530,7 @@ split = dataset.classify("5checker").train_valid_test_split(
 
 Unrequested release rows remain in the assignment CSV as explicit exclusions.
 
-### 15.6 Use pandas only in downstream analysis
+### 16.6 Use pandas only in downstream analysis
 
 Pandas is not required by the package, but it can read the output normally:
 
@@ -1115,9 +1541,9 @@ assignments = pd.read_csv("model_splits/cod_si_5checker_seed42.csv")
 train = assignments.loc[assignments["split"] == "train"]
 ```
 
-## 16. Reproducibility and scientific interpretation
+## 17. Reproducibility and scientific interpretation
 
-### 16.1 What is deterministic
+### 17.1 What is deterministic
 
 For the same validated release, package source, parameters, and
 `random_state`, the `structure_id -> partition` assignment and assignment
@@ -1127,14 +1553,14 @@ not change that mapping.
 Changing `random_state` can change which complete blocks enter each partition.
 It cannot change labels, parent groups, or leakage-block membership.
 
-### 16.2 Why requested fractions may not be exact
+### 17.2 Why requested fractions may not be exact
 
 The splitter assigns whole leakage blocks. It never breaks a block merely to
 hit an exact percentage. A large block can therefore make an exact 80/10/10
 split impossible. This is reported through achieved fractions, maximum block
 size, and `GROUP_CONSTRAINED_FRACTIONS`.
 
-### 16.3 Use IDs rather than row numbers
+### 17.3 Use IDs rather than row numbers
 
 Integer indices are convenience values tied to a particular release or view.
 Persist:
@@ -1144,7 +1570,7 @@ Persist:
 - the JSON receipt; and
 - the exact release files used.
 
-### 16.4 Current versus official splits
+### 17.4 Current versus official splits
 
 Current package outputs are reproducible exploratory splits. They contain:
 
@@ -1160,7 +1586,7 @@ structure connects base groups already frozen in different partitions, the new
 row must be reported as a bridge conflict rather than moving old rows silently.
 That frozen-extension feature is not yet implemented.
 
-### 16.5 Provisional parent inputs
+### 17.5 Provisional parent inputs
 
 `provisional_input` becomes false only when both the dataset and parent-method
 artifacts declare the exact release status `FINAL`. Values such as
@@ -1170,7 +1596,7 @@ Current v26 parent tables remain provisional pending the final approved MOFid
 evidence and parent rebuild. The package is usable now for exploratory work,
 but every MOFid-dependent or `priority_main` result must retain that caveat.
 
-### 16.6 Recording and citing a split
+### 17.6 Recording and citing a split
 
 For a reproducible publication or model release, report at least:
 
@@ -1186,7 +1612,7 @@ Publish the assignment CSV and JSON receipt with the model when licensing
 allows. Do not invent a citation for an unpublished local snapshot; cite the
 official release record supplied by the data distributor.
 
-## 17. Licensing and redistribution
+## 18. Licensing and redistribution
 
 Loading and splitting existing release tables do not require a CCDC licence.
 The package does not invoke CSD software, MOSAEC, SETC-GAT, Zeo++, molSimplify,
@@ -1211,7 +1637,7 @@ release structure, including excluded CSD rows. Review the output before
 redistribution; source filtering is a modelling selection, not a licence
 sanitizer.
 
-## 18. Troubleshooting
+## 19. Troubleshooting
 
 | Problem | Likely cause | Action |
 |---|---|---|
@@ -1225,12 +1651,17 @@ sanitizer.
 | Unknown structure ID | Typo or ID from another release | Check `dataset.structure_ids` and release version |
 | Unknown `stratify_by` field | Column absent from metadata | Use `label` or an existing metadata column |
 | Fractions rejected | Wrong length, negative/NaN, or sum not equal to one | Supply train/validation/test fractions such as `(0.8, 0.1, 0.1)` |
-| Output already exists | Safe overwrite protection | Choose a new stem/directory or set `overwrite=True` / `--overwrite` |
+| Output already exists | Safe overwrite protection | Prefer a new immutable stem/directory; overwrite is single-writer and same-stem concurrent writers require an external lock |
 | Empty partition warning | Too few indivisible blocks for the requested nonzero partition | Use more data or set the fraction to zero deliberately |
 | Requested ratios not reached | Large parent/leakage groups | Inspect `achieved_fractions` and `max_block_size`; do not split the group manually |
 | `official=True` fails | No audited official assignment manifest exists | Generate an exploratory split and retain `official_split=false` |
 | Preclassified checker conflict | Explicit `checkers` differs from the existing view | Omit `checkers` or pass the matching view |
 | High memory use on full release | Complete metadata, conflict, and leakage ledgers are retained | Run one full split at a time and release unused objects between sensitivity runs |
+| Unknown target structure ID | Input name is not a current ID and no alias maps it | Correct the name or supply an explicit audited alias registry |
+| Ambiguous alias | One alias maps to multiple current IDs | Repair/audit the registry; the package will not choose one |
+| Conflicting duplicate target | Two non-null observations disagree | Reconcile the source data or use scientifically distinct canonical target names |
+| Conflicting target definition | One canonical name has different units/conditions/types | Rename the endpoints with `target_names` or correct the declaration |
+| Missing required target | Target is null/absent for that row | Keep the explicit exclusion, choose `any`, or change the required endpoint list |
 
 Expected validation errors are concise in the CLI. In Python, catch specific
 exceptions only when you can handle them meaningfully:
@@ -1245,18 +1676,34 @@ except (FileNotFoundError, ReleaseValidationError) as error:
     print("Cannot use this release:", error)
 ```
 
-## 19. Current validation status and limitations
+## 20. Current validation status and limitations
 
 The package and this handbook have been validated with:
 
-- 61 focused tests under normal Python;
-- the same 61 focused tests under `python -S` without site-packages;
-- 75 passing dependency-complete tests, with the three opt-in real-release
-  integrations also executed separately and passing;
+- 134 focused package/notebook/target/screen/parent tests under normal
+  Python;
+- the same 134 focused tests under `python -S` without site-packages;
+- a 151-test dependency-complete Python 3.11 discovery run with 148 passing and
+  the three opt-in real-release tests skipped, followed by a separate real
+  v26.0.1/v26.0.2 run where all three passed;
 - exact loading of 36,628 v26.0.1 and 42,574 v26.0.2 structures;
 - strict byte-level rehashing of all 42,574 v26.0.2 CIFs;
-- empty-environment wheel installation and `pip check`; and
-- an independent implementation review with no release-blocking package defect.
+- a real 42,574-row v26.0.2 target join with all 308 current RAC5, Zeo++,
+  zero-probe, and topology feature columns, 17,245 target-complete structures,
+  and 137,960 historical Rosenbluth observations;
+- execution of all 24 code cells (47 cells total) in the target-aware companion
+  notebook against v26.0.2 and the real historical target configuration;
+- a real unattended five-checker CR COD/SI screen that retained 4,287 finite
+  target-complete candidates, emitted a deterministic top 1,000, and split
+  them 800/100/100 with zero crossed leakage blocks;
+- empty-environment wheel installation and `pip check`;
+- fail-closed synthetic tests for ambiguous aliases, duplicate conflicts,
+  canonical target renaming, target nulls, hidden leakage bridges, unrelated
+  split bundles, forged screening rows, concurrent-publication rollback, and
+  JSON object/array target canonicalization; and
+- fail-closed StructureMatcher contract tests for method/version/semantics,
+  optional-only hierarchy membership, parent-table and ledger hashes,
+  receipt counts, public completeness policy, and relaxed-output exclusion.
 
 For the local v26.0.2 provisional audited snapshot captured on 2026-08-03, a
 five-checker COD+SI CR/NCR run has 5,902 eligible structures and produced
@@ -1289,9 +1736,9 @@ Remaining publication gates are:
 - rerunning the release integrations after that rebuild;
 - audited official/frozen-base assignment-manifest support;
 - Sphinx documentation rendering; and
-- Python 3.10 and 3.11 package test matrices.
+- a Python 3.10 package test matrix.
 
-## 20. Developer checks
+## 21. Developer checks
 
 From the source checkout:
 
@@ -1304,7 +1751,9 @@ python -m unittest \
   tests.test_notebook \
   tests.test_dataset_labels \
   tests.test_parents_splitters \
-  tests.test_cli
+  tests.test_targets \
+  tests.test_cli \
+  tests.test_screen_candidates_example
 
 # Prove the new API does not depend on site-packages.
 python -S -m unittest \
@@ -1312,7 +1761,9 @@ python -S -m unittest \
   tests.test_notebook \
   tests.test_dataset_labels \
   tests.test_parents_splitters \
-  tests.test_cli
+  tests.test_targets \
+  tests.test_cli \
+  tests.test_screen_candidates_example
 ```
 
 Run opt-in real-release tests by supplying both roots:
@@ -1343,4 +1794,4 @@ The loader does not download releases. External users should obtain an
 authorized CoRE-MOF archive from the project/data distributor, preserve its
 published checksum, extract it, and pass the extracted directory containing
 `dataset_info.json`. CSD-containing material remains subject to the licence
-rules in [Licensing and redistribution](#17-licensing-and-redistribution).
+rules in [Licensing and redistribution](#18-licensing-and-redistribution).

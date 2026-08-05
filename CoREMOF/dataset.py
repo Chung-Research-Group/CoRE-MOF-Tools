@@ -9,8 +9,11 @@ all published checker labels are independently recomputed before use.
 
 import csv
 import hashlib
+import io
 import json
+import os
 import re
+import stat
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,7 +41,7 @@ from .labels import (
 
 PARENT_STATUSES = frozenset({"MATCHED", "UNMATCHED", "NOT_AVAILABLE"})
 PUBLIC_CHECKER_STATUSES = frozenset({"PASS", "FAIL", "NOT_AVAILABLE"})
-PUBLIC_PARENT_METHOD_PREFIXES = MappingProxyType(
+BASE_PUBLIC_PARENT_METHOD_PREFIXES = MappingProxyType(
     {
         "rac5_zeo": "rac_zeo",
         "rac5": "rac",
@@ -50,10 +53,28 @@ PUBLIC_PARENT_METHOD_PREFIXES = MappingProxyType(
         "identity_union": "identity",
     }
 )
+OPTIONAL_PUBLIC_PARENT_METHOD_PREFIXES = MappingProxyType(
+    {
+        "rac5_topology": "rac_topology",
+        "mofid_v2_topology": "mofid2_topology",
+        "structure_matcher_strict": "sm",
+    }
+)
+PUBLIC_PARENT_METHOD_PREFIXES = MappingProxyType(
+    {
+        **dict(BASE_PUBLIC_PARENT_METHOD_PREFIXES),
+        **dict(OPTIONAL_PUBLIC_PARENT_METHOD_PREFIXES),
+    }
+)
 PARENT_METHOD_ALIASES = MappingProxyType(
     {
         **dict(PUBLIC_PARENT_METHOD_PREFIXES),
         "rac_zeo": "rac_zeo",
+        "rac_topology": "rac_topology",
+        "mofid2_topology": "mofid2_topology",
+        "structure_matcher": "sm",
+        "structure_matcher_strict": "sm",
+        "sm": "sm",
         "rac": "rac",
         "source": "source",
         "mofid2": "mofid2",
@@ -70,6 +91,9 @@ _STRUCTURE_ID_RE = re.compile(
 _PARENT_GROUP_PREFIXES = MappingProxyType(
     {
         "rac_zeo": "RZ-",
+        "rac_topology": "RT-",
+        "mofid2_topology": "M2T-",
+        "sm": "SM-",
         "rac": "R-",
         "zeo": "Z-",
         "source": "S-",
@@ -80,9 +104,123 @@ _PARENT_GROUP_PREFIXES = MappingProxyType(
     }
 )
 
+_STRUCTURE_MATCHER_METHOD_ID = "pymatgen_structure_matcher_strict_v2"
+_STRUCTURE_MATCHER_METHOD_SCHEMA = "coremof-structure-matcher-method/2.0"
+_STRUCTURE_MATCHER_RECEIPT_SCHEMA = (
+    "coremof-structure-matcher-release-adapter-receipt/1.0"
+)
+_STRUCTURE_MATCHER_RECEIPT_FILE = (
+    "parent_groups/structure_matcher_strict_evidence_receipt.json"
+)
+_STRUCTURE_MATCHER_METHOD_CONTRACT = MappingProxyType(
+    {
+        "role": "OPTIONAL_REFERENCE",
+        "method_id": _STRUCTURE_MATCHER_METHOD_ID,
+        "method_schema_version": _STRUCTURE_MATCHER_METHOD_SCHEMA,
+        "authoritative_evidence": "DIRECT_SYMMETRIC_STRICT_MATCH_EDGES",
+        "fit_policy": "FIT_SYMMETRIC_TRUE_REQUIRED",
+        "component_semantics": (
+            "CONNECTED_COMPONENT_CONVENIENCE_DIRECT_EDGES_AUTHORITATIVE"
+        ),
+        "component_completeness_policy": (
+            "INCOMPLETE_COMPONENTS_NOT_AVAILABLE_UNIQUE_SINGLETON"
+        ),
+        "public_status_policy": ["MATCHED", "UNMATCHED", "NOT_AVAILABLE"],
+        "included_in_priority_main": False,
+        "included_in_main_union": False,
+        "historical_relaxed_executed": False,
+        "historical_relaxed_exposed": False,
+    }
+)
+
 
 class ReleaseValidationError(ValueError):
     """Raised when release tables do not satisfy the public data contract."""
+
+
+@dataclass(frozen=True)
+class _ReleaseFileSnapshot:
+    """One stable release-file byte generation and its integrity values."""
+
+    path: Path
+    data: bytes
+    sha256: str
+    size_bytes: int
+
+
+def _release_stat_signature(
+    value: os.stat_result,
+) -> Tuple[int, int, int, int, int]:
+    return (
+        int(value.st_dev),
+        int(value.st_ino),
+        int(value.st_size),
+        int(getattr(value, "st_mtime_ns", int(value.st_mtime * 1_000_000_000))),
+        int(getattr(value, "st_ctime_ns", int(value.st_ctime * 1_000_000_000))),
+    )
+
+
+def _read_release_snapshot_bytes(handle) -> bytes:
+    return handle.read()
+
+
+def _capture_release_file(
+    path: Path, description: str
+) -> _ReleaseFileSnapshot:
+    """Capture one stable regular file and verify it through the same open fd."""
+
+    if not path.is_file():
+        raise FileNotFoundError(
+            "{} file does not exist: {}".format(description, path)
+        )
+    path_before = path.stat()
+    if not stat.S_ISREG(path_before.st_mode):
+        raise ReleaseValidationError(
+            "{} is not a regular file: {}".format(description, path)
+        )
+    with path.open("rb") as handle:
+        descriptor_before = os.fstat(handle.fileno())
+        if _release_stat_signature(path_before) != _release_stat_signature(
+            descriptor_before
+        ):
+            raise ReleaseValidationError(
+                "{} changed or was replaced while being opened: {}".format(
+                    description, path
+                )
+            )
+        data = _read_release_snapshot_bytes(handle)
+        snapshot_sha256 = hashlib.sha256(data).hexdigest()
+        handle.seek(0)
+        verification_digest = hashlib.sha256()
+        verification_size = 0
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            verification_digest.update(block)
+            verification_size += len(block)
+        descriptor_after = os.fstat(handle.fileno())
+    path_after = path.stat()
+    signatures = {
+        _release_stat_signature(path_before),
+        _release_stat_signature(descriptor_before),
+        _release_stat_signature(descriptor_after),
+        _release_stat_signature(path_after),
+    }
+    if (
+        len(signatures) != 1
+        or len(data) != descriptor_after.st_size
+        or verification_size != len(data)
+        or verification_digest.hexdigest() != snapshot_sha256
+    ):
+        raise ReleaseValidationError(
+            "{} changed or was replaced during byte capture: {}".format(
+                description, path
+            )
+        )
+    return _ReleaseFileSnapshot(
+        path=path,
+        data=data,
+        sha256=snapshot_sha256,
+        size_bytes=len(data),
+    )
 
 
 def _deep_freeze(value: object) -> object:
@@ -277,7 +415,9 @@ class CoREMOFDataset:
         ``parent_groups/parent_groups.csv``,
         ``parent_groups/parent_group_methods.json``, and ``dataset_info.json``.
         If ``manifests/cif_manifest.csv`` is present, it is joined and validated
-        against the same exact identifier set.
+        against the same exact identifier set. A release declaring optional
+        ``sm_*`` parent columns must also provide the exact, hash-bound
+        StructureMatcher method contract and release-adapter receipt.
         """
 
         root = Path(release_root).expanduser()
@@ -291,8 +431,17 @@ class CoREMOFDataset:
         info_path = root / "dataset_info.json"
         manifest_path = root / "manifests" / "cif_manifest.csv"
 
-        metadata_fields, metadata_rows = _read_csv(
+        metadata_snapshot = _capture_release_file(
             metadata_path, "release metadata"
+        )
+        parents_snapshot = _capture_release_file(parents_path, "parent groups")
+        methods_snapshot = _capture_release_file(
+            methods_path, "parent-group methods"
+        )
+        info_snapshot = _capture_release_file(info_path, "dataset information")
+
+        metadata_fields, metadata_rows = _read_csv(
+            metadata_snapshot, "release metadata"
         )
         _require_columns(
             metadata_fields,
@@ -314,9 +463,13 @@ class CoREMOFDataset:
             metadata_rows, metadata_path
         )
 
-        parent_fields, parent_rows = _read_csv(parents_path, "parent groups")
+        parent_fields, parent_rows = _read_csv(parents_snapshot, "parent groups")
         required_parent_columns = ["structure_id"]
-        for prefix in sorted(set(PUBLIC_PARENT_METHOD_PREFIXES.values())):
+        # The eight original criteria remain mandatory.  New audited
+        # sensitivity criteria are optional so this package stays compatible
+        # with already published releases while accepting an extended parent
+        # table once it is available.
+        for prefix in sorted(set(BASE_PUBLIC_PARENT_METHOD_PREFIXES.values())):
             required_parent_columns.extend(
                 (
                     "{}_status".format(prefix),
@@ -327,8 +480,10 @@ class CoREMOFDataset:
         _require_columns(parent_fields, tuple(required_parent_columns), parents_path)
         parent_by_id, _ = _index_unique(parent_rows, parents_path)
 
-        dataset_info = _read_json_object(info_path, "dataset information")
-        parent_methods = _read_json_object(methods_path, "parent-group methods")
+        dataset_info = _read_json_object(info_snapshot, "dataset information")
+        parent_methods = _read_json_object(
+            methods_snapshot, "parent-group methods"
+        )
 
         metadata_ids = set(metadata_by_id)
         _require_exact_id_set(
@@ -336,9 +491,11 @@ class CoREMOFDataset:
         )
 
         manifest_by_id = None
+        manifest_snapshot = None
         if manifest_path.is_file():
+            manifest_snapshot = _capture_release_file(manifest_path, "CIF manifest")
             manifest_fields, manifest_rows = _read_csv(
-                manifest_path, "CIF manifest"
+                manifest_snapshot, "CIF manifest"
             )
             _require_columns(
                 manifest_fields,
@@ -357,6 +514,14 @@ class CoREMOFDataset:
         _validate_metadata_identity(metadata_rows)
         _validate_parent_methods(parent_methods, dataset_info, parent_fields)
         parent_prefixes = _validate_parent_rows(parent_fields, parent_rows)
+        structure_matcher_inputs = _validate_structure_matcher_evidence(
+            parent_methods,
+            dataset_info,
+            parent_fields,
+            parent_rows,
+            root=root,
+            parents_snapshot=parents_snapshot,
+        )
         _validate_published_labels(metadata_rows, dataset_info)
         if manifest_by_id is not None:
             _validate_cif_manifest(
@@ -386,18 +551,19 @@ class CoREMOFDataset:
                 )
             )
 
-        input_paths = {
-            "metadata/metadata.csv": metadata_path,
-            "parent_groups/parent_groups.csv": parents_path,
-            "parent_groups/parent_group_methods.json": methods_path,
-            "dataset_info.json": info_path,
+        input_snapshots = {
+            "metadata/metadata.csv": metadata_snapshot,
+            "parent_groups/parent_groups.csv": parents_snapshot,
+            "parent_groups/parent_group_methods.json": methods_snapshot,
+            "dataset_info.json": info_snapshot,
         }
-        if manifest_path.is_file():
-            input_paths["manifests/cif_manifest.csv"] = manifest_path
+        if manifest_snapshot is not None:
+            input_snapshots["manifests/cif_manifest.csv"] = manifest_snapshot
+        input_snapshots.update(structure_matcher_inputs)
         input_hashes = MappingProxyType(
             {
-                name: _sha256_file(path)
-                for name, path in sorted(input_paths.items())
+                name: snapshot.sha256
+                for name, snapshot in sorted(input_snapshots.items())
             }
         )
         immutable_parent_by_id = MappingProxyType(
@@ -475,6 +641,28 @@ class CoREMOFDataset:
             variants=variants,
             metals=metals,
             structure_ids=structure_ids,
+        )
+
+    def merge_targets(
+        self,
+        sources: Sequence[object],
+        alias_registry: Optional[object] = None,
+        feature_tables: Sequence[str] = (),
+    ) -> object:
+        """Return release rows joined to user targets and optional features.
+
+        Importing the target layer lazily keeps ordinary release loading
+        lightweight.  Earlier identifiers are accepted only when an explicit
+        :class:`CoREMOF.targets.AliasRegistry` is supplied.
+        """
+
+        from .targets import merge_targets
+
+        return merge_targets(
+            self,
+            sources,
+            alias_registry=alias_registry,
+            feature_tables=feature_tables,
         )
 
 
@@ -687,6 +875,8 @@ class ClassifiedDataset:
         variants: Optional[Iterable[str]] = None,
         metals: Optional[Iterable[str]] = None,
         structure_ids: Optional[Iterable[str]] = None,
+        required_targets: Optional[Iterable[str]] = None,
+        required_target_mode: str = "all",
         missing_parent: str = "singleton",
         leakage_guard: str = "auto",
         stratify_by: Sequence[str] = ("label",),
@@ -696,7 +886,11 @@ class ClassifiedDataset:
 
         The splitter is imported only when requested, keeping metadata loading
         independent from optional training dependencies and future splitter
-        implementations.
+        implementations.  ``priority_main`` and ``auto`` are project-defined
+        policies, not standard statistical terms.  Inspect their exact
+        machine-readable contracts with
+        :func:`CoREMOF.parents.parent_method_definition` and
+        :func:`CoREMOF.parents.leakage_guard_definition`.
         """
 
         from .splitters import ParentGroupSplitter
@@ -713,6 +907,8 @@ class ClassifiedDataset:
             variants=variants,
             metals=metals,
             structure_ids=structure_ids,
+            required_targets=required_targets,
+            required_target_mode=required_target_mode,
             **splitter_options
         )
         return splitter.train_valid_test_split(fractions=fractions)
@@ -723,10 +919,17 @@ class ClassifiedDataset:
         return self.train_valid_test_split(**kwargs)
 
 
-def _read_csv(path: Path, description: str) -> Tuple[Tuple[str, ...], List[Dict[str, str]]]:
-    if not path.is_file():
-        raise FileNotFoundError("{} file does not exist: {}".format(description, path))
-    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+def _read_csv(
+    snapshot: _ReleaseFileSnapshot, description: str
+) -> Tuple[Tuple[str, ...], List[Dict[str, str]]]:
+    path = snapshot.path
+    try:
+        text = snapshot.data.decode("utf-8-sig")
+    except UnicodeDecodeError as error:
+        raise ReleaseValidationError(
+            "cannot read {} {}: {}".format(description, path, error)
+        )
+    with io.StringIO(text, newline="") as handle:
         reader = csv.DictReader(handle)
         if reader.fieldnames is None:
             raise ReleaseValidationError("CSV has no header: {}".format(path))
@@ -762,13 +965,13 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _read_json_object(path: Path, description: str) -> Dict[str, object]:
-    if not path.is_file():
-        raise FileNotFoundError("{} file does not exist: {}".format(description, path))
+def _read_json_object(
+    snapshot: _ReleaseFileSnapshot, description: str
+) -> Dict[str, object]:
+    path = snapshot.path
     try:
-        with path.open("r", encoding="utf-8") as handle:
-            value = json.load(handle)
-    except (OSError, json.JSONDecodeError) as error:
+        value = json.loads(snapshot.data.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ReleaseValidationError("cannot read {} {}: {}".format(description, path, error))
     if not isinstance(value, dict):
         raise ReleaseValidationError("{} must contain a JSON object: {}".format(description, path))
@@ -887,22 +1090,42 @@ def _validate_metadata_identity(rows: Sequence[Mapping[str, str]]) -> None:
 
 
 def _parent_prefixes(fields: Sequence[str]) -> Tuple[str, ...]:
+    if any("relaxed" in field.casefold() for field in fields):
+        raise ReleaseValidationError(
+            "historical relaxed StructureMatcher evidence may not be exposed "
+            "in parent_groups.csv"
+        )
+
+    suffixes = ("_status", "_group", "_size")
+    expected_suffixes = set(suffixes)
     prefixes = []
+    observed = {}
     for field in fields:
-        if field.endswith("_status"):
-            prefix = field[: -len("_status")]
-            if (
-                "{}_group".format(prefix) not in fields
-                or "{}_size".format(prefix) not in fields
-            ):
+        for suffix in suffixes:
+            if not field.endswith(suffix):
+                continue
+            prefix = field[: -len(suffix)]
+            if not prefix:
                 raise ReleaseValidationError(
-                    "parent criterion {!r} does not have status/group/size columns".format(
-                        prefix
-                    )
+                    "parent_groups.csv contains an empty parent criterion prefix"
                 )
-            prefixes.append(prefix)
+            if prefix not in observed:
+                observed[prefix] = set()
+                prefixes.append(prefix)
+            observed[prefix].add(suffix)
+            break
     if not prefixes:
         raise ReleaseValidationError("parent_groups.csv contains no parent criteria")
+    for prefix in prefixes:
+        if observed[prefix] != expected_suffixes:
+            missing = expected_suffixes.difference(observed[prefix])
+            raise ReleaseValidationError(
+                "parent criterion {!r} must have a complete status/group/size "
+                "triad; missing {}".format(
+                    prefix,
+                    ", ".join(sorted(value.lstrip("_") for value in missing)),
+                )
+            )
     return tuple(prefixes)
 
 
@@ -920,15 +1143,227 @@ def _validate_parent_methods(
     declared = methods.get("csv_column_prefixes")
     if not isinstance(declared, dict):
         raise ReleaseValidationError("csv_column_prefixes must be an object")
-    if declared != dict(PUBLIC_PARENT_METHOD_PREFIXES):
+    expected_base = dict(BASE_PUBLIC_PARENT_METHOD_PREFIXES)
+    supported = dict(PUBLIC_PARENT_METHOD_PREFIXES)
+    if any(declared.get(method) != prefix for method, prefix in expected_base.items()):
         raise ReleaseValidationError(
-            "parent_group_methods.json csv_column_prefixes does not match the "
-            "public method contract"
+            "parent_group_methods.json public method contract is missing or "
+            "changes a required parent method"
+        )
+    unsupported = {
+        method: prefix
+        for method, prefix in declared.items()
+        if supported.get(method) != prefix
+    }
+    if unsupported:
+        raise ReleaseValidationError(
+            "parent_group_methods.json contains unsupported parent methods: {}".format(
+                ", ".join(sorted(unsupported))
+            )
         )
     if set(declared.values()) != prefixes:
         raise ReleaseValidationError(
             "parent-group CSV prefixes do not match parent_group_methods.json"
         )
+    expected_fields = {"structure_id"}
+    for prefix in declared.values():
+        expected_fields.update(
+            {
+                "{}_status".format(prefix),
+                "{}_group".format(prefix),
+                "{}_size".format(prefix),
+            }
+        )
+    if set(fields) != expected_fields:
+        unexpected = sorted(set(fields).difference(expected_fields))
+        missing = sorted(expected_fields.difference(fields))
+        detail = []
+        if unexpected:
+            detail.append("unexpected={}".format(", ".join(unexpected)))
+        if missing:
+            detail.append("missing={}".format(", ".join(missing)))
+        raise ReleaseValidationError(
+            "parent_groups.csv must contain exactly structure_id and the "
+            "declared status/group/size triads ({})".format("; ".join(detail))
+        )
+
+    if "structure_matcher_strict" not in declared:
+        criteria = methods.get("criteria")
+        if isinstance(criteria, dict) and "structure_matcher_strict" in criteria:
+            raise ReleaseValidationError(
+                "structure_matcher_strict criteria are declared without sm_* columns"
+            )
+        return
+
+    criteria = methods.get("criteria")
+    if not isinstance(criteria, dict):
+        raise ReleaseValidationError(
+            "criteria.structure_matcher_strict requires a criteria object"
+        )
+    criterion = criteria.get("structure_matcher_strict")
+    if not isinstance(criterion, dict):
+        raise ReleaseValidationError(
+            "criteria.structure_matcher_strict must be an object"
+        )
+    expected_keys = set(_STRUCTURE_MATCHER_METHOD_CONTRACT).union(
+        {"evidence_receipt"}
+    )
+    if set(criterion) != expected_keys:
+        raise ReleaseValidationError(
+            "criteria.structure_matcher_strict does not match the exact "
+            "optional-reference contract"
+        )
+    for key, expected in _STRUCTURE_MATCHER_METHOD_CONTRACT.items():
+        if criterion.get(key) != expected:
+            raise ReleaseValidationError(
+                "criteria.structure_matcher_strict {!r} must be {!r}".format(
+                    key, expected
+                )
+            )
+    evidence = criterion.get("evidence_receipt")
+    if not isinstance(evidence, dict) or set(evidence) != {"file", "sha256"}:
+        raise ReleaseValidationError(
+            "criteria.structure_matcher_strict evidence_receipt must contain "
+            "exactly file and sha256"
+        )
+    if evidence.get("file") != _STRUCTURE_MATCHER_RECEIPT_FILE:
+        raise ReleaseValidationError(
+            "criteria.structure_matcher_strict evidence receipt must use {!r}".format(
+                _STRUCTURE_MATCHER_RECEIPT_FILE
+            )
+        )
+    if _SHA256_RE.fullmatch(str(evidence.get("sha256", ""))) is None:
+        raise ReleaseValidationError(
+            "criteria.structure_matcher_strict evidence receipt SHA-256 must "
+            "be 64 lowercase hexadecimal characters"
+        )
+def _validate_structure_matcher_evidence(
+    methods: Mapping[str, object],
+    info: Mapping[str, object],
+    fields: Sequence[str],
+    rows: Sequence[Mapping[str, str]],
+    *,
+    root: Path,
+    parents_snapshot: _ReleaseFileSnapshot,
+) -> Dict[str, _ReleaseFileSnapshot]:
+    """Validate the hash-bound optional StructureMatcher release receipt."""
+
+    if "sm" not in _parent_prefixes(fields):
+        return {}
+    criteria = methods["criteria"]
+    criterion = criteria["structure_matcher_strict"]  # type: ignore[index]
+    evidence = criterion["evidence_receipt"]  # type: ignore[index]
+    receipt_path = root / _STRUCTURE_MATCHER_RECEIPT_FILE
+    try:
+        receipt_snapshot = _capture_release_file(
+            receipt_path, "StructureMatcher release evidence receipt"
+        )
+    except FileNotFoundError:
+        raise ReleaseValidationError(
+            "structure_matcher_strict evidence receipt is missing: {}".format(
+                receipt_path
+            )
+        )
+    observed_receipt_hash = receipt_snapshot.sha256
+    if observed_receipt_hash != evidence["sha256"]:  # type: ignore[index]
+        raise ReleaseValidationError(
+            "structure_matcher_strict evidence receipt SHA-256 does not match"
+        )
+    receipt = _read_json_object(
+        receipt_snapshot, "StructureMatcher release evidence receipt"
+    )
+    expected_receipt_keys = {
+        "schema_version",
+        "status",
+        "dataset_version",
+        "method_id",
+        "method_schema_version",
+        "parent_groups_sha256",
+        "strict_pair_ledger_sha256",
+        "structure_count",
+        "candidate_pair_count",
+        "successful_pair_count",
+        "unresolved_pair_count",
+        "strict_direct_match_edge_count",
+        "not_available_structure_count",
+        "historical_relaxed_executed",
+        "historical_relaxed_exposed",
+    }
+    if set(receipt) != expected_receipt_keys:
+        raise ReleaseValidationError(
+            "StructureMatcher evidence receipt does not match the exact "
+            "release-adapter schema"
+        )
+    expected_values = {
+        "schema_version": _STRUCTURE_MATCHER_RECEIPT_SCHEMA,
+        "status": "PASS",
+        "dataset_version": info.get("dataset_version"),
+        "method_id": _STRUCTURE_MATCHER_METHOD_ID,
+        "method_schema_version": _STRUCTURE_MATCHER_METHOD_SCHEMA,
+        "historical_relaxed_executed": False,
+        "historical_relaxed_exposed": False,
+    }
+    for key, expected in expected_values.items():
+        if receipt.get(key) != expected:
+            raise ReleaseValidationError(
+                "StructureMatcher evidence receipt {!r} must be {!r}".format(
+                    key, expected
+                )
+            )
+    for key in ("parent_groups_sha256", "strict_pair_ledger_sha256"):
+        if _SHA256_RE.fullmatch(str(receipt.get(key, ""))) is None:
+            raise ReleaseValidationError(
+                "StructureMatcher evidence receipt {} must be a full lowercase "
+                "SHA-256".format(key)
+            )
+    if receipt["parent_groups_sha256"] != parents_snapshot.sha256:
+        raise ReleaseValidationError(
+            "StructureMatcher evidence receipt is not bound to parent_groups.csv"
+        )
+    expected_structure_count = info.get("structure_count")
+    integer_fields = (
+        "structure_count",
+        "candidate_pair_count",
+        "successful_pair_count",
+        "unresolved_pair_count",
+        "strict_direct_match_edge_count",
+        "not_available_structure_count",
+    )
+    for key in integer_fields:
+        value = receipt.get(key)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise ReleaseValidationError(
+                "StructureMatcher evidence receipt {} must be a non-negative "
+                "integer".format(key)
+            )
+    if receipt["structure_count"] != expected_structure_count or len(rows) != expected_structure_count:
+        raise ReleaseValidationError(
+            "StructureMatcher evidence receipt structure_count does not match "
+            "the release"
+        )
+    if (
+        receipt["successful_pair_count"] + receipt["unresolved_pair_count"]
+        != receipt["candidate_pair_count"]
+    ):
+        raise ReleaseValidationError(
+            "StructureMatcher successful and unresolved pair counts do not "
+            "sum to candidate_pair_count"
+        )
+    if receipt["strict_direct_match_edge_count"] > receipt["successful_pair_count"]:
+        raise ReleaseValidationError(
+            "StructureMatcher direct match edge count exceeds successful pairs"
+        )
+    observed_not_available = sum(row["sm_status"] == "NOT_AVAILABLE" for row in rows)
+    if receipt["not_available_structure_count"] != observed_not_available:
+        raise ReleaseValidationError(
+            "StructureMatcher evidence receipt NOT_AVAILABLE count does not "
+            "match parent_groups.csv"
+        )
+    if receipt["unresolved_pair_count"] and not observed_not_available:
+        raise ReleaseValidationError(
+            "unresolved StructureMatcher pairs require NOT_AVAILABLE public rows"
+        )
+    return {_STRUCTURE_MATCHER_RECEIPT_FILE: receipt_snapshot}
 
 
 def _validate_parent_rows(

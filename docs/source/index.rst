@@ -90,8 +90,8 @@ troubleshooting guidance.
       :link-type: doc
       :class-card: coremof-card
 
-      Recompute strict 3-, 4-, or 5-checker labels and create deterministic,
-      parent-aware train, validation, and test partitions.
+      Join external targets to current features, recompute strict 3-, 4-, or
+      5-checker labels, and create deterministic parent-aware partitions.
 
       +++
       **Main policy:** RAC5 > MOFid v2 > MOFid v1

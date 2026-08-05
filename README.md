@@ -75,6 +75,27 @@ For a complete executable walkthrough, open
 
 ### Build CR/NCR train/validation/test splits
 
+Two project-defined API identifiers are used below; neither is a standard
+crystallographic term:
+
+- `priority_main` is the explanatory parent hierarchy. Across the complete
+  release it creates exact RAC5 anchor components, then uses exact MOFid-v2
+  groups and finally exact MOFid-v1 groups. At each lower step, a group touching
+  no stronger component creates a component; one touching exactly one stronger
+  component attaches only its unresolved rows; one touching two or more never
+  merges those stronger components, records `PARENT_METHOD_CONFLICT`, and
+  leaves lower-only rows unresolved. Missing evidence becomes one unique
+  singleton per structure unless exclusion is explicitly requested. This is
+  not a row-wise first-nonmissing fallback. Zeo++, topology, source IDs, CIF
+  hashes, common names, and StructureMatcher do not enter this hierarchy.
+- `main_union` is the separate conservative leakage guard, not a parent claim.
+  It forms transitive connected components over the full unfiltered release
+  using exact full CIF SHA-256, database-namespaced source siblings, and the
+  available release-authorized RAC5, MOFid-v2, and MOFid-v1 group edges.
+  `leakage_guard="auto"` selects it when `priority_main` is requested and
+  selects `parent_only` for an explicitly chosen direct/reference method.
+  `parent_only` uses only that selected explanatory grouping as split blocks.
+
 Load an extracted release, recompute a checker view, and keep related
 structures in the same partition:
 
@@ -97,12 +118,20 @@ print(split.train_ids[:3])
 split.write("my_split")
 ```
 
-The default `priority_main` policy is conflict-aware; it is not a row-by-row
-first-nonmissing fallback. Its automatic leakage guard builds full-release
-components from exact CIF, source-sibling, RAC5, MOFid-v2, and MOFid-v1 edges
-before applying filters. Direct methods such as `rac5`, `mofid_v2`, and
+The default `priority_main` policy is not a row-by-row first-nonmissing
+fallback, and its explanatory groups are distinct from the `main_union`
+partition blocks. Both are computed before applying experiment filters.
+Direct methods such as `rac5`, `mofid_v2`, and
 `mofid_v1` are separately selectable for sensitivity studies. Missing parent
 evidence becomes a unique singleton and never causes missing rows to match.
+Releases may also expose the optional `rac5_topology`,
+`mofid_v2_topology`, and `structure_matcher_strict` sensitivity criteria;
+these do not change the default hierarchy. The StructureMatcher view is a
+connected component of audited direct strict-match edges, not a claim that
+every pair in the component directly matches. The loader accepts `sm_*`
+columns only with the exact optional-reference method declaration and its
+hash-verified release-adapter receipt; incomplete components must project to
+unique `NOT_AVAILABLE` singletons, and relaxed evidence cannot be executed or exposed.
 The COD/SI filter still constructs its leakage blocks over the complete
 COD+CSD+SI release. A future standalone open-data bundle must therefore ship
 an audited full-universe block projection before it can reproduce
@@ -118,13 +147,79 @@ coremof split /path/to/coremof_v26.0.2 \
 ```
 
 Every output includes explicit exclusions, release-input hashes, the selected
-parent method and leakage guard, a structured lower-versus-stronger parent
-conflict ledger, and a zero-cross-partition leakage audit.
+parent method, the requested and resolved leakage guard, machine-readable
+definitions of both project-defined policies, a structured
+lower-versus-stronger parent conflict ledger, and a zero-cross-partition
+leakage audit.
 `provisional_input` becomes false only when both the dataset and parent-method
 release statuses are exactly `FINAL`; missing values, `FINAL_CANDIDATE`, and
 all other tokens remain provisional. A user-generated split is never labelled
 as an official CoRE-MOF split, and `official=True` currently fails closed
 because no audited official assignment manifest exists.
+
+### Join target results before splitting
+
+Combine one or more uptake, selectivity, or other endpoint files with current
+release metadata and selected feature tables before assigning partitions:
+
+```python
+from CoREMOF.targets import TargetSource
+
+targets = dataset.merge_targets(
+    (
+        TargetSource(
+            "uptake.csv",
+            id_column="structure_name",
+            target_columns=("uptake",),
+            target_names={"uptake": "xe_uptake"},
+            value_types={"xe_uptake": "float"},
+            units={"xe_uptake": "mol/kg"},
+            conditions={"xe_uptake": {"temperature_K": 298, "pressure_bar": 1}},
+        ),
+    ),
+    feature_tables=("rac5", "zeo"),
+)
+split = targets.classify("5checker").train_valid_test_split(
+    required_targets=("xe_uptake",),
+    parent_method="priority_main",
+)
+```
+
+Matching uses exact current IDs. Earlier IDs require an explicit audited alias
+registry; fuzzy matching, unit inference, target imputation, and silent
+conflict resolution are never performed. See the handbook for multi-file,
+alias-registry, provenance, configuration-file, and CLI examples.
+
+### Screen candidates automatically
+
+[`examples/screen_candidates.py`](examples/screen_candidates.py) turns the
+same validated release or target configuration into a deterministic ranked
+CSV and hash-bound receipt:
+
+```bash
+python examples/screen_candidates.py /path/to/coremof_v26.0.2 \
+  --target-config targets.json \
+  --rank-by xe_uptake \
+  --require-target xe_uptake \
+  --checkers 5checker \
+  --label CR \
+  --source COD \
+  --order descending \
+  --limit 1000 \
+  --split \
+  --parent-method priority_main \
+  --leakage-guard auto \
+  --output-directory screening/xe_uptake
+```
+
+Eligibility and required-target filters run before ranking. Null,
+non-numeric, and non-finite values are excluded without imputation; ties use
+ascending `structure_id`. Integers and decimal text are ranked without
+binary64 rounding, while native floats retain their IEEE-754 values. The
+optional split still builds leakage components from the full release and is
+exploratory, not an official CoRE-MOF split.
+See the [executable notebook](examples/CoREMOF_dataset_splitting_quickstart.ipynb)
+for portable and guarded real-target examples.
 
 ### Query a CoRE MOF record
 
@@ -192,6 +287,7 @@ stability_result = stability("my_mof.cif")
 | Property models | `CoREMOF.prediction` | `pacman()`, `cp()`, `stability()` |
 | MOF identifiers | `CoREMOF.get_mofid` | `run_v1()`, `run_v2()` |
 | Dataset classification and splitting | `CoREMOF.dataset`, `CoREMOF.splitters` | `CoREMOFDataset`, `split_release()` |
+| Feature/target joining | `CoREMOF.targets` | `TargetSource`, `AliasRegistry`, `merge_targets()` |
 
 Full guides and API documentation are available on [Read the Docs](https://core-mof-tools.readthedocs.io/). Executable notebooks and CIF examples are in [`examples/`](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/tree/main/examples).
 

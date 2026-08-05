@@ -9,6 +9,7 @@ from types import ModuleType
 import unittest
 from unittest.mock import patch
 
+import CoREMOF.dataset as dataset_module
 from CoREMOF.dataset import CoREMOFDataset, ReleaseValidationError
 from CoREMOF.labels import (
     CHECKER_PRESETS,
@@ -172,6 +173,79 @@ def _make_release(root):
     )
 
 
+def _add_structure_matcher_parent_columns(root):
+    parents_path = root / "parent_groups" / "parent_groups.csv"
+    with parents_path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    for index, row in enumerate(rows):
+        row["sm_status"] = "MATCHED" if index < 2 else "UNMATCHED"
+        row["sm_group"] = (
+            "SM-ABCD0001" if index < 2 else "SM-{:08X}".format(index)
+        )
+        row["sm_size"] = "2" if index < 2 else "1"
+    _write_csv(parents_path, tuple(rows[0]), rows)
+    return rows
+
+
+def _declare_structure_matcher_contract(root):
+    parents_path = root / "parent_groups" / "parent_groups.csv"
+    with parents_path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    receipt = {
+        "schema_version": "coremof-structure-matcher-release-adapter-receipt/1.0",
+        "status": "PASS",
+        "dataset_version": "vtest",
+        "method_id": "pymatgen_structure_matcher_strict_v2",
+        "method_schema_version": "coremof-structure-matcher-method/2.0",
+        "parent_groups_sha256": hashlib.sha256(parents_path.read_bytes()).hexdigest(),
+        "strict_pair_ledger_sha256": hashlib.sha256(b"strict-pair-ledger").hexdigest(),
+        "structure_count": len(rows),
+        "candidate_pair_count": 1,
+        "successful_pair_count": 1,
+        "unresolved_pair_count": 0,
+        "strict_direct_match_edge_count": 1,
+        "not_available_structure_count": sum(
+            row["sm_status"] == "NOT_AVAILABLE" for row in rows
+        ),
+        "historical_relaxed_executed": False,
+        "historical_relaxed_exposed": False,
+    }
+    receipt_path = (
+        root
+        / "parent_groups"
+        / "structure_matcher_strict_evidence_receipt.json"
+    )
+    receipt_path.write_text(json.dumps(receipt, sort_keys=True), encoding="utf-8")
+
+    methods_path = root / "parent_groups" / "parent_group_methods.json"
+    methods = json.loads(methods_path.read_text(encoding="utf-8"))
+    methods["csv_column_prefixes"]["structure_matcher_strict"] = "sm"
+    methods.setdefault("criteria", {})["structure_matcher_strict"] = {
+        "role": "OPTIONAL_REFERENCE",
+        "method_id": "pymatgen_structure_matcher_strict_v2",
+        "method_schema_version": "coremof-structure-matcher-method/2.0",
+        "authoritative_evidence": "DIRECT_SYMMETRIC_STRICT_MATCH_EDGES",
+        "fit_policy": "FIT_SYMMETRIC_TRUE_REQUIRED",
+        "component_semantics": (
+            "CONNECTED_COMPONENT_CONVENIENCE_DIRECT_EDGES_AUTHORITATIVE"
+        ),
+        "component_completeness_policy": (
+            "INCOMPLETE_COMPONENTS_NOT_AVAILABLE_UNIQUE_SINGLETON"
+        ),
+        "public_status_policy": ["MATCHED", "UNMATCHED", "NOT_AVAILABLE"],
+        "included_in_priority_main": False,
+        "included_in_main_union": False,
+        "historical_relaxed_executed": False,
+        "historical_relaxed_exposed": False,
+        "evidence_receipt": {
+            "file": "parent_groups/structure_matcher_strict_evidence_receipt.json",
+            "sha256": hashlib.sha256(receipt_path.read_bytes()).hexdigest(),
+        },
+    }
+    methods_path.write_text(json.dumps(methods, sort_keys=True), encoding="utf-8")
+    return methods_path, receipt_path
+
+
 class LabelTests(unittest.TestCase):
     def test_strict_consensus_contract(self):
         self.assertEqual(consensus_label(["PASS", "PASS"]), "CR")
@@ -246,6 +320,148 @@ class DatasetTests(unittest.TestCase):
         self.assertEqual(classified.unchecked_ids, ("ION-CSD-2024-0001",))
         with self.assertRaises(ValueError):
             classified.ids_for_label("MAYBE")
+
+    def test_optional_topology_combined_parent_columns_are_validated_and_loaded(self):
+        parents_path = self.root / "parent_groups" / "parent_groups.csv"
+        with parents_path.open("r", encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+        for index, row in enumerate(rows):
+            for prefix, group_prefix in (
+                ("rac_topology", "RT-"),
+                ("mofid2_topology", "M2T-"),
+            ):
+                if index < 2:
+                    row["{}_status".format(prefix)] = "MATCHED"
+                    row["{}_group".format(prefix)] = group_prefix + "ABCD0001"
+                    row["{}_size".format(prefix)] = "2"
+                else:
+                    row["{}_status".format(prefix)] = "NOT_AVAILABLE"
+                    row["{}_group".format(prefix)] = group_prefix + "{:08X}".format(index)
+                    row["{}_size".format(prefix)] = "1"
+        _write_csv(parents_path, tuple(rows[0]), rows)
+
+        methods_path = self.root / "parent_groups" / "parent_group_methods.json"
+        methods = json.loads(methods_path.read_text(encoding="utf-8"))
+        methods["csv_column_prefixes"].update(
+            {
+                "rac5_topology": "rac_topology",
+                "mofid_v2_topology": "mofid2_topology",
+            }
+        )
+        methods_path.write_text(json.dumps(methods), encoding="utf-8")
+
+        dataset = CoREMOFDataset.from_release(self.root)
+        first = dataset[dataset.structure_ids[0]]
+        second = dataset[dataset.structure_ids[1]]
+        self.assertEqual(
+            first.parent_group("rac5_topology").group_id,
+            second.parent_group("rac_topology").group_id,
+        )
+        self.assertEqual(
+            first.parent_group("mofid_v2_topology").group_id,
+            "M2T-ABCD0001",
+        )
+
+    def test_optional_structure_matcher_parent_columns_are_validated_and_loaded(self):
+        _add_structure_matcher_parent_columns(self.root)
+        _declare_structure_matcher_contract(self.root)
+
+        dataset = CoREMOFDataset.from_release(self.root)
+        first = dataset[dataset.structure_ids[0]]
+        self.assertEqual(
+            first.parent_group("structure_matcher_strict").group_id,
+            "SM-ABCD0001",
+        )
+        self.assertEqual(first.parent_group("sm").group_id, "SM-ABCD0001")
+        self.assertIn(
+            "parent_groups/structure_matcher_strict_evidence_receipt.json",
+            dataset.input_hashes,
+        )
+
+    def test_structure_matcher_columns_require_the_exact_method_contract(self):
+        _add_structure_matcher_parent_columns(self.root)
+        methods_path = self.root / "parent_groups" / "parent_group_methods.json"
+        methods = json.loads(methods_path.read_text(encoding="utf-8"))
+        methods["csv_column_prefixes"]["structure_matcher_strict"] = "sm"
+        methods_path.write_text(json.dumps(methods), encoding="utf-8")
+        with self.assertRaisesRegex(
+            ReleaseValidationError, "criteria.structure_matcher_strict"
+        ):
+            CoREMOFDataset.from_release(self.root)
+
+    def test_structure_matcher_scientific_contract_fields_are_exact(self):
+        _add_structure_matcher_parent_columns(self.root)
+        cases = (
+            ("method_id", "different_method"),
+            ("method_schema_version", "different-schema/1.0"),
+            ("authoritative_evidence", "ONE_WAY_EDGES"),
+            ("fit_policy", "ONE_WAY_ALLOWED"),
+            ("component_semantics", "ALL_PAIRS_MATCH"),
+            ("component_completeness_policy", "ALLOW_PARTIAL"),
+            ("public_status_policy", ["MATCHED", "PARTIAL"]),
+            ("included_in_priority_main", True),
+            ("included_in_main_union", True),
+            ("historical_relaxed_executed", True),
+        )
+        for key, invalid in cases:
+            with self.subTest(key=key):
+                methods_path, _ = _declare_structure_matcher_contract(self.root)
+                methods = json.loads(methods_path.read_text(encoding="utf-8"))
+                methods["criteria"]["structure_matcher_strict"][key] = invalid
+                methods_path.write_text(json.dumps(methods), encoding="utf-8")
+                with self.assertRaisesRegex(ReleaseValidationError, key):
+                    CoREMOFDataset.from_release(self.root)
+
+    def test_structure_matcher_receipt_hash_and_relaxed_policy_fail_closed(self):
+        _add_structure_matcher_parent_columns(self.root)
+        methods_path, receipt_path = _declare_structure_matcher_contract(self.root)
+        receipt_path.write_text("{}", encoding="utf-8")
+        with self.assertRaisesRegex(ReleaseValidationError, "receipt SHA-256"):
+            CoREMOFDataset.from_release(self.root)
+
+        _declare_structure_matcher_contract(self.root)
+        methods = json.loads(methods_path.read_text(encoding="utf-8"))
+        methods["criteria"]["structure_matcher_strict"][
+            "historical_relaxed_exposed"
+        ] = True
+        methods_path.write_text(json.dumps(methods), encoding="utf-8")
+        with self.assertRaisesRegex(
+            ReleaseValidationError, "historical_relaxed_exposed"
+        ):
+            CoREMOFDataset.from_release(self.root)
+
+    def test_structure_matcher_receipt_schema_and_counts_fail_closed(self):
+        _add_structure_matcher_parent_columns(self.root)
+        methods_path, receipt_path = _declare_structure_matcher_contract(self.root)
+
+        def rewrite_receipt(**changes):
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            receipt.update(changes)
+            receipt_path.write_text(json.dumps(receipt, sort_keys=True), encoding="utf-8")
+            methods = json.loads(methods_path.read_text(encoding="utf-8"))
+            methods["criteria"]["structure_matcher_strict"]["evidence_receipt"][
+                "sha256"
+            ] = hashlib.sha256(receipt_path.read_bytes()).hexdigest()
+            methods_path.write_text(json.dumps(methods, sort_keys=True), encoding="utf-8")
+
+        rewrite_receipt(strict_pair_ledger_sha256="not-a-sha256")
+        with self.assertRaisesRegex(ReleaseValidationError, "strict_pair_ledger_sha256"):
+            CoREMOFDataset.from_release(self.root)
+
+        _declare_structure_matcher_contract(self.root)
+        rewrite_receipt(unresolved_pair_count=1)
+        with self.assertRaisesRegex(ReleaseValidationError, "candidate_pair_count"):
+            CoREMOFDataset.from_release(self.root)
+
+    def test_structure_matcher_receipt_binds_the_parent_table(self):
+        rows = _add_structure_matcher_parent_columns(self.root)
+        _declare_structure_matcher_contract(self.root)
+        parents_path = self.root / "parent_groups" / "parent_groups.csv"
+        for row in rows:
+            row["unbound_note"] = "changed-after-receipt"
+        _write_csv(parents_path, tuple(rows[0]), rows)
+        with self.assertRaisesRegex(ReleaseValidationError, "parent_groups.csv"):
+            CoREMOFDataset.from_release(self.root)
 
     def test_manifest_is_optional(self):
         (self.root / "manifests" / "cif_manifest.csv").unlink()
@@ -429,6 +645,46 @@ class DatasetTests(unittest.TestCase):
         with self.assertRaisesRegex(ReleaseValidationError, "public method contract"):
             CoREMOFDataset.from_release(self.root)
 
+    def test_orphan_and_unknown_parent_columns_fail_closed(self):
+        path = self.root / "parent_groups" / "parent_groups.csv"
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            original_rows = list(csv.DictReader(handle))
+
+        orphan_rows = [dict(row) for row in original_rows]
+        for row in orphan_rows:
+            row["unregistered_group"] = "U-ABCD0001"
+        _write_csv(path, tuple(orphan_rows[0]), orphan_rows)
+        with self.assertRaisesRegex(
+            ReleaseValidationError, "complete status/group/size"
+        ):
+            CoREMOFDataset.from_release(self.root)
+
+        unknown_rows = [dict(row) for row in original_rows]
+        for index, row in enumerate(unknown_rows):
+            row["unregistered_status"] = "UNMATCHED"
+            row["unregistered_group"] = "U-{:08X}".format(index)
+            row["unregistered_size"] = "1"
+        _write_csv(path, tuple(unknown_rows[0]), unknown_rows)
+        with self.assertRaisesRegex(ReleaseValidationError, "CSV prefixes"):
+            CoREMOFDataset.from_release(self.root)
+
+        extra_rows = [dict(row) for row in original_rows]
+        for row in extra_rows:
+            row["audit_note"] = "not-part-of-the-public-schema"
+        _write_csv(path, tuple(extra_rows[0]), extra_rows)
+        with self.assertRaisesRegex(ReleaseValidationError, "must contain exactly"):
+            CoREMOFDataset.from_release(self.root)
+
+    def test_relaxed_parent_field_is_always_rejected(self):
+        path = self.root / "parent_groups" / "parent_groups.csv"
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            rows = list(csv.DictReader(handle))
+        for row in rows:
+            row["historical_relaxed_note"] = "not-public"
+        _write_csv(path, tuple(rows[0]), rows)
+        with self.assertRaisesRegex(ReleaseValidationError, "historical relaxed"):
+            CoREMOFDataset.from_release(self.root)
+
     def test_duplicate_and_cross_table_identifier_errors_are_rejected(self):
         metadata_path = self.root / "metadata" / "metadata.csv"
         rows = _metadata_rows()
@@ -452,6 +708,32 @@ class DatasetTests(unittest.TestCase):
         path.write_text(first + ",structure_id\n" + rest, encoding="utf-8")
         with self.assertRaisesRegex(ReleaseValidationError, "duplicate header"):
             CoREMOFDataset.from_release(self.root)
+
+    def test_release_snapshot_rejects_same_byte_path_replacement(self):
+        metadata_path = self.root / "metadata" / "metadata.csv"
+        original_reader = dataset_module._read_release_snapshot_bytes
+        replaced = False
+
+        def replace_during_capture(handle):
+            nonlocal replaced
+            data = original_reader(handle)
+            if Path(handle.name) == metadata_path and not replaced:
+                replacement = metadata_path.with_name("metadata.replacement")
+                replacement.write_bytes(data)
+                replacement.replace(metadata_path)
+                replaced = True
+            return data
+
+        with patch.object(
+            dataset_module,
+            "_read_release_snapshot_bytes",
+            side_effect=replace_during_capture,
+        ):
+            with self.assertRaisesRegex(
+                ReleaseValidationError, "changed or was replaced"
+            ):
+                CoREMOFDataset.from_release(self.root)
+        self.assertTrue(replaced)
 
 
 if __name__ == "__main__":

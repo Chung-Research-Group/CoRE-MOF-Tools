@@ -22,8 +22,15 @@ from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
 
 DIRECT_PARENT_METHODS = ("rac5", "mofid_v2", "mofid_v1")
+OPTIONAL_TOPOLOGY_PARENT_METHODS = ("rac5_topology", "mofid_v2_topology")
+OPTIONAL_REFERENCE_PARENT_METHODS = OPTIONAL_TOPOLOGY_PARENT_METHODS + (
+    "structure_matcher_strict",
+)
 REFERENCE_PARENT_METHODS = (
     "rac5_zeo",
+    "rac5_topology",
+    "mofid_v2_topology",
+    "structure_matcher_strict",
     "zeo",
     "source_id",
     "common_name",
@@ -32,6 +39,9 @@ REFERENCE_PARENT_METHODS = (
 )
 COMPUTED_PARENT_METHODS = ("priority_main", "main_union")
 PARENT_METHODS = DIRECT_PARENT_METHODS + REFERENCE_PARENT_METHODS + COMPUTED_PARENT_METHODS
+SELECTABLE_PARENT_METHODS = (
+    ("priority_main",) + DIRECT_PARENT_METHODS + REFERENCE_PARENT_METHODS
+)
 
 
 _METHOD_KEYS = {
@@ -39,6 +49,26 @@ _METHOD_KEYS = {
     "mofid_v2": ("mofid_v2", "mofid2", "mofid_v2_group", "mofid2_group"),
     "mofid_v1": ("mofid_v1", "mofid1", "mofid_v1_group", "mofid1_group"),
     "rac5_zeo": ("rac5_zeo", "rac_zeo", "rac5_zeo_group", "rac_zeo_group"),
+    "rac5_topology": (
+        "rac5_topology",
+        "rac_topology",
+        "rac5_topology_group",
+        "rac_topology_group",
+    ),
+    "mofid_v2_topology": (
+        "mofid_v2_topology",
+        "mofid2_topology",
+        "mofid_v2_topology_group",
+        "mofid2_topology_group",
+    ),
+    "structure_matcher_strict": (
+        "structure_matcher_strict",
+        "structure_matcher",
+        "sm",
+        "structure_matcher_strict_group",
+        "structure_matcher_group",
+        "sm_group",
+    ),
     "zeo": ("zeo", "zeo_group"),
     "source_id": ("source_id", "source", "source_id_group", "source_group"),
     "common_name": ("common_name", "name", "common_name_group", "name_group"),
@@ -55,6 +85,9 @@ _RELEASE_BASE = {
     "mofid_v2": "mofid2",
     "mofid_v1": "mofid1",
     "rac5_zeo": "rac_zeo",
+    "rac5_topology": "rac_topology",
+    "mofid_v2_topology": "mofid2_topology",
+    "structure_matcher_strict": "sm",
     "zeo": "zeo",
     "source_id": "source",
     "common_name": "name",
@@ -63,6 +96,311 @@ _RELEASE_BASE = {
 
 
 _MISSING_TEXT = {"", "NA", "N/A", "NONE", "NULL", "NOT_AVAILABLE", "UNAVAILABLE"}
+
+
+PARENT_METHOD_CONTRACT_VERSION = "coremof-parent-method/1.0"
+LEAKAGE_GUARD_CHOICES = ("auto", "main_union", "parent_only")
+
+
+def _freeze_contract(value):
+    """Return an immutable, recursively frozen contract value."""
+
+    if isinstance(value, Mapping):
+        return MappingProxyType(
+            {str(key): _freeze_contract(item) for key, item in value.items()}
+        )
+    if isinstance(value, (list, tuple)):
+        return tuple(_freeze_contract(item) for item in value)
+    return value
+
+
+PRIORITY_MAIN_DEFINITION = _freeze_contract(
+    {
+        "schema_version": PARENT_METHOD_CONTRACT_VERSION,
+        "identifier": "priority_main",
+        "project_defined_identifier": True,
+        "role": "explanatory_parent_resolution",
+        "purpose": (
+            "Choose one conflict-aware explanatory parent component for each "
+            "structure from the three approved parent criteria."
+        ),
+        "summary": (
+            "Conflict-aware hierarchy over release-authorized RAC5, MOFid v2, "
+            "and MOFid v1 parent groups; it is not a row-by-row first-nonmissing "
+            "fallback and it is separate from the leakage guard."
+        ),
+        "resolution_scope": "complete_release_before_optional_subset",
+        "priority_order": ("rac5", "mofid_v2", "mofid_v1"),
+        "availability_rule": (
+            "use_a_nonmissing_release_authorized_group_and_treat_explicit_"
+            "NOT_AVAILABLE_as_missing"
+        ),
+        "rules": (
+            {
+                "step": 1,
+                "criterion": "rac5",
+                "action": "anchor_each_available_rac5_group_as_a_component",
+            },
+            {
+                "step": 2,
+                "criterion": "mofid_v2",
+                "action": "process_each_available_group_against_stronger_components",
+            },
+            {
+                "step": 3,
+                "criterion": "mofid_v1",
+                "action": "process_each_available_group_against_stronger_components",
+            },
+        ),
+        "lower_group_resolution": {
+            "zero_stronger_components": "create_one_new_component_for_the_group",
+            "one_stronger_component": "attach_unresolved_members_to_that_component",
+            "multiple_stronger_components": (
+                "keep_stronger_components_separate_record_parent_conflict_and_leave_"
+                "unresolved_members_unassigned"
+            ),
+            "already_anchored_members": "remain_in_their_stronger_components",
+            "conflict_unresolved_members_are_reconsidered_by_lower_steps": False,
+        },
+        "conflict": {
+            "diagnostic": "PARENT_METHOD_CONFLICT",
+            "stronger_components_are_merged": False,
+            "unresolved_with_parent_only": "excluded",
+            "unresolved_with_main_union": (
+                "retained_only_if_main_union_supplies_a_leakage_block_and_marked_"
+                "with_the_diagnostic"
+            ),
+            "ledger_is_retained_even_without_unresolved_members": True,
+        },
+        "missing_evidence": {
+            "singleton": "assign_unique_SINGLETON_structure_id_group",
+            "exclude": "exclude_as_MISSING_PARENT_EVIDENCE",
+            "common_nulls_are_grouped": False,
+        },
+        "output_group_ids": {
+            "rac5_anchor": "RAC5:<published_rac5_group>",
+            "mofid_v2_component": "MOFID_V2:<published_mofid_v2_group>",
+            "mofid_v1_component": "MOFID_V1:<published_mofid_v1_group>",
+            "missing_singleton": "SINGLETON:<structure_id>",
+            "attached_member_rule": "keep_the_stronger_component_group_id",
+            "published_group_text_is_preserved": True,
+        },
+        "available_evidence_only": True,
+        "excluded_inputs": (
+            "rac5_zeo",
+            "rac5_topology",
+            "mofid_v2_topology",
+            "structure_matcher_strict",
+            "zeo",
+            "source_id",
+            "common_name",
+            "identity_union",
+            "cif_sha256",
+        ),
+        "recommended_leakage_guard": "main_union",
+    }
+)
+
+
+MAIN_UNION_DEFINITION = _freeze_contract(
+    {
+        "schema_version": PARENT_METHOD_CONTRACT_VERSION,
+        "identifier": "main_union",
+        "project_defined_identifier": True,
+        "role": "leakage_guard",
+        "purpose": (
+            "Build indivisible train-validation-test blocks that prevent a path "
+            "through any approved exact relation from crossing partitions."
+        ),
+        "summary": (
+            "Full-release transitive union used to keep related structures in one "
+            "split block; it is deliberately broader than priority_main and is not "
+            "the explanatory parent assignment."
+        ),
+        "explanatory_parent_method": False,
+        "universe": "complete_unfiltered_release",
+        "construction_order": "construct_before_all_label_identity_and_target_filters",
+        "edge_sources": (
+            {
+                "criterion": "cif_sha256",
+                "relation": "exact_full_lowercase_sha256_equality",
+                "required_for_every_structure": True,
+                "missing_action": "fail_closed",
+            },
+            {
+                "criterion": "source_id",
+                "relation": "same_database_namespaced_source_sibling_group",
+                "required_for_every_structure": False,
+                "fallback": (
+                    "normalized_metadata_source_id_only_when_release_source_criterion_"
+                    "is_not_explicitly_NOT_AVAILABLE"
+                ),
+            },
+            {
+                "criterion": "rac5",
+                "relation": "same_available_release_authorized_group",
+                "required_for_every_structure": False,
+            },
+            {
+                "criterion": "mofid_v2",
+                "relation": "same_available_release_authorized_group",
+                "required_for_every_structure": False,
+            },
+            {
+                "criterion": "mofid_v1",
+                "relation": "same_available_release_authorized_group",
+                "required_for_every_structure": False,
+            },
+        ),
+        "graph_rule": "connected_components_of_the_transitive_union_of_all_edges",
+        "priority_or_conflict_resolution": "none_all_listed_edges_are_union_edges",
+        "filtered_rows_can_bridge_selected_rows": True,
+        "group_name": "MAIN_plus_deterministic_sha256_of_sorted_component_members",
+        "output_group_id": {
+            "grammar": "MAIN-<lowercase_sha256_prefix>",
+            "member_order": "ascending_structure_id",
+            "member_serialization": "U+0000_NUL_joined_without_trailing_separator",
+            "text_encoding": "UTF-8",
+            "digest": "SHA-256",
+            "hex_case": "lowercase",
+            "initial_prefix_length": 16,
+            "collision_rule": (
+                "extend_the_digest_prefix_one_hex_character_at_a_time_until_unique"
+            ),
+        },
+        "excluded_inputs": (
+            "rac5_zeo",
+            "rac5_topology",
+            "mofid_v2_topology",
+            "structure_matcher_strict",
+            "zeo",
+            "common_name",
+            "identity_union",
+        ),
+        "relation_to_priority_main": (
+            "priority_main_explains_parentage_main_union_only_constrains_partitioning"
+        ),
+    }
+)
+
+
+PARENT_ONLY_DEFINITION = _freeze_contract(
+    {
+        "schema_version": PARENT_METHOD_CONTRACT_VERSION,
+        "identifier": "parent_only",
+        "project_defined_identifier": True,
+        "role": "leakage_guard",
+        "purpose": "Use no leakage relation beyond the selected parent method.",
+        "summary": (
+            "Use the selected explanatory parent groups themselves as split blocks; "
+            "do not add the broader main_union relations."
+        ),
+        "block_source": "resolved_selected_parent_method",
+        "full_release_transitive_union_applied": False,
+        "priority_main_conflict_members_without_a_parent_group": "excluded",
+    }
+)
+
+
+AUTO_LEAKAGE_GUARD_DEFINITION = _freeze_contract(
+    {
+        "schema_version": PARENT_METHOD_CONTRACT_VERSION,
+        "identifier": "auto",
+        "project_defined_identifier": True,
+        "role": "leakage_guard_selector",
+        "purpose": (
+            "Select the package policy guard from the explanatory parent method "
+            "before split blocks are constructed."
+        ),
+        "summary": (
+            "Resolve to main_union for priority_main; resolve to parent_only for "
+            "every other selectable explanatory parent method."
+        ),
+        "resolution_rules": (
+            {
+                "when_parent_method": "priority_main",
+                "resolved_guard": "main_union",
+            },
+            {
+                "when_parent_method": "any_other_explanatory_parent_method",
+                "resolved_guard": "parent_only",
+            },
+        ),
+        "resolution_time": "splitter_construction_before_parent_resolution",
+        "receipt_policy": (
+            "record_auto_as_requested_guard_and_record_the_concrete_guard_separately"
+        ),
+        "does_not_construct_groups_itself": True,
+    }
+)
+
+
+def parent_method_definition(method: str) -> Mapping[str, object]:
+    """Return the machine-readable semantics of an explanatory parent method."""
+
+    if not isinstance(method, str):
+        raise TypeError("parent method must be a string")
+    method = method.strip().lower()
+    if method not in PARENT_METHODS or method == "main_union":
+        raise ValueError("%r is not an explanatory parent method" % method)
+    if method == "priority_main":
+        return PRIORITY_MAIN_DEFINITION
+    if method == "none":
+        summary = "Treat every structure as its own explanatory parent singleton."
+        criterion = None
+    else:
+        summary = (
+            "Use only the available release-authorized %s group; missing values "
+            "follow the selected missing-parent policy." % method
+        )
+        criterion = method
+    return _freeze_contract(
+        {
+            "schema_version": PARENT_METHOD_CONTRACT_VERSION,
+            "identifier": method,
+            "project_defined_identifier": True,
+            "role": "explanatory_parent_resolution",
+            "purpose": "Resolve explanatory parent groups for split reporting.",
+            "summary": summary,
+            "criterion": criterion,
+            "resolution_scope": "complete_release_before_optional_subset",
+            "missing_evidence": {
+                "singleton": "assign_unique_SINGLETON_structure_id_group",
+                "exclude": "exclude_as_MISSING_PARENT_EVIDENCE",
+                "common_nulls_are_grouped": False,
+            },
+        }
+    )
+
+
+def leakage_guard_definition(guard: str) -> Mapping[str, object]:
+    """Return exact semantics for ``auto`` or a concrete leakage guard."""
+
+    if not isinstance(guard, str):
+        raise TypeError("leakage guard must be a string")
+    guard = guard.strip().lower()
+    if guard == "auto":
+        return AUTO_LEAKAGE_GUARD_DEFINITION
+    if guard == "main_union":
+        return MAIN_UNION_DEFINITION
+    if guard == "parent_only":
+        return PARENT_ONLY_DEFINITION
+    raise ValueError(
+        "leakage guard must be 'auto', 'parent_only', or 'main_union'"
+    )
+
+
+def resolve_leakage_guard(guard: str, parent_method: str) -> str:
+    """Resolve ``auto`` without duplicating its project-defined policy."""
+
+    # Validate both public identifiers through their authoritative lookups.
+    leakage_guard_definition(guard)
+    parent_method_definition(parent_method)
+    normalized_guard = guard.strip().lower()
+    normalized_parent = parent_method.strip().lower()
+    if normalized_guard == "auto":
+        return "main_union" if normalized_parent == "priority_main" else "parent_only"
+    return normalized_guard
 
 
 class _DisjointSet:
@@ -264,6 +602,10 @@ class ParentResolver:
         Computing first and subsetting second is intentional: a structure
         filtered out of a particular experiment can still be a parent bridge
         and must not allow related structures to leak across split partitions.
+        Call :func:`parent_method_definition` for the complete machine-readable
+        meaning of a selectable method.  ``main_union`` is a leakage graph, not
+        an explanatory parent hierarchy; its contract is returned by
+        :func:`leakage_guard_definition`.
         """
 
         if not isinstance(method, str):
@@ -275,6 +617,12 @@ class ParentResolver:
                 % (method, ", ".join(PARENT_METHODS))
             )
         missing = self._validate_missing_parent(missing_parent or self.missing_parent)
+        if method in OPTIONAL_REFERENCE_PARENT_METHODS and not self._method_is_declared(
+            method
+        ):
+            raise ValueError(
+                "Parent method %r is not present in this release" % method
+            )
         if method == "none":
             resolution = self._resolve_none(missing)
         elif method == "priority_main":
@@ -314,6 +662,18 @@ class ParentResolver:
                 if requested.intersection(conflict.member_ids)
             ),
         )
+
+    def _method_is_declared(self, method: str) -> bool:
+        """Return whether any release row declares the optional criterion."""
+
+        keys = _METHOD_KEYS[method]
+        if not isinstance(self._parent_by_id, Mapping):
+            return False
+        for structure_id in self._ids:
+            entry = self._parent_by_id.get(structure_id)
+            if isinstance(entry, Mapping) and any(key in entry for key in keys):
+                return True
+        return any(isinstance(self._parent_by_id.get(key), Mapping) for key in keys)
 
     def _parent_value(self, structure_id: str, method: str) -> Optional[str]:
         """Read either ID-major or method-major parent metadata."""
@@ -674,11 +1034,23 @@ class ParentResolver:
 
 
 __all__ = [
+    "AUTO_LEAKAGE_GUARD_DEFINITION",
     "COMPUTED_PARENT_METHODS",
     "DIRECT_PARENT_METHODS",
+    "LEAKAGE_GUARD_CHOICES",
+    "MAIN_UNION_DEFINITION",
+    "OPTIONAL_REFERENCE_PARENT_METHODS",
+    "OPTIONAL_TOPOLOGY_PARENT_METHODS",
     "PARENT_METHODS",
+    "PARENT_METHOD_CONTRACT_VERSION",
+    "PARENT_ONLY_DEFINITION",
+    "PRIORITY_MAIN_DEFINITION",
     "REFERENCE_PARENT_METHODS",
+    "SELECTABLE_PARENT_METHODS",
     "ParentConflict",
     "ParentResolution",
     "ParentResolver",
+    "leakage_guard_definition",
+    "parent_method_definition",
+    "resolve_leakage_guard",
 ]

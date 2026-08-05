@@ -9,7 +9,18 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from CoREMOF.parents import ParentResolver
+from CoREMOF.parents import (
+    AUTO_LEAKAGE_GUARD_DEFINITION,
+    LEAKAGE_GUARD_CHOICES,
+    MAIN_UNION_DEFINITION,
+    PRIORITY_MAIN_DEFINITION,
+    SELECTABLE_PARENT_METHODS,
+    ParentResolver,
+    leakage_guard_definition,
+    parent_method_definition,
+    resolve_leakage_guard,
+)
+import CoREMOF.splitters as splitters_module
 from CoREMOF.splitters import (
     OfficialSplitUnavailableError,
     ParentGroupSplitter,
@@ -65,6 +76,180 @@ def _unique_hashes(ids):
 
 
 class ParentResolverTests(unittest.TestCase):
+    def test_every_selectable_parent_and_guard_has_a_definition(self):
+        self.assertEqual(len(SELECTABLE_PARENT_METHODS), len(set(SELECTABLE_PARENT_METHODS)))
+        for method in SELECTABLE_PARENT_METHODS:
+            with self.subTest(parent_method=method):
+                definition = parent_method_definition(method)
+                self.assertEqual(definition["identifier"], method)
+                self.assertTrue(definition["project_defined_identifier"])
+                self.assertTrue(definition["purpose"])
+                self.assertTrue(definition["summary"])
+        for guard in LEAKAGE_GUARD_CHOICES:
+            with self.subTest(leakage_guard=guard):
+                definition = leakage_guard_definition(guard)
+                self.assertEqual(definition["identifier"], guard)
+                self.assertTrue(definition["project_defined_identifier"])
+                self.assertTrue(definition["purpose"])
+                self.assertTrue(definition["summary"])
+
+    def test_auto_guard_lookup_and_resolution_are_explicit(self):
+        definition = leakage_guard_definition("auto")
+        self.assertIs(definition, AUTO_LEAKAGE_GUARD_DEFINITION)
+        self.assertEqual(
+            tuple(
+                (rule["when_parent_method"], rule["resolved_guard"])
+                for rule in definition["resolution_rules"]
+            ),
+            (
+                ("priority_main", "main_union"),
+                ("any_other_explanatory_parent_method", "parent_only"),
+            ),
+        )
+        for method in SELECTABLE_PARENT_METHODS:
+            with self.subTest(parent_method=method):
+                expected = "main_union" if method == "priority_main" else "parent_only"
+                self.assertEqual(resolve_leakage_guard("auto", method), expected)
+                self.assertEqual(resolve_leakage_guard(expected, method), expected)
+
+    def test_priority_main_has_an_explicit_immutable_contract(self):
+        definition = parent_method_definition("priority_main")
+        self.assertIs(definition, PRIORITY_MAIN_DEFINITION)
+        self.assertTrue(definition["project_defined_identifier"])
+        self.assertEqual(
+            definition["priority_order"], ("rac5", "mofid_v2", "mofid_v1")
+        )
+        self.assertEqual(
+            definition["lower_group_resolution"]["multiple_stronger_components"],
+            "keep_stronger_components_separate_record_parent_conflict_and_leave_"
+            "unresolved_members_unassigned",
+        )
+        self.assertFalse(definition["conflict"]["stronger_components_are_merged"])
+        self.assertFalse(
+            definition["missing_evidence"]["common_nulls_are_grouped"]
+        )
+        self.assertNotIn("structure_matcher_strict", definition["priority_order"])
+        self.assertEqual(
+            definition["output_group_ids"],
+            {
+                "rac5_anchor": "RAC5:<published_rac5_group>",
+                "mofid_v2_component": "MOFID_V2:<published_mofid_v2_group>",
+                "mofid_v1_component": "MOFID_V1:<published_mofid_v1_group>",
+                "missing_singleton": "SINGLETON:<structure_id>",
+                "attached_member_rule": "keep_the_stronger_component_group_id",
+                "published_group_text_is_preserved": True,
+            },
+        )
+        with self.assertRaises(TypeError):
+            definition["summary"] = "changed"
+
+    def test_main_union_contract_is_distinct_from_priority_explanation(self):
+        definition = leakage_guard_definition("main_union")
+        self.assertIs(definition, MAIN_UNION_DEFINITION)
+        self.assertTrue(definition["project_defined_identifier"])
+        self.assertEqual(definition["role"], "leakage_guard")
+        self.assertFalse(definition["explanatory_parent_method"])
+        self.assertEqual(definition["universe"], "complete_unfiltered_release")
+        self.assertEqual(
+            tuple(edge["criterion"] for edge in definition["edge_sources"]),
+            ("cif_sha256", "source_id", "rac5", "mofid_v2", "mofid_v1"),
+        )
+        self.assertTrue(definition["edge_sources"][0]["required_for_every_structure"])
+        self.assertNotIn(
+            "structure_matcher_strict",
+            tuple(edge["criterion"] for edge in definition["edge_sources"]),
+        )
+        self.assertEqual(
+            definition["output_group_id"],
+            {
+                "grammar": "MAIN-<lowercase_sha256_prefix>",
+                "member_order": "ascending_structure_id",
+                "member_serialization": "U+0000_NUL_joined_without_trailing_separator",
+                "text_encoding": "UTF-8",
+                "digest": "SHA-256",
+                "hex_case": "lowercase",
+                "initial_prefix_length": 16,
+                "collision_rule": (
+                    "extend_the_digest_prefix_one_hex_character_at_a_time_until_unique"
+                ),
+            },
+        )
+        with self.assertRaisesRegex(ValueError, "not an explanatory parent method"):
+            parent_method_definition("main_union")
+
+    def test_optional_topology_criterion_must_be_declared_by_release(self):
+        resolver = ParentResolver(_Dataset(_rows(("a", "b"))))
+        with self.assertRaisesRegex(ValueError, "not present in this release"):
+            resolver.resolve("rac5_topology")
+
+    def test_structure_matcher_is_optional_reference_not_default_hierarchy(self):
+        ids = ("a", "b", "c")
+        parents = {
+            "a": {
+                "sm_group": "SM-AAAA0001",
+                "sm_status": "MATCHED",
+                "sm_size": "2",
+            },
+            "b": {
+                "sm_group": "SM-AAAA0001",
+                "sm_status": "MATCHED",
+                "sm_size": "2",
+            },
+            "c": {
+                "sm_group": "SM-CCCC0001",
+                "sm_status": "UNMATCHED",
+                "sm_size": "1",
+            },
+        }
+        resolver = ParentResolver(_Dataset(_rows(ids), parents))
+        matched = resolver.resolve("structure_matcher_strict")
+        self.assertEqual(matched.groups["a"], matched.groups["b"])
+        self.assertNotEqual(matched.groups["a"], matched.groups["c"])
+        priority = resolver.resolve("priority_main")
+        self.assertEqual(priority.groups["a"], "SINGLETON:a")
+        self.assertEqual(priority.groups["b"], "SINGLETON:b")
+        union = resolver.resolve("main_union")
+        self.assertNotEqual(union.groups["a"], union.groups["b"])
+
+    def test_topology_combined_criteria_are_selectable_but_not_in_priority_main(self):
+        ids = ("a", "b", "c")
+        parents = {
+            "a": {
+                "rac_topology_group": "RT-AAAA0001",
+                "rac_topology_status": "MATCHED",
+                "rac_topology_size": "2",
+                "mofid2_topology_group": "M2T-BBBB0001",
+                "mofid2_topology_status": "MATCHED",
+                "mofid2_topology_size": "2",
+            },
+            "b": {
+                "rac_topology_group": "RT-AAAA0001",
+                "rac_topology_status": "MATCHED",
+                "rac_topology_size": "2",
+                "mofid2_topology_group": "M2T-BBBB0001",
+                "mofid2_topology_status": "MATCHED",
+                "mofid2_topology_size": "2",
+            },
+            "c": {
+                "rac_topology_group": "RT-CCCC0001",
+                "rac_topology_status": "NOT_AVAILABLE",
+                "rac_topology_size": "1",
+                "mofid2_topology_group": "M2T-DDDD0001",
+                "mofid2_topology_status": "NOT_AVAILABLE",
+                "mofid2_topology_size": "1",
+            },
+        }
+        resolver = ParentResolver(_Dataset(_rows(ids), parents))
+        rac_topology = resolver.resolve("rac5_topology")
+        mofid_topology = resolver.resolve("mofid_v2_topology")
+        self.assertEqual(rac_topology.groups["a"], rac_topology.groups["b"])
+        self.assertEqual(mofid_topology.groups["a"], mofid_topology.groups["b"])
+        self.assertEqual(rac_topology.groups["c"], "SINGLETON:c")
+        # The established RAC5 > MOFid-v2 > MOFid-v1 hierarchy is unchanged.
+        priority = resolver.resolve("priority_main")
+        self.assertEqual(priority.groups["a"], "SINGLETON:a")
+        self.assertEqual(priority.groups["b"], "SINGLETON:b")
+
     def test_missing_direct_value_is_unique_singleton_by_default(self):
         dataset = _Dataset(
             _rows(("a", "b", "c")),
@@ -172,6 +357,8 @@ class ParentResolverTests(unittest.TestCase):
         resolution = ParentResolver(_Dataset(rows, parents, hashes)).resolve("main_union")
         self.assertEqual(len({resolution.groups[value] for value in ("a", "b", "c", "d", "e")}), 1)
         self.assertNotEqual(resolution.groups["f"], resolution.groups["a"])
+        expected = hashlib.sha256(b"a\0b\0c\0d\0e").hexdigest()[:16]
+        self.assertEqual(resolution.groups["a"], "MAIN-{}".format(expected))
 
     def test_main_union_rejects_truncated_or_placeholder_cif_hashes(self):
         dataset = _Dataset(_rows(("a",)), hashes={"a": "abc123"})
@@ -303,6 +490,44 @@ class ParentGroupSplitterTests(unittest.TestCase):
             ParentGroupSplitter(
                 classified, parent_method="main_union"
             )
+
+    def test_split_receipt_expands_parent_and_leakage_terms(self):
+        result = ParentGroupSplitter(
+            self._singleton_classified(count=8),
+            parent_method="priority_main",
+            leakage_guard="auto",
+            random_state="contract-receipt",
+        ).train_valid_test_split((0.5, 0.25, 0.25))
+        receipt = result.receipt()
+        self.assertEqual(receipt["parent_method"], "priority_main")
+        self.assertEqual(
+            receipt["parent_method_definition"]["priority_order"],
+            ["rac5", "mofid_v2", "mofid_v1"],
+        )
+        self.assertIn("not a row-by-row", receipt["parent_method_definition"]["summary"])
+        self.assertEqual(receipt["leakage_guard"], "main_union")
+        self.assertEqual(receipt["requested_leakage_guard"], "auto")
+        self.assertEqual(
+            receipt["requested_leakage_guard_definition"]["identifier"], "auto"
+        )
+        self.assertEqual(
+            receipt["leakage_guard_definition"]["graph_rule"],
+            "connected_components_of_the_transitive_union_of_all_edges",
+        )
+        self.assertFalse(
+            receipt["leakage_guard_definition"]["explanatory_parent_method"]
+        )
+        # The expanded explanation is ordinary JSON data, not a Python-only proxy.
+        json.dumps(receipt, sort_keys=True, allow_nan=False)
+
+        other = ParentGroupSplitter(
+            self._singleton_classified(count=8),
+            parent_method="none",
+            leakage_guard="auto",
+        ).train_valid_test_split((0.5, 0.25, 0.25))
+        other_receipt = other.receipt()
+        self.assertEqual(other_receipt["requested_leakage_guard"], "auto")
+        self.assertEqual(other_receipt["leakage_guard"], "parent_only")
 
     def test_explicit_structure_id_filter_is_reported(self):
         classified = self._singleton_classified(count=10)
@@ -510,6 +735,21 @@ print(json.dumps(dict(result.assignments), sort_keys=True))
             receipt = result.receipt()
         self.assertEqual(receipt["implementation"]["source_sha256"], first_hashes)
 
+    def test_split_fails_if_imported_implementation_sources_drift(self):
+        changed = dict(splitters_module._IMPORTED_BASE_IMPLEMENTATION_HASHES)
+        changed["splitters.py"] = "0" * 64
+        with patch.object(
+            splitters_module,
+            "_current_base_implementation_hashes",
+            return_value=changed,
+        ):
+            with self.assertRaisesRegex(
+                ValueError, "split implementation source changed after module import"
+            ):
+                ParentGroupSplitter(
+                    self._singleton_classified(count=10), parent_method="none"
+                ).train_valid_test_split()
+
     def test_pair_write_rolls_back_if_second_render_fails(self):
         result = ParentGroupSplitter(
             self._singleton_classified(count=20), parent_method="none"
@@ -530,6 +770,97 @@ print(json.dumps(dict(result.assignments), sort_keys=True))
                 object.__setattr__(result, "to_json", original_to_json)
             self.assertFalse(Path(directory, "pair.csv").exists())
             self.assertFalse(Path(directory, "pair.json").exists())
+
+    def test_pair_nonoverwrite_rollback_preserves_post_identity_replacement(self):
+        result = ParentGroupSplitter(
+            self._singleton_classified(count=20), parent_method="none"
+        ).train_valid_test_split()
+        with tempfile.TemporaryDirectory() as directory_text:
+            directory = Path(directory_text)
+            final_csv = directory / "pair.csv"
+            real_link = splitters_module.os.link
+            real_replace = splitters_module.os.replace
+            real_samefile = splitters_module.os.path.samefile
+            link_count = 0
+            identity_checked = False
+
+            def fail_second_pair_publication(source, destination):
+                nonlocal link_count
+                link_count += 1
+                # Two links render the staged CSV/JSON; the third publishes
+                # pair.csv and the fourth is the injected pair.json failure.
+                if link_count == 4:
+                    raise OSError("deterministic second publication failure")
+                return real_link(source, destination)
+
+            def replace_after_identity_check(left, right):
+                nonlocal identity_checked
+                answer = real_samefile(left, right)
+                if answer and not identity_checked:
+                    identity_checked = True
+                    replacement = directory / ".concurrent-replacement"
+                    replacement.write_text("foreign generation\n", encoding="utf-8")
+                    real_replace(str(replacement), str(final_csv))
+                return answer
+
+            with patch.object(
+                splitters_module.os,
+                "link",
+                side_effect=fail_second_pair_publication,
+            ), patch.object(
+                splitters_module.os.path,
+                "samefile",
+                side_effect=replace_after_identity_check,
+            ):
+                with self.assertRaisesRegex(
+                    OSError, "deterministic second publication failure"
+                ):
+                    result.write(directory, stem="pair")
+
+            self.assertTrue(identity_checked)
+            self.assertEqual(
+                final_csv.read_text(encoding="utf-8"), "foreign generation\n"
+            )
+            self.assertFalse((directory / "pair.json").exists())
+            self.assertFalse(
+                any(path.name.startswith(".pair.") for path in directory.iterdir())
+            )
+
+    def test_pair_overwrite_failure_removes_new_and_restores_existing_output(self):
+        result = ParentGroupSplitter(
+            self._singleton_classified(count=20), parent_method="none"
+        ).train_valid_test_split()
+        with tempfile.TemporaryDirectory() as directory_text:
+            directory = Path(directory_text)
+            final_csv = directory / "pair.csv"
+            final_json = directory / "pair.json"
+            old_json = b'{"old": true}\n'
+            final_json.write_bytes(old_json)
+            real_replace = splitters_module.os.replace
+            replace_count = 0
+
+            def fail_second_pair_replacement(source, destination):
+                nonlocal replace_count
+                replace_count += 1
+                if replace_count == 2:
+                    raise OSError("deterministic second replacement failure")
+                return real_replace(source, destination)
+
+            with patch.object(
+                splitters_module.os,
+                "replace",
+                side_effect=fail_second_pair_replacement,
+            ):
+                with self.assertRaisesRegex(
+                    OSError, "deterministic second replacement failure"
+                ):
+                    result.write(directory, stem="pair", overwrite=True)
+
+            self.assertFalse(final_csv.exists())
+            self.assertEqual(final_json.read_bytes(), old_json)
+            self.assertFalse(
+                any(path.name.startswith(".pair.") for path in directory.iterdir())
+            )
 
     def test_official_split_request_fails_closed(self):
         with self.assertRaisesRegex(

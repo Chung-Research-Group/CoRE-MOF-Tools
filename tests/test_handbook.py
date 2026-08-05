@@ -44,6 +44,43 @@ class HandbookTests(unittest.TestCase):
         self.assertGreaterEqual(len(anchors), 20)
         self.assertEqual(sorted(set(anchors).difference(headings)), [])
 
+    def test_project_defined_split_identifiers_are_defined_before_examples(self):
+        documents = {
+            ROOT / "README.md": "Two project-defined API identifiers",
+            HANDBOOK: "Project-defined identifiers used in this handbook",
+            ROOT / "docs" / "source" / "splitting.rst": (
+                "Project-defined split identifiers"
+            ),
+            ROOT / "examples" / "README.md": (
+                "project-defined CoREMOF-tools identifiers"
+            ),
+        }
+        for path, marker in documents.items():
+            with self.subTest(path=path.name):
+                text = path.read_text(encoding="utf-8")
+                definition_index = text.index(marker)
+                first_example = min(
+                    index
+                    for token in (
+                        'parent_method="priority_main"',
+                        "--parent-method priority_main",
+                    )
+                    if (index := text.find(token)) >= 0
+                )
+                self.assertLess(definition_index, first_example)
+                for required in (
+                    "PARENT_METHOD_CONFLICT",
+                    "RAC5",
+                    "MOFid-v2",
+                    "MOFid-v1",
+                    "full CIF SHA-256",
+                    "source sibling",
+                    "parent_only",
+                    "StructureMatcher",
+                ):
+                    normalized = text.replace("source-sibling", "source sibling")
+                    self.assertIn(required, normalized)
+
 
 if __name__ == "__main__":
     unittest.main()

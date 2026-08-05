@@ -30,6 +30,26 @@ python -m sphinx -W --keep-going -b html docs/source docs/build/html
 - Do not commit `__pycache__`, notebook checkpoints, generated documentation, local environments, or proprietary CSD data.
 - State which external programs and model files were used for scientific validation.
 
+## Project-defined terminology
+
+Do not expose a coined identifier, policy name, abbreviation, or convenience
+method without defining it. Before a project-defined term appears in a public
+API, command-line option, notebook, metadata field, or receipt:
+
+- explain it in plain language at first use and mark it as project-defined;
+- provide one centralized machine-readable contract containing its purpose,
+  exact ordered inputs and algorithm, conflict and missing-data rules, excluded
+  inputs, output-ID grammar, and how it differs from adjacent concepts;
+- make command-line help and user documentation point to the same semantics;
+- record both the identifier and its expanded definition in generated receipts;
+- for selectors such as `auto`, record the requested selector and the concrete
+  resolved policy separately; and
+- test every exposed choice, its definition lookup, and receipt serialization.
+
+For example, `priority_main` is an explanatory parent hierarchy while
+`main_union` is a broader leakage-block graph. A contribution must not present
+either token without preserving that distinction.
+
 ## Reporting scientific discrepancies
 
 Include the exact function call, package version, dependency versions, complete traceback, and the smallest shareable CIF. For numerical disagreements, also include probe radii, sampling count, external-program version, and expected units. “Runs without error” is not sufficient validation of a scientific result.

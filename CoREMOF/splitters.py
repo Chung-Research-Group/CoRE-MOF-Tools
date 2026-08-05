@@ -23,7 +23,14 @@ from typing import Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 from CoREMOF import __version__
 from CoREMOF.labels import CHECKER_PRESETS, LABELS, resolve_checker_view
-from CoREMOF.parents import PARENT_METHODS, ParentResolver
+from CoREMOF.parents import (
+    LEAKAGE_GUARD_CHOICES,
+    SELECTABLE_PARENT_METHODS,
+    ParentResolver,
+    leakage_guard_definition,
+    parent_method_definition,
+    resolve_leakage_guard,
+)
 
 
 _SPLIT_NAMES = ("train", "validation", "test")
@@ -52,13 +59,96 @@ def _jsonable(value):
     return value
 
 
-def _implementation_hashes() -> Mapping[str, str]:
+_BASE_IMPLEMENTATION_FILES = (
+    "dataset.py",
+    "labels.py",
+    "parents.py",
+    "splitters.py",
+)
+_TARGET_IMPLEMENTATION_FILES = ("dataset.py", "labels.py", "targets.py")
+
+
+def _current_base_implementation_hashes() -> Dict[str, str]:
     package_root = Path(__file__).resolve().parent
-    result = {}
-    for filename in ("dataset.py", "labels.py", "parents.py", "splitters.py"):
-        result[filename] = hashlib.sha256(
+    return {
+        filename: hashlib.sha256(
             (package_root / filename).read_bytes()
         ).hexdigest()
+        for filename in _BASE_IMPLEMENTATION_FILES
+    }
+
+
+_IMPORTED_BASE_IMPLEMENTATION_HASHES = MappingProxyType(
+    _current_base_implementation_hashes()
+)
+
+
+def _target_receipt_implementation_hashes(
+    target_receipt: Mapping[str, object],
+) -> Dict[str, str]:
+    implementation = target_receipt.get("implementation")
+    if not isinstance(implementation, Mapping):
+        raise ValueError("target merge receipt has no implementation mapping")
+    source_hashes = implementation.get("source_sha256")
+    if not isinstance(source_hashes, Mapping):
+        raise ValueError("target merge receipt has no source_sha256 mapping")
+    observed = {str(filename) for filename in source_hashes}
+    if observed != set(_TARGET_IMPLEMENTATION_FILES):
+        raise ValueError(
+            "target merge implementation closure must contain exactly {}".format(
+                ", ".join(_TARGET_IMPLEMENTATION_FILES)
+            )
+        )
+    result = {}
+    for filename in _TARGET_IMPLEMENTATION_FILES:
+        digest = source_hashes.get(filename)
+        if (
+            not isinstance(digest, str)
+            or len(digest) != 64
+            or any(character not in "0123456789abcdef" for character in digest)
+        ):
+            raise ValueError(
+                "target merge receipt has an invalid SHA-256 for {}".format(
+                    filename
+                )
+            )
+        result[filename] = digest
+    return result
+
+
+def _implementation_hashes(
+    include_targets: bool = False,
+    target_receipt: Optional[Mapping[str, object]] = None,
+) -> Mapping[str, str]:
+    """Return import-bound split sources and the frozen target-merge source."""
+
+    current = _current_base_implementation_hashes()
+    imported = dict(_IMPORTED_BASE_IMPLEMENTATION_HASHES)
+    if current != imported:
+        changed = sorted(
+            filename
+            for filename in set(current).union(imported)
+            if current.get(filename) != imported.get(filename)
+        )
+        raise ValueError(
+            "CoREMOF split implementation source changed after module import: {}".format(
+                ", ".join(changed)
+            )
+        )
+    result = dict(imported)
+    if not include_targets:
+        return result
+    if target_receipt is None:
+        raise ValueError(
+            "target-aware implementation hashing requires the target merge receipt"
+        )
+    target_hashes = _target_receipt_implementation_hashes(target_receipt)
+    for filename in ("dataset.py", "labels.py"):
+        if target_hashes[filename] != imported[filename]:
+            raise ValueError(
+                "{} changed between target merge and split import".format(filename)
+            )
+    result["targets.py"] = target_hashes["targets.py"]
     return result
 
 
@@ -103,6 +193,7 @@ class SplitResult:
     checker_view: Optional[str]
     checker_view_official: bool
     parent_method: str
+    requested_leakage_guard: str
     leakage_guard: str
     missing_parent: str
     fractions: Tuple[float, float, float]
@@ -117,6 +208,7 @@ class SplitResult:
     parent_input_status: Optional[str]
     dataset_input_status: Optional[str]
     provisional_input: bool
+    target_data: Optional[Mapping[str, object]] = None
     official_split: bool = False
 
     def __post_init__(self) -> None:
@@ -138,6 +230,8 @@ class SplitResult:
                 MappingProxyType(dict(getattr(self, field_name))),
             )
         object.__setattr__(self, "filters", _deep_freeze(self.filters))
+        if self.target_data is not None:
+            object.__setattr__(self, "target_data", _deep_freeze(self.target_data))
         object.__setattr__(
             self,
             "parent_conflicts",
@@ -325,7 +419,7 @@ class SplitResult:
                 "release_indices": list(self.test_release_indices),
             },
         }
-        return {
+        receipt = {
             "schema_version": "coremof-split-receipt/1.0",
             "implementation": {
                 "package": "CoREMOF-tools",
@@ -350,7 +444,17 @@ class SplitResult:
             "provisional_input": self.provisional_input,
             "official_split": self.official_split,
             "parent_method": self.parent_method,
+            "parent_method_definition": _jsonable(
+                parent_method_definition(self.parent_method)
+            ),
+            "requested_leakage_guard": self.requested_leakage_guard,
+            "requested_leakage_guard_definition": _jsonable(
+                leakage_guard_definition(self.requested_leakage_guard)
+            ),
             "leakage_guard": self.leakage_guard,
+            "leakage_guard_definition": _jsonable(
+                leakage_guard_definition(self.leakage_guard)
+            ),
             "missing_parent": self.missing_parent,
             "fractions": dict(zip(_SPLIT_NAMES, self.fractions)),
             "achieved_fractions": dict(self.achieved_fractions),
@@ -391,6 +495,9 @@ class SplitResult:
                 )
             ],
         }
+        if self.target_data is not None:
+            receipt["target_data"] = _jsonable(self.target_data)
+        return receipt
 
     @staticmethod
     def _atomic_target(path, overwrite: bool) -> Tuple[Path, Path]:
@@ -459,13 +566,52 @@ class SplitResult:
                 temporary.unlink()
         return output
 
+    @staticmethod
+    def _quarantine_published_generation(
+        target: Path, identity: Path, quarantine: Path
+    ) -> bool:
+        """Remove only the published generation identified by ``identity``.
+
+        Moving the public pathname into the private staging directory before
+        comparing inodes closes the race between ``samefile`` and ``unlink``.
+        A foreign generation is restored create-if-absent; if a newer writer
+        already owns the public pathname, the detached generation remains in
+        staging and the caller preserves that directory for recovery.
+        """
+
+        try:
+            os.replace(str(target), str(quarantine))
+        except FileNotFoundError:
+            return True
+        try:
+            published_by_us = identity.exists() and os.path.samefile(
+                str(identity), str(quarantine)
+            )
+        except FileNotFoundError:
+            published_by_us = False
+        if published_by_us:
+            quarantine.unlink()
+            return True
+        try:
+            os.link(str(quarantine), str(target))
+        except OSError:
+            return False
+        quarantine.unlink()
+        return True
+
     def write(
         self,
         output_directory,
         stem: str = "coremof_split",
         overwrite: bool = False,
     ) -> Tuple[Path, Path]:
-        """Write ``<stem>.csv`` and ``<stem>.json`` and return both paths."""
+        """Write ``<stem>.csv`` and ``<stem>.json`` and return both paths.
+
+        Default create-if-absent rollback never deletes a concurrent writer's
+        replacement.  Since two ordinary files cannot be replaced as one
+        filesystem transaction, ``overwrite=True`` has explicit single-writer
+        semantics; callers must serialize writers for the same stem.
+        """
 
         if (
             not isinstance(stem, str)
@@ -496,9 +642,10 @@ class SplitResult:
         staged_json = staging_directory / json_path.name
         targets = (csv_path, json_path)
         staged = (staged_csv, staged_json)
-        existed = {target: target.exists() for target in targets}
         backups = {}
+        published_identities = {}
         published = []
+        remove_staging = True
         try:
             self.to_csv(staged_csv)
             self.to_json(staged_json)
@@ -513,6 +660,10 @@ class SplitResult:
                         backups[target] = backup
             for source, target in zip(staged, targets):
                 if overwrite:
+                    if target not in backups:
+                        identity = staging_directory / (target.name + ".published")
+                        os.link(str(source), str(identity))
+                        published_identities[target] = identity
                     os.replace(str(source), str(target))
                 else:
                     os.link(str(source), str(target))
@@ -522,25 +673,32 @@ class SplitResult:
                 backup = backups.get(target)
                 if backup is not None and backup.exists():
                     os.replace(str(backup), str(target))
-                elif target in published and not existed[target] and target.exists():
-                    source = staged[targets.index(target)]
-                    # A concurrent writer must never be removed during
-                    # rollback.  Delete only the hard link we published.
-                    if source.exists() and os.path.samefile(str(source), str(target)):
-                        target.unlink()
+                elif target in published:
+                    identity = published_identities.get(
+                        target, staged[targets.index(target)]
+                    )
+                    quarantine = staging_directory / (target.name + ".rollback")
+                    if not self._quarantine_published_generation(
+                        target, identity, quarantine
+                    ):
+                        remove_staging = False
             raise
         finally:
-            shutil.rmtree(staging_directory, ignore_errors=True)
+            if remove_staging:
+                shutil.rmtree(staging_directory, ignore_errors=True)
         return csv_path, json_path
 
 
 class ParentGroupSplitter:
     """Split a classified CoRE-MOF dataset while keeping parents together.
 
-    ``priority_main`` is the recommended parent method.  It uses RAC5 first,
-    then MOFid v2, then MOFid v1.  Its automatic leakage guard is the broader
-    ``main_union`` graph.  Explicit direct/reference methods use only their
-    own parent groups unless ``leakage_guard="main_union"`` is requested.
+    ``priority_main`` is the project-defined, conflict-aware explanatory
+    hierarchy RAC5, then MOFid v2, then MOFid v1; it is not a row-wise
+    first-nonmissing fallback.  ``leakage_guard="auto"`` resolves to the
+    broader full-release ``main_union`` graph for ``priority_main`` and to
+    ``parent_only`` for every other explanatory method.  See
+    :func:`CoREMOF.parents.parent_method_definition` and
+    :func:`CoREMOF.parents.leakage_guard_definition` for exact contracts.
     """
 
     def __init__(
@@ -556,6 +714,8 @@ class ParentGroupSplitter:
         variants: Optional[Sequence[str]] = None,
         metals: Optional[Sequence[str]] = None,
         structure_ids: Optional[Sequence[str]] = None,
+        required_targets: Optional[Sequence[str]] = None,
+        required_target_mode: str = "all",
         official: bool = False,
     ):
         self.classified_dataset = classified_dataset
@@ -567,18 +727,19 @@ class ParentGroupSplitter:
         if not isinstance(parent_method, str):
             raise TypeError("parent method must be a string")
         parent_method = parent_method.strip().lower()
-        splitter_parent_methods = tuple(
-            method for method in PARENT_METHODS if method != "main_union"
-        )
-        if parent_method not in splitter_parent_methods:
+        if parent_method not in SELECTABLE_PARENT_METHODS:
             raise ValueError(
                 "Unknown parent method %r; choose one of %s"
-                % (parent_method, ", ".join(splitter_parent_methods))
+                % (parent_method, ", ".join(SELECTABLE_PARENT_METHODS))
             )
-        if leakage_guard not in ("auto", "parent_only", "main_union"):
-            raise ValueError("leakage_guard must be 'auto', 'parent_only', or 'main_union'")
-        if leakage_guard == "auto":
-            leakage_guard = "main_union" if parent_method == "priority_main" else "parent_only"
+        if not isinstance(leakage_guard, str):
+            raise TypeError("leakage guard must be a string")
+        if leakage_guard not in LEAKAGE_GUARD_CHOICES:
+            raise ValueError(
+                "leakage_guard must be 'auto', 'parent_only', or 'main_union'"
+            )
+        requested_leakage_guard = leakage_guard
+        leakage_guard = resolve_leakage_guard(leakage_guard, parent_method)
         if missing_parent not in ("exclude", "singleton"):
             raise ValueError("missing_parent must be 'exclude' or 'singleton'")
         if official:
@@ -589,6 +750,7 @@ class ParentGroupSplitter:
             )
 
         self.parent_method = parent_method
+        self.requested_leakage_guard = requested_leakage_guard
         self.leakage_guard = leakage_guard
         self.missing_parent = missing_parent
         self.random_state = str(random_state)
@@ -614,6 +776,18 @@ class ParentGroupSplitter:
             if self.structure_id_filter is not None
             else None
         )
+        self.required_targets = _as_optional_tuple(required_targets)
+        if self.required_targets is not None:
+            self.required_targets = tuple(
+                value.strip() for value in self.required_targets
+            )
+            if not self.required_targets or any(not value for value in self.required_targets):
+                raise ValueError("required_targets must contain non-empty target names")
+            if len(set(self.required_targets)) != len(self.required_targets):
+                raise ValueError("required_targets contains duplicates")
+        if required_target_mode not in ("all", "any"):
+            raise ValueError("required_target_mode must be 'all' or 'any'")
+        self.required_target_mode = required_target_mode
 
         self._rows = tuple(getattr(self.dataset, "metadata_rows"))
         self._row_by_id: Dict[str, Mapping[str, object]] = {}
@@ -626,6 +800,19 @@ class ParentGroupSplitter:
                 raise ValueError("Duplicate structure_id in metadata_rows: %s" % structure_id)
             self._row_by_id[structure_id] = row
             self._index_by_id[structure_id] = index
+        attached_targets = tuple(getattr(self.dataset, "target_columns", ()) or ())
+        self._attached_targets = attached_targets
+        if self.required_targets is not None:
+            if not attached_targets:
+                raise ValueError(
+                    "required_targets needs a dataset created by merge_targets()"
+                )
+            unknown_targets = set(self.required_targets).difference(attached_targets)
+            if unknown_targets:
+                raise ValueError(
+                    "unknown required target(s): %s"
+                    % ", ".join(sorted(unknown_targets))
+                )
         label_values = getattr(classified_dataset, "label_by_id", None)
         if label_values is None:
             label_values = getattr(classified_dataset, "labels", {})
@@ -669,6 +856,10 @@ class ParentGroupSplitter:
             )
         selection_filters = getattr(classified_dataset, "selection_filters", {}) or {}
         self._selection_filters = self._json_safe(selection_filters)
+        target_receipt = getattr(self.dataset, "target_input_receipt", None)
+        self._target_input_receipt = (
+            self._json_safe(target_receipt) if target_receipt is not None else None
+        )
 
     @classmethod
     def _json_safe(cls, value):
@@ -856,6 +1047,27 @@ class ParentGroupSplitter:
                 else None
             ),
         }
+        if self._target_input_receipt is not None or self.required_targets is not None:
+            required = tuple(self.required_targets or ())
+            available_counts = {
+                target: sum(
+                    self._target_is_available(row.get(target)) for row in self._rows
+                )
+                for target in required
+            }
+            eligible_count = sum(
+                self._passes_target_requirement(row) for row in self._rows
+            ) if required else len(self._rows)
+            filters["targets"] = {
+                "attached_columns": list(self._attached_targets),
+                "required": list(required),
+                "mode": self.required_target_mode,
+                "available_counts": available_counts,
+                "eligible_release_count": eligible_count,
+                "excluded_release_count": len(self._rows) - eligible_count,
+                "filter_precedes_assignment": True,
+                "leakage_blocks_use_full_release_universe": True,
+            }
         return SplitResult(
             train_ids=ids_by_split["train"],
             validation_ids=ids_by_split["validation"],
@@ -903,6 +1115,7 @@ class ParentGroupSplitter:
             checker_view=str(checker_view) if checker_view is not None else None,
             checker_view_official=checker_view_official,
             parent_method=self.parent_method,
+            requested_leakage_guard=self.requested_leakage_guard,
             leakage_guard=self.leakage_guard,
             missing_parent=self.missing_parent,
             fractions=fractions_tuple,
@@ -912,11 +1125,17 @@ class ParentGroupSplitter:
             input_hashes={str(key): str(value) for key, value in input_hashes.items()},
             implementation_package_version=__version__,
             implementation_split_api_version=SPLIT_API_VERSION,
-            implementation_hashes=dict(_implementation_hashes()),
+            implementation_hashes=dict(
+                _implementation_hashes(
+                    include_targets=self._target_input_receipt is not None,
+                    target_receipt=self._target_input_receipt,
+                )
+            ),
             cif_files_verified=cif_files_verified,
             parent_input_status=parent_input_status,
             dataset_input_status=dataset_input_status,
             provisional_input=provisional_input,
+            target_data=self._target_input_receipt,
             official_split=False,
         )
 
@@ -929,6 +1148,8 @@ class ParentGroupSplitter:
             and structure_id not in self._structure_id_filter_set
         ):
             return "STRUCTURE_ID_FILTER"
+        if self.required_targets is not None and not self._passes_target_requirement(row):
+            return "MISSING_REQUIRED_TARGET"
         label = self._labels.get(structure_id)
         if label is None:
             return "LABEL_NOT_AVAILABLE"
@@ -949,6 +1170,19 @@ class ParentGroupSplitter:
             if not requested.intersection(self._metal_elements(row)):
                 return "METAL_FILTER"
         return None
+
+    @staticmethod
+    def _target_is_available(value: object) -> bool:
+        return value is not None
+
+    def _passes_target_requirement(self, row: Mapping[str, object]) -> bool:
+        required = self.required_targets
+        if required is None:
+            return True
+        available = [self._target_is_available(row.get(target)) for target in required]
+        if self.required_target_mode == "all":
+            return all(available)
+        return any(available)
 
     @staticmethod
     def _metal_elements(row: Mapping[str, object]) -> Set[str]:
@@ -1116,6 +1350,9 @@ def split_release(
     ``release_root`` is normally the extracted release directory.  An already
     loaded :class:`~CoREMOF.dataset.CoREMOFDataset` or an already classified
     dataset is also accepted, which avoids redundant I/O in notebooks.
+    Use :func:`CoREMOF.parents.parent_method_definition` and
+    :func:`CoREMOF.parents.leakage_guard_definition` to inspect the exact
+    project-defined parent and leakage semantics recorded in the receipt.
     """
 
     if splitter_options.get("official"):

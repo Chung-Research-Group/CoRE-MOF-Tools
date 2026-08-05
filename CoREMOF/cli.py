@@ -10,6 +10,7 @@ import shutil
 import sys
 
 from CoREMOF import __version__
+from CoREMOF.parents import LEAKAGE_GUARD_CHOICES, SELECTABLE_PARENT_METHODS
 
 
 FEATURES = {
@@ -99,10 +100,22 @@ def split_release(args) -> int:
         split_release as build_split,
     )
     from CoREMOF.dataset import ReleaseValidationError
+    from CoREMOF.targets import TargetDataError, merge_targets_from_config
 
     try:
+        release_input = args.release
+        if args.target_config is not None:
+            release_input = merge_targets_from_config(
+                args.release,
+                args.target_config,
+                verify_cif_files=args.verify_cifs,
+            )
+        elif args.require_target:
+            raise TargetDataError(
+                "--require-target requires --target-config so targets are joined before splitting"
+            )
         result = build_split(
-            args.release,
+            release_input,
             checkers=args.checkers,
             fractions=tuple(args.fractions),
             parent_method=args.parent_method,
@@ -115,6 +128,10 @@ def split_release(args) -> int:
             variants=tuple(args.variants) if args.variants else None,
             metals=tuple(args.metals) if args.metals else None,
             structure_ids=tuple(args.structure_ids) if args.structure_ids else None,
+            required_targets=(
+                tuple(args.require_target) if args.require_target else None
+            ),
+            required_target_mode=args.required_target_mode,
             verify_cif_files=args.verify_cifs,
             official=args.official,
         )
@@ -126,6 +143,7 @@ def split_release(args) -> int:
     except (
         OfficialSplitUnavailableError,
         ReleaseValidationError,
+        TargetDataError,
         FileNotFoundError,
         FileExistsError,
         KeyError,
@@ -140,11 +158,55 @@ def split_release(args) -> int:
         "dataset_version": result.dataset_version,
         "checker_view": result.checker_view,
         "parent_method": result.parent_method,
+        "requested_leakage_guard": getattr(
+            result, "requested_leakage_guard", result.leakage_guard
+        ),
         "leakage_guard": result.leakage_guard,
         "provisional_input": result.provisional_input,
         "cif_files_verified": result.cif_files_verified,
         "counts": dict(result.counts),
         "leakage_audit": dict(result.leakage_audit),
+    }
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    return 0
+
+
+def merge_target_data(args) -> int:
+    """Join configured target files to release metadata and feature tables."""
+
+    from CoREMOF.dataset import ReleaseValidationError
+    from CoREMOF.targets import TargetDataError, merge_targets_from_config
+
+    try:
+        merged = merge_targets_from_config(
+            args.release,
+            args.config,
+            verify_cif_files=args.verify_cifs,
+        )
+        csv_path, provenance_path, receipt_path = merged.write(
+            args.output_directory,
+            stem=args.stem,
+            overwrite=args.overwrite,
+        )
+    except (
+        FileExistsError,
+        FileNotFoundError,
+        OSError,
+        ReleaseValidationError,
+        TargetDataError,
+        ValueError,
+    ) as error:
+        print("coremof merge-targets: error: {}".format(error), file=sys.stderr)
+        return 2
+    summary = {
+        "merged_csv": str(csv_path),
+        "provenance_jsonl": str(provenance_path),
+        "receipt_json": str(receipt_path),
+        "dataset_version": merged.dataset_version,
+        "release_structure_count": len(merged),
+        "target_columns": list(merged.target_columns),
+        "feature_column_count": len(merged.feature_columns),
+        "target_values_sha256": merged.receipt()["target_values_sha256"],
     }
     print(json.dumps(summary, indent=2, sort_keys=True))
     return 0
@@ -159,9 +221,40 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("doctor", help="check optional dependencies by feature")
 
+    target_parser = subparsers.add_parser(
+        "merge-targets",
+        help="join user target files to release metadata and selected features",
+    )
+    target_parser.add_argument(
+        "release",
+        type=Path,
+        help="extracted CoRE-MOF release root",
+    )
+    target_parser.add_argument(
+        "--config",
+        type=Path,
+        required=True,
+        help="JSON file declaring target sources, units, conditions, and aliases",
+    )
+    target_parser.add_argument(
+        "--output-directory", type=Path, required=True
+    )
+    target_parser.add_argument("--stem", default="coremof_targets")
+    target_parser.add_argument("--overwrite", action="store_true")
+    target_parser.add_argument(
+        "--verify-cifs",
+        action="store_true",
+        help="hash every CIF before joining targets",
+    )
+
     split_parser = subparsers.add_parser(
         "split",
         help="make a deterministic parent-aware dataset split",
+        description=(
+            "Make a deterministic split using separate explanatory-parent and "
+            "leakage-block policies. Project-defined terms are expanded in the "
+            "JSON receipt."
+        ),
     )
     split_parser.add_argument(
         "release",
@@ -176,26 +269,29 @@ def build_parser() -> argparse.ArgumentParser:
     )
     split_parser.add_argument(
         "--parent-method",
-        choices=(
-            "priority_main",
-            "rac5",
-            "mofid_v2",
-            "mofid_v1",
-            "rac5_zeo",
-            "zeo",
-            "source_id",
-            "common_name",
-            "identity_union",
-            "none",
-        ),
+        choices=SELECTABLE_PARENT_METHODS,
         default="priority_main",
-        help="parent relation used to explain the split (default: priority_main)",
+        help=(
+            "explanatory parent relation. priority_main is the project-defined, "
+            "conflict-aware hierarchy RAC5 then MOFid v2 then MOFid v1: a lower "
+            "group may attach unresolved rows to at most one stronger component "
+            "but never merges multiple stronger components. It is not a row-wise "
+            "first-nonmissing fallback and does not itself define leakage blocks "
+            "(default: priority_main)"
+        ),
     )
     split_parser.add_argument(
         "--leakage-guard",
-        choices=("auto", "main_union", "parent_only"),
+        choices=LEAKAGE_GUARD_CHOICES,
         default="auto",
-        help="split-block policy (default: auto)",
+        help=(
+            "split-block policy. auto is the project-defined selector: it becomes "
+            "main_union for priority_main and parent_only for every other parent "
+            "method. main_union is the full-release transitive union of exact CIF "
+            "SHA-256, database-namespaced source sibling, RAC5, MOFid v2, and "
+            "MOFid v1 relations, constructed before filters; parent_only uses only "
+            "the explanatory parent groups (default: auto)"
+        ),
     )
     split_parser.add_argument(
         "--missing-parent",
@@ -230,6 +326,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="optional exact public structure IDs to include",
     )
     split_parser.add_argument(
+        "--target-config",
+        type=Path,
+        help="join target files described by this JSON config before splitting",
+    )
+    split_parser.add_argument(
+        "--require-target",
+        action="append",
+        help="require a non-null target before assignment; repeat for multiple targets",
+    )
+    split_parser.add_argument(
+        "--required-target-mode",
+        choices=("all", "any"),
+        default="all",
+        help="require all or any named targets (default: all)",
+    )
+    split_parser.add_argument(
         "--stratify-by",
         nargs="+",
         default=("label",),
@@ -262,4 +374,6 @@ def main(argv=None) -> int:
         return doctor()
     if args.command == "split":
         return split_release(args)
+    if args.command == "merge-targets":
+        return merge_target_data(args)
     return 2
