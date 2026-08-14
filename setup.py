@@ -47,12 +47,16 @@ setup(
         'CoREMOF': [
             'calculation/juliapkg.json',
             'data/*.json',
-            'data/SI/*.zip',
             'data/mofid/*.zip',
             'data/mosaec/*.csv',
             'models/stability/*',
         ],
     },
+    # The supporting-information structure archives remain usable from a
+    # source checkout and through the existing on-demand downloader, but are
+    # not redistributed in wheel or source-distribution artifacts without an
+    # independently documented asset-level grant.
+    exclude_package_data={'CoREMOF': ['data/SI/*.zip']},
     # The release loader, checker labels, parent resolver, and splitter are
     # standard-library-only. Historical scientific features remain available
     # through the compatibility-preserving ``full`` extra.
@@ -62,7 +66,7 @@ setup(
         'openbabel': LEGACY_SCIENTIFIC_REQUIREMENTS + ['openbabel-wheel'],
         'docs': LEGACY_SCIENTIFIC_REQUIREMENTS + [
             'sphinx',
-            'pydata-sphinx-theme',
+            'furo',
             'sphinx-design',
             'sphinx-autodoc-typehints',
         ],

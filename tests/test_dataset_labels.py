@@ -1,7 +1,10 @@
 import csv
+import copy
+from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
+import pickle
 import sys
 import subprocess
 import tempfile
@@ -81,6 +84,8 @@ def _metadata_rows():
             "source_id": "SOURCE-{}".format(structure_id),
             "structure_variant": variant,
             "metal_elements": metals,
+            "mofid_v2": "MOF-SHARED",
+            "mofid_v2_status": "SUCCESS",
             "label_3checker": labels[0],
             "label_4checker": labels[1],
             "label_5checker": labels[2],
@@ -187,6 +192,27 @@ def _add_structure_matcher_parent_columns(root):
     return rows
 
 
+def _add_crystalnets_parent_columns(root):
+    parents_path = root / "parent_groups" / "parent_groups.csv"
+    with parents_path.open("r", encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    for index, row in enumerate(rows):
+        for prefix, group_prefix in (
+            ("rac_crystalnets", "RT-"),
+            ("mofid2_crystalnets", "M2T-"),
+        ):
+            if index < 2:
+                row["{}_status".format(prefix)] = "MATCHED"
+                row["{}_group".format(prefix)] = group_prefix + "ABCD0001"
+                row["{}_size".format(prefix)] = "2"
+            else:
+                row["{}_status".format(prefix)] = "NOT_AVAILABLE"
+                row["{}_group".format(prefix)] = group_prefix + "{:08X}".format(index)
+                row["{}_size".format(prefix)] = "1"
+    _write_csv(parents_path, tuple(rows[0]), rows)
+    return rows
+
+
 def _declare_structure_matcher_contract(root):
     parents_path = root / "parent_groups" / "parent_groups.csv"
     with parents_path.open("r", encoding="utf-8", newline="") as handle:
@@ -244,6 +270,45 @@ def _declare_structure_matcher_contract(root):
     }
     methods_path.write_text(json.dumps(methods, sort_keys=True), encoding="utf-8")
     return methods_path, receipt_path
+
+
+def _declare_crystalnets_reference_contracts(root):
+    methods_path = root / "parent_groups" / "parent_group_methods.json"
+    methods = json.loads(methods_path.read_text(encoding="utf-8"))
+    methods["csv_column_prefixes"].update(
+        {
+            "rac5_crystalnets": "rac_crystalnets",
+            "mofid_v2_crystalnets": "mofid2_crystalnets",
+        }
+    )
+    criteria = methods.setdefault("criteria", {})
+    definitions = methods.setdefault("definitions", {})
+    for method in ("rac5_crystalnets", "mofid_v2_crystalnets"):
+        contract = json.loads(
+            json.dumps(dataset_module._CRYSTALNETS_REFERENCE_CONTRACTS[method])
+        )
+        criteria[method] = contract
+        definitions[method] = json.loads(json.dumps(contract))
+    methods["crystalnets_reference_integration"] = json.loads(
+        json.dumps(dict(dataset_module._CRYSTALNETS_REFERENCE_INTEGRATION))
+    )
+    methods_path.write_text(json.dumps(methods, sort_keys=True), encoding="utf-8")
+    info_path = root / "dataset_info.json"
+    info = json.loads(info_path.read_text(encoding="utf-8"))
+    info_definitions = info.setdefault("definitions", {})
+    parent_grouping = info.setdefault("parent_grouping", {})
+    info_contracts = parent_grouping.setdefault("criterion_contracts", {})
+    for method in ("rac5_crystalnets", "mofid_v2_crystalnets"):
+        contract = json.loads(
+            json.dumps(dataset_module._CRYSTALNETS_REFERENCE_CONTRACTS[method])
+        )
+        info_definitions[method] = contract
+        info_contracts[method] = json.loads(json.dumps(contract))
+    parent_grouping["crystalnets_reference_integration"] = json.loads(
+        json.dumps(dict(dataset_module._CRYSTALNETS_REFERENCE_INTEGRATION))
+    )
+    info_path.write_text(json.dumps(info, sort_keys=True), encoding="utf-8")
+    return methods_path
 
 
 class LabelTests(unittest.TestCase):
@@ -316,30 +381,411 @@ class DatasetTests(unittest.TestCase):
         self.assertEqual(classified.label_counts()["CR"], 1)
         self.assertEqual(classified.cr_ids, ("ASR-COD-2026-0001",))
         self.assertEqual(classified.ncr_ids, ("FSR-COD-2026-0001",))
+
+    def test_authenticated_generations_reject_copy_and_mutation_attacks(self):
+        dataset = CoREMOFDataset.from_release(self.root)
+        classified = dataset.classify("5checker")
+
+        for value in (dataset, classified):
+            for operation in (copy.copy, copy.deepcopy, pickle.dumps):
+                with self.subTest(value=type(value).__name__, operation=operation.__name__):
+                    with self.assertRaisesRegex(TypeError, "cannot be"):
+                        operation(value)
+
+        with self.assertRaisesRegex(AttributeError, "immutable"):
+            dataset.records = tuple(reversed(dataset.records))
+        with self.assertRaisesRegex(AttributeError, "immutable"):
+            classified.label_by_id = {}
+
+        object.__setattr__(dataset, "records", tuple(reversed(dataset.records)))
+        with self.assertRaisesRegex(
+            ValueError, "generation changed|fingerprint changed"
+        ):
+            dataset.classify("5checker")
+
+        dataset = CoREMOFDataset.from_release(self.root)
+        classified = dataset.classify("5checker")
+        forged_record = replace(classified.records[0], label="NCR")
+        object.__setattr__(
+            classified,
+            "records",
+            (forged_record,) + classified.records[1:],
+        )
+        with self.assertRaisesRegex(ValueError, "checker-view generation changed"):
+            classified.filter(labels=("CR",))
+
+    def test_authenticated_generation_detects_nested_dataclass_bypass(self):
+        dataset = CoREMOFDataset.from_release(self.root)
+        original = dataset.records[0].structure_id
+        object.__setattr__(dataset.records[0], "structure_id", original + "-FORGED")
+        with self.assertRaisesRegex(
+            ValueError, "generation changed|fingerprint changed"
+        ):
+            dataset.classify("5checker")
+
+        dataset = CoREMOFDataset.from_release(self.root)
+        classified = dataset.classify("5checker")
+        object.__setattr__(classified.records[0], "label", "NCR")
+        with self.assertRaisesRegex(
+            ValueError, "checker-view generation changed|fingerprint changed"
+        ):
+            classified.filter(labels=("CR",))
         self.assertEqual(classified.ids_for_label("ambiguous"), ("ASR-SI-2025-0001",))
         self.assertEqual(classified.unchecked_ids, ("ION-CSD-2024-0001",))
         with self.assertRaises(ValueError):
             classified.ids_for_label("MAYBE")
 
-    def test_optional_topology_combined_parent_columns_are_validated_and_loaded(self):
-        parents_path = self.root / "parent_groups" / "parent_groups.csv"
-        with parents_path.open("r", encoding="utf-8", newline="") as handle:
-            rows = list(csv.DictReader(handle))
-        for index, row in enumerate(rows):
-            for prefix, group_prefix in (
-                ("rac_topology", "RT-"),
-                ("mofid2_topology", "M2T-"),
-            ):
-                if index < 2:
-                    row["{}_status".format(prefix)] = "MATCHED"
-                    row["{}_group".format(prefix)] = group_prefix + "ABCD0001"
-                    row["{}_size".format(prefix)] = "2"
-                else:
-                    row["{}_status".format(prefix)] = "NOT_AVAILABLE"
-                    row["{}_group".format(prefix)] = group_prefix + "{:08X}".format(index)
-                    row["{}_size".format(prefix)] = "1"
-        _write_csv(parents_path, tuple(rows[0]), rows)
+    def test_optional_crystalnets_combined_parent_columns_are_validated_and_loaded(self):
+        _add_crystalnets_parent_columns(self.root)
+        _declare_crystalnets_reference_contracts(self.root)
 
+        dataset = CoREMOFDataset.from_release(self.root)
+        first = dataset[dataset.structure_ids[0]]
+        second = dataset[dataset.structure_ids[1]]
+        self.assertEqual(
+            first.parent_group("rac5_crystalnets").group_id,
+            second.parent_group("rac_crystalnets").group_id,
+        )
+        self.assertEqual(
+            first.parent_group("mofid_v2_crystalnets").group_id,
+            "M2T-ABCD0001",
+        )
+
+    def test_m2t_available_rows_require_explicit_eligible_mofid_v2_status(self):
+        metadata_path = self.root / "metadata" / "metadata.csv"
+        for value in (
+            "ERROR",
+            "TIMEOUT",
+            "NOT_AVAILABLE",
+            "success",
+            " SUCCESS",
+            "",
+        ):
+            with self.subTest(ineligible=value):
+                _make_release(self.root)
+                _add_crystalnets_parent_columns(self.root)
+                _declare_crystalnets_reference_contracts(self.root)
+                rows = _metadata_rows()
+                rows[0]["mofid_v2_status"] = value
+                _write_csv(metadata_path, tuple(rows[0]), rows)
+                with self.assertRaisesRegex(
+                    ReleaseValidationError, "ineligible mofid_v2_status"
+                ):
+                    CoREMOFDataset.from_release(self.root)
+
+        for value in sorted(dataset_module.M2T_ELIGIBLE_MOFID_V2_STATUSES):
+            with self.subTest(eligible=value):
+                _make_release(self.root)
+                _add_crystalnets_parent_columns(self.root)
+                _declare_crystalnets_reference_contracts(self.root)
+                rows = _metadata_rows()
+                rows[0]["mofid_v2_status"] = value
+                _write_csv(metadata_path, tuple(rows[0]), rows)
+                CoREMOFDataset.from_release(self.root)
+
+    def test_m2t_available_rows_require_one_complete_canonical_mofid_v2_per_group(self):
+        metadata_path = self.root / "metadata" / "metadata.csv"
+        for value in (None, "", "   ", "NOT_AVAILABLE", "error"):
+            with self.subTest(invalid=value):
+                _make_release(self.root)
+                _add_crystalnets_parent_columns(self.root)
+                _declare_crystalnets_reference_contracts(self.root)
+                rows = _metadata_rows()
+                if value is None:
+                    for row in rows:
+                        row.pop("mofid_v2", None)
+                else:
+                    rows[0]["mofid_v2"] = value
+                _write_csv(metadata_path, tuple(rows[0]), rows)
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    "exact string|complete nonplaceholder mofid_v2",
+                ):
+                    CoREMOFDataset.from_release(self.root)
+
+        _make_release(self.root)
+        _add_crystalnets_parent_columns(self.root)
+        _declare_crystalnets_reference_contracts(self.root)
+        rows = _metadata_rows()
+        rows[0]["mofid_v2"] = "MOF-A"
+        rows[1]["mofid_v2"] = "MOF-B"
+        _write_csv(metadata_path, tuple(rows[0]), rows)
+        with self.assertRaisesRegex(
+            ReleaseValidationError, "conflicting canonical mofid_v2"
+        ):
+            CoREMOFDataset.from_release(self.root)
+
+        _make_release(self.root)
+        _add_crystalnets_parent_columns(self.root)
+        _declare_crystalnets_reference_contracts(self.root)
+        rows = _metadata_rows()
+        rows[0]["mofid_v2"] = "  ＭＯＦ-A  "
+        rows[1]["mofid_v2"] = "mof-a"
+        _write_csv(metadata_path, tuple(rows[0]), rows)
+        CoREMOFDataset.from_release(self.root)
+
+    def test_crystalnets_columns_require_machine_readable_reference_contracts(self):
+        _add_crystalnets_parent_columns(self.root)
+        methods_path = self.root / "parent_groups" / "parent_group_methods.json"
+        methods = json.loads(methods_path.read_text(encoding="utf-8"))
+        methods["csv_column_prefixes"].update(
+            {
+                "rac5_crystalnets": "rac_crystalnets",
+                "mofid_v2_crystalnets": "mofid2_crystalnets",
+            }
+        )
+        methods_path.write_text(json.dumps(methods), encoding="utf-8")
+        with self.assertRaisesRegex(ReleaseValidationError, "criteria.rac5_crystalnets"):
+            CoREMOFDataset.from_release(self.root)
+
+    def test_crystalnets_reference_contract_fails_closed_on_semantic_drift(self):
+        _add_crystalnets_parent_columns(self.root)
+        methods_path = _declare_crystalnets_reference_contracts(self.root)
+        original = json.loads(methods_path.read_text(encoding="utf-8"))
+
+        def mutate_key(value, *path):
+            document = json.loads(json.dumps(original))
+            target = document
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = value
+            methods_path.write_text(json.dumps(document), encoding="utf-8")
+
+        cases = (
+            (False, ("criteria", "rac5_crystalnets", "key")),
+            ("R-WRONG", ("criteria", "rac5_crystalnets", "group_prefix")),
+            (True, ("criteria", "rac5_crystalnets", "decision_contract", "publication_authorized")),
+            (True, ("criteria", "rac5_crystalnets", "decision_contract", "priority_main", "consumed")),
+            (True, ("criteria", "rac5_crystalnets", "decision_contract", "main_union", "changed")),
+            (["mofid_v2", "rac5", "mofid_v1"], ("criteria", "rac5_crystalnets", "decision_contract", "priority_main", "authorized_criterion_order")),
+            (["rac5_crystalnets"], ("criteria", "rac5_crystalnets", "decision_contract", "main_union", "edge_relations")),
+            ("ERROR is eligible", ("criteria", "rac5_crystalnets", "inputs", "crystalnets", "availability_gate")),
+            ("rounded to 3 decimals", ("criteria", "rac5_crystalnets", "inputs", "rac5")),
+            ("missing values match each other", ("criteria", "rac5_crystalnets", "missing_error_behavior")),
+            ("FINAL_PUBLISHED", ("criteria", "rac5_crystalnets", "release_state")),
+            ("one-structure singleton", ("criteria", "rac5_crystalnets", "result_mapping", "MATCHED")),
+            ("multi-member", ("criteria", "rac5_crystalnets", "result_mapping", "UNMATCHED")),
+            ("eligible match", ("criteria", "rac5_crystalnets", "result_mapping", "NOT_AVAILABLE")),
+            (["SUCCESS"], ("criteria", "mofid_v2_crystalnets", "inputs", "mofid_v2", "required_statuses")),
+            (["SUCCESS", ["SUCCESS_TOPOLOGY_UNKNOWN"], "SUCCESS_TOPOLOGY_ERROR", "SUCCESS_TOPOLOGY_TIMEOUT"], ("criteria", "mofid_v2_crystalnets", "inputs", "mofid_v2", "required_statuses")),
+            ("coordinates are changed", ("criteria", "mofid_v2_crystalnets", "inputs", "mofid_v2", "canonical_text", "scientific_effect")),
+            ("ERROR is also eligible", ("criteria", "mofid_v2_crystalnets", "inputs", "mofid_v2", "status_gate")),
+            (False, ("criteria", "mofid_v2_crystalnets", "decision_contract", "mofid_v2_crystalnets_rebuild_trigger")),
+        )
+        for value, path in cases:
+            with self.subTest(path=path):
+                mutate_key(value, *path)
+                with self.assertRaisesRegex(
+                    ReleaseValidationError, "exact closed terminal reference contract"
+                ):
+                    CoREMOFDataset.from_release(self.root)
+
+        document = json.loads(json.dumps(original))
+        document["criteria"]["rac5_crystalnets"]["publication_authorized"] = True
+        methods_path.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(
+            ReleaseValidationError, "exact closed terminal reference contract"
+        ):
+            CoREMOFDataset.from_release(self.root)
+
+    def test_dataset_info_crystalnets_contract_copies_fail_closed_on_drift(self):
+        _add_crystalnets_parent_columns(self.root)
+        _declare_crystalnets_reference_contracts(self.root)
+        info_path = self.root / "dataset_info.json"
+        original = json.loads(info_path.read_text(encoding="utf-8"))
+
+        cases = (
+            (
+                "DECISIVE PUBLISHED PARENT",
+                ("definitions", "rac5_crystalnets", "purpose"),
+                "definitions.rac5_crystalnets",
+            ),
+            (
+                True,
+                (
+                    "parent_grouping",
+                    "criterion_contracts",
+                    "mofid_v2_crystalnets",
+                    "publication_authorized",
+                ),
+                "criterion_contracts.mofid_v2_crystalnets",
+            ),
+            (
+                True,
+                (
+                    "parent_grouping",
+                    "crystalnets_reference_integration",
+                    "priority_main_changed",
+                ),
+                "crystalnets_reference_integration",
+            ),
+            (
+                True,
+                (
+                    "parent_grouping",
+                    "crystalnets_reference_integration",
+                    "main_union_changed",
+                ),
+                "crystalnets_reference_integration",
+            ),
+            (
+                True,
+                (
+                    "parent_grouping",
+                    "crystalnets_reference_integration",
+                    "publication_authorized",
+                ),
+                "crystalnets_reference_integration",
+            ),
+            (
+                0,
+                (
+                    "parent_grouping",
+                    "crystalnets_reference_integration",
+                    "publication_authorized",
+                ),
+                "crystalnets_reference_integration",
+            ),
+            (
+                "FINAL_PUBLISHED",
+                (
+                    "parent_grouping",
+                    "crystalnets_reference_integration",
+                    "candidate_state",
+                ),
+                "crystalnets_reference_integration",
+            ),
+            (
+                "LOCAL PATHS ARE PUBLIC",
+                (
+                    "parent_grouping",
+                    "crystalnets_reference_integration",
+                    "evidence_state",
+                ),
+                "crystalnets_reference_integration",
+            ),
+        )
+        for value, path, message in cases:
+            with self.subTest(path=path):
+                document = json.loads(json.dumps(original))
+                target = document
+                for key in path[:-1]:
+                    target = target[key]
+                target[path[-1]] = value
+                info_path.write_text(json.dumps(document), encoding="utf-8")
+                with self.assertRaisesRegex(ReleaseValidationError, message):
+                    CoREMOFDataset.from_release(self.root)
+
+        for path, message in (
+            (
+                ("definitions", "rac5_crystalnets"),
+                "definitions.rac5_crystalnets",
+            ),
+            (
+                (
+                    "parent_grouping",
+                    "criterion_contracts",
+                    "mofid_v2_crystalnets",
+                ),
+                "criterion_contracts.mofid_v2_crystalnets",
+            ),
+            (
+                ("parent_grouping", "crystalnets_reference_integration"),
+                "crystalnets_reference_integration",
+            ),
+        ):
+            with self.subTest(missing=path):
+                document = json.loads(json.dumps(original))
+                target = document
+                for key in path[:-1]:
+                    target = target[key]
+                del target[path[-1]]
+                info_path.write_text(json.dumps(document), encoding="utf-8")
+                with self.assertRaisesRegex(ReleaseValidationError, message):
+                    CoREMOFDataset.from_release(self.root)
+
+        document = json.loads(json.dumps(original))
+        document["parent_grouping"]["crystalnets_reference_integration"][
+            "extra_authority"
+        ] = True
+        info_path.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(
+            ReleaseValidationError, "crystalnets_reference_integration"
+        ):
+            CoREMOFDataset.from_release(self.root)
+
+    def test_parent_method_crystalnets_contract_copies_fail_closed_on_drift(self):
+        _add_crystalnets_parent_columns(self.root)
+        methods_path = _declare_crystalnets_reference_contracts(self.root)
+        original = json.loads(methods_path.read_text(encoding="utf-8"))
+
+        cases = (
+            (
+                "DECISIVE PUBLISHED PARENT",
+                ("definitions", "rac5_crystalnets", "purpose"),
+                "definitions.rac5_crystalnets",
+            ),
+            (
+                True,
+                (
+                    "definitions",
+                    "mofid_v2_crystalnets",
+                    "publication_authorized",
+                ),
+                "definitions.mofid_v2_crystalnets",
+            ),
+            (
+                True,
+                ("crystalnets_reference_integration", "priority_main_changed"),
+                "crystalnets_reference_integration",
+            ),
+            (
+                True,
+                ("crystalnets_reference_integration", "main_union_changed"),
+                "crystalnets_reference_integration",
+            ),
+            (
+                True,
+                ("crystalnets_reference_integration", "publication_authorized"),
+                "crystalnets_reference_integration",
+            ),
+            (
+                0,
+                ("crystalnets_reference_integration", "publication_authorized"),
+                "crystalnets_reference_integration",
+            ),
+        )
+        for value, path, message in cases:
+            with self.subTest(path=path):
+                document = json.loads(json.dumps(original))
+                target = document
+                for key in path[:-1]:
+                    target = target[key]
+                target[path[-1]] = value
+                methods_path.write_text(json.dumps(document), encoding="utf-8")
+                with self.assertRaisesRegex(ReleaseValidationError, message):
+                    CoREMOFDataset.from_release(self.root)
+
+        for key, message in (
+            ("definitions", "definitions"),
+            ("crystalnets_reference_integration", "crystalnets_reference_integration"),
+        ):
+            with self.subTest(missing=key):
+                document = json.loads(json.dumps(original))
+                del document[key]
+                methods_path.write_text(json.dumps(document), encoding="utf-8")
+                with self.assertRaisesRegex(ReleaseValidationError, message):
+                    CoREMOFDataset.from_release(self.root)
+
+        document = json.loads(json.dumps(original))
+        document["crystalnets_reference_integration"]["extra_authority"] = True
+        methods_path.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(
+            ReleaseValidationError, "crystalnets_reference_integration"
+        ):
+            CoREMOFDataset.from_release(self.root)
+
+    def test_old_topology_method_names_are_not_public_release_aliases(self):
         methods_path = self.root / "parent_groups" / "parent_group_methods.json"
         methods = json.loads(methods_path.read_text(encoding="utf-8"))
         methods["csv_column_prefixes"].update(
@@ -349,18 +795,165 @@ class DatasetTests(unittest.TestCase):
             }
         )
         methods_path.write_text(json.dumps(methods), encoding="utf-8")
+        with self.assertRaisesRegex(
+            ReleaseValidationError, "retired or reserved declaration key"
+        ):
+            CoREMOFDataset.from_release(self.root)
 
-        dataset = CoREMOFDataset.from_release(self.root)
-        first = dataset[dataset.structure_ids[0]]
-        second = dataset[dataset.structure_ids[1]]
-        self.assertEqual(
-            first.parent_group("rac5_topology").group_id,
-            second.parent_group("rac_topology").group_id,
+    def test_retired_and_reserved_authority_keys_are_rejected_recursively(self):
+        for target, key in (
+            ("methods", "rac5_topology"),
+            ("methods", "ＲＡＣ５＿Ｔｏｐｏｌｏｇｙ"),
+            ("methods", "_authority_generation_marker"),
+            ("info", "mofid_v2_topology_status"),
+            ("info", "_validated_release_token"),
+        ):
+            with self.subTest(target=target, key=key):
+                _make_release(self.root)
+                path = (
+                    self.root / "parent_groups" / "parent_group_methods.json"
+                    if target == "methods"
+                    else self.root / "dataset_info.json"
+                )
+                document = json.loads(path.read_text(encoding="utf-8"))
+                document.setdefault("nested", {}).setdefault("deeper", {})[key] = True
+                path.write_text(json.dumps(document), encoding="utf-8")
+                with self.assertRaisesRegex(
+                    ReleaseValidationError, "retired or reserved declaration key"
+                ):
+                    CoREMOFDataset.from_release(self.root)
+
+        authority_keys = (
+            "publication_authorized",
+            "PUBLICATION.AUTHORIZED",
+            "Publication-Authorized",
+            "Ｐｕｂｌｉｃａｔｉｏｎ＿Ａｕｔｈｏｒｉｚｅｄ",
+            "publication_status",
+            "Publication-Status",
+            "publication_authorization",
+            "Publication Authorization",
+            "publication_ready",
+            "Publication-Ready",
+            "publishable",
+            "authoritative",
+            "official_split",
+            "Official-Split",
+            "release_authority",
+            "Release Authority",
+            "release_status",
+            "Release-Status",
+            "release_state",
+            "Release-State",
+            "candidate_status",
+            "candidate_state",
+            "evidence_state",
+            "priority_main_changed",
+            "main_union_changed",
+            "checker_view_official",
+            "Checker.View-Official",
         )
-        self.assertEqual(
-            first.parent_group("mofid_v2_topology").group_id,
-            "M2T-ABCD0001",
+        authority_claims = tuple(
+            (key, value)
+            for key in authority_keys
+            for value in (
+                True,
+                False,
+                "FINAL",
+                "PROVISIONAL_LATEST_AUDITED_SNAPSHOT",
+            )
         )
+        for target in ("methods", "info"):
+            for key, value in authority_claims:
+                with self.subTest(target=target, authority_key=key, value=value):
+                    _make_release(self.root)
+                    path = (
+                        self.root / "parent_groups" / "parent_group_methods.json"
+                        if target == "methods"
+                        else self.root / "dataset_info.json"
+                    )
+                    document = json.loads(path.read_text(encoding="utf-8"))
+                    document.setdefault("nested", {}).setdefault("deeper", {})[
+                        key
+                    ] = value
+                    path.write_text(json.dumps(document), encoding="utf-8")
+                    with self.assertRaisesRegex(
+                        ReleaseValidationError,
+                        "retired or reserved declaration key",
+                    ):
+                        CoREMOFDataset.from_release(self.root)
+
+        for key, value in (
+            ("rac5_topology", "forged"),
+            ("ＲＡＣ５＿Ｔｏｐｏｌｏｇｙ", "forged"),
+            ("_official_checker_view_token", "forged"),
+            *authority_claims,
+        ):
+            with self.subTest(target="metadata", key=key, value=value):
+                _make_release(self.root)
+                metadata_path = self.root / "metadata" / "metadata.csv"
+                with metadata_path.open("r", encoding="utf-8", newline="") as handle:
+                    reader = csv.DictReader(handle)
+                    fields = list(reader.fieldnames or ()) + [key]
+                    rows = list(reader)
+                rows[0][key] = value
+                _write_csv(metadata_path, fields, rows)
+                with self.assertRaisesRegex(
+                    ReleaseValidationError, "retired or reserved declaration key"
+                ):
+                    CoREMOFDataset.from_release(self.root)
+
+    def test_only_exact_staged_release_state_paths_are_accepted(self):
+        staged_status = "PROVISIONAL_LATEST_AUDITED_SNAPSHOT"
+        _add_crystalnets_parent_columns(self.root)
+        _declare_crystalnets_reference_contracts(self.root)
+
+        info_path = self.root / "dataset_info.json"
+        methods_path = (
+            self.root / "parent_groups" / "parent_group_methods.json"
+        )
+        info = json.loads(info_path.read_text(encoding="utf-8"))
+        methods = json.loads(methods_path.read_text(encoding="utf-8"))
+        info["release_status"] = staged_status
+        info_path.write_text(json.dumps(info, sort_keys=True), encoding="utf-8")
+        methods_path.write_text(
+            json.dumps(methods, sort_keys=True), encoding="utf-8"
+        )
+        loaded = CoREMOFDataset.from_release(self.root)
+        self.assertEqual(loaded.dataset_info["release_status"], staged_status)
+
+        methods = json.loads(methods_path.read_text(encoding="utf-8"))
+        integration = methods["crystalnets_reference_integration"]
+        integration["Candidate-State"] = integration.pop("candidate_state")
+        methods_path.write_text(
+            json.dumps(methods, sort_keys=True), encoding="utf-8"
+        )
+        with self.assertRaisesRegex(
+            ReleaseValidationError, "retired or reserved declaration key"
+        ):
+            CoREMOFDataset.from_release(self.root)
+
+        for target in ("info", "methods", "both"):
+            with self.subTest(target=target):
+                _make_release(self.root)
+                _add_crystalnets_parent_columns(self.root)
+                _declare_crystalnets_reference_contracts(self.root)
+                info = json.loads(info_path.read_text(encoding="utf-8"))
+                methods = json.loads(methods_path.read_text(encoding="utf-8"))
+                if target in ("info", "both"):
+                    info["release_status"] = "FINAL"
+                if target in ("methods", "both"):
+                    methods["release_status"] = "FINAL"
+                info_path.write_text(
+                    json.dumps(info, sort_keys=True), encoding="utf-8"
+                )
+                methods_path.write_text(
+                    json.dumps(methods, sort_keys=True), encoding="utf-8"
+                )
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    "retired or reserved declaration key",
+                ):
+                    CoREMOFDataset.from_release(self.root)
 
     def test_optional_structure_matcher_parent_columns_are_validated_and_loaded(self):
         _add_structure_matcher_parent_columns(self.root)
@@ -400,8 +993,12 @@ class DatasetTests(unittest.TestCase):
             ("component_completeness_policy", "ALLOW_PARTIAL"),
             ("public_status_policy", ["MATCHED", "PARTIAL"]),
             ("included_in_priority_main", True),
+            ("included_in_priority_main", 0),
             ("included_in_main_union", True),
+            ("included_in_main_union", 0),
             ("historical_relaxed_executed", True),
+            ("historical_relaxed_executed", 0),
+            ("historical_relaxed_exposed", 0),
         )
         for key, invalid in cases:
             with self.subTest(key=key):
@@ -452,6 +1049,16 @@ class DatasetTests(unittest.TestCase):
         rewrite_receipt(unresolved_pair_count=1)
         with self.assertRaisesRegex(ReleaseValidationError, "candidate_pair_count"):
             CoREMOFDataset.from_release(self.root)
+
+        for field in (
+            "historical_relaxed_executed",
+            "historical_relaxed_exposed",
+        ):
+            with self.subTest(field=field):
+                _declare_structure_matcher_contract(self.root)
+                rewrite_receipt(**{field: 0})
+                with self.assertRaisesRegex(ReleaseValidationError, field):
+                    CoREMOFDataset.from_release(self.root)
 
     def test_structure_matcher_receipt_binds_the_parent_table(self):
         rows = _add_structure_matcher_parent_columns(self.root)
@@ -505,6 +1112,117 @@ class DatasetTests(unittest.TestCase):
         first.write_bytes(b"changed!!!")
         with self.assertRaisesRegex(ReleaseValidationError, "SHA-256"):
             CoREMOFDataset.from_release(self.root, verify_cif_files=True)
+
+    def test_cif_verification_and_official_view_flags_require_exact_booleans(self):
+        for value in (0, 1, None, "false", [], {}):
+            with self.subTest(api="from_release", value=value):
+                with self.assertRaisesRegex(TypeError, "verify_cif_files"):
+                    CoREMOFDataset.from_release(
+                        self.root, verify_cif_files=value
+                    )
+
+        dataset = CoREMOFDataset.from_release(self.root)
+        for value in (0, 1, None, "false", [], {}):
+            with self.subTest(api="dataset_constructor", value=value):
+                with self.assertRaisesRegex(TypeError, "cif_files_verified"):
+                    CoREMOFDataset(
+                        dataset.release_root,
+                        dataset.records,
+                        dataset.dataset_info,
+                        dataset.parent_group_methods,
+                        dataset.parent_by_id,
+                        dataset.input_hashes,
+                        value,
+                    )
+            with self.subTest(api="classified_constructor", value=value):
+                with self.assertRaisesRegex(TypeError, "checker_view_official"):
+                    dataset_module.ClassifiedDataset(
+                        dataset, "5checker", (), checker_view_official=value
+                    )
+
+        custom = dataset_module.ClassifiedDataset(dataset, "custom:test", ())
+        self.assertFalse(custom.checker_view_official)
+        with self.assertRaisesRegex(
+            ValueError, "requires a canonical official checker preset"
+        ):
+            dataset_module.ClassifiedDataset(
+                dataset, "custom:test", (), checker_view_official=True
+            )
+        with self.assertRaisesRegex(
+            ValueError, "internal validated-release checker-recomputation path"
+        ):
+            dataset_module.ClassifiedDataset(
+                dataset, "5checker", (), checker_view_official=True
+            )
+        official = dataset.classify("5checker")
+        self.assertTrue(official.checker_view_official)
+
+        forged_label = replace(official.records[0], label="NCR")
+        with self.assertRaisesRegex(ValueError, "internal validated-release"):
+            dataset_module.ClassifiedDataset(
+                dataset,
+                "5checker",
+                (forged_label,),
+                checker_view_official=True,
+                _official_checker_view_token=dataset_module._OFFICIAL_CHECKER_VIEW_TOKEN,
+            )
+        missing_status = replace(official.records[0], checker_statuses={})
+        with self.assertRaisesRegex(ValueError, "internal validated-release"):
+            dataset_module.ClassifiedDataset(
+                dataset,
+                "5checker",
+                (missing_status,),
+                checker_view_official=True,
+                _official_checker_view_token=dataset_module._OFFICIAL_CHECKER_VIEW_TOKEN,
+            )
+
+        generic = CoREMOFDataset(
+            dataset.release_root,
+            dataset.records,
+            dataset.dataset_info,
+            dataset.parent_group_methods,
+            dataset.parent_by_id,
+            dataset.input_hashes,
+            False,
+        )
+        self.assertFalse(generic.classify("5checker").checker_view_official)
+
+        for value in (True, 1, 1.5, [], {}, None, "", " vtest", "vtest "):
+            with self.subTest(dataset_version=value):
+                malformed_info = dict(dataset.dataset_info)
+                malformed_info["dataset_version"] = value
+                malformed = CoREMOFDataset(
+                    dataset.release_root,
+                    dataset.records,
+                    malformed_info,
+                    dataset.parent_group_methods,
+                    dataset.parent_by_id,
+                    dataset.input_hashes,
+                    False,
+                )
+                with self.assertRaisesRegex(
+                    (TypeError, ValueError), "dataset_version"
+                ):
+                    _ = malformed.dataset_version
+
+        for value in (" vtest", "vtest "):
+            with self.subTest(loader_dataset_version=value):
+                _make_release(self.root)
+                info_path = self.root / "dataset_info.json"
+                methods_path = (
+                    self.root / "parent_groups" / "parent_group_methods.json"
+                )
+                info = json.loads(info_path.read_text(encoding="utf-8"))
+                methods = json.loads(methods_path.read_text(encoding="utf-8"))
+                info["dataset_version"] = value
+                methods["dataset_version"] = value
+                info_path.write_text(json.dumps(info), encoding="utf-8")
+                methods_path.write_text(json.dumps(methods), encoding="utf-8")
+                with self.assertRaisesRegex(
+                    ReleaseValidationError,
+                    "dataset_version must be an exact nonblank string",
+                ):
+                    CoREMOFDataset.from_release(self.root)
 
     def test_public_id_and_identity_fields_must_agree(self):
         path = self.root / "metadata" / "metadata.csv"
@@ -560,6 +1278,20 @@ class DatasetTests(unittest.TestCase):
             classified.filter(labels="maybe")
         with self.assertRaisesRegex(KeyError, "unknown structure_id"):
             classified.filter(structure_ids=("absent",))
+        for value in (True, 1, 1.5, [], {}, " ASR-COD-2026-0001"):
+            with self.subTest(structure_id=value):
+                with self.assertRaises((TypeError, ValueError)):
+                    classified.filter(structure_ids=(value,))
+        for value in (
+            {"COD", "SI"},
+            frozenset(("COD", "SI")),
+            {"COD": True},
+            (item for item in ("COD", "SI")),
+            b"COD",
+        ):
+            with self.subTest(unordered_or_one_shot=type(value).__name__):
+                with self.assertRaisesRegex(TypeError, "ordered list/tuple"):
+                    classified.filter(sources=value)
 
     def test_custom_view_does_not_read_a_published_label_column(self):
         dataset = CoREMOFDataset.from_release(self.root)
@@ -627,6 +1359,16 @@ class DatasetTests(unittest.TestCase):
         with self.assertRaisesRegex(ReleaseValidationError, "declares size 3"):
             CoREMOFDataset.from_release(self.root)
 
+    def test_parent_group_size_rejects_signed_and_non_ascii_digits(self):
+        path = self.root / "parent_groups" / "parent_groups.csv"
+        for value in ("+1", "-1", "١", " 1 ", "01"):
+            with self.subTest(value=value):
+                rows = _parent_rows()
+                rows[2]["rac_size"] = value
+                _write_csv(path, tuple(rows[0]), rows)
+                with self.assertRaisesRegex(ReleaseValidationError, "invalid rac size"):
+                    CoREMOFDataset.from_release(self.root)
+
     def test_parent_group_id_prefix_and_hash_are_validated(self):
         path = self.root / "parent_groups" / "parent_groups.csv"
         rows = _parent_rows()
@@ -644,6 +1386,17 @@ class DatasetTests(unittest.TestCase):
         path.write_text(json.dumps(methods), encoding="utf-8")
         with self.assertRaisesRegex(ReleaseValidationError, "public method contract"):
             CoREMOFDataset.from_release(self.root)
+
+    def test_parent_method_prefix_values_must_be_strings(self):
+        path = self.root / "parent_groups" / "parent_group_methods.json"
+        for value in ([], {}, True, 1):
+            with self.subTest(value=value):
+                methods = json.loads(path.read_text(encoding="utf-8"))
+                methods["csv_column_prefixes"]["rac5"] = value
+                path.write_text(json.dumps(methods), encoding="utf-8")
+                with self.assertRaisesRegex(ReleaseValidationError, "must all be strings"):
+                    CoREMOFDataset.from_release(self.root)
+                _make_release(self.root)
 
     def test_orphan_and_unknown_parent_columns_fail_closed(self):
         path = self.root / "parent_groups" / "parent_groups.csv"

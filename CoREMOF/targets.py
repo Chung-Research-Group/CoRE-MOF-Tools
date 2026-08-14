@@ -27,10 +27,17 @@ from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Uni
 
 from CoREMOF import __version__
 
-from .dataset import CoREMOFDataset, StructureRecord
+from ._authority import state_fingerprint
+from .dataset import (
+    CoREMOFDataset,
+    StructureRecord,
+    _register_dataset_generation,
+    _validate_dataset_generation_if_present,
+)
 
 
 TARGET_API_VERSION = "0.1.0"
+_TARGET_MERGE_FACTORY_TOKEN = object()
 
 CURRENT_FEATURE_TABLES = MappingProxyType(
     {
@@ -140,7 +147,7 @@ def _current_implementation_hashes() -> Dict[str, str]:
     package_root = Path(__file__).resolve().parent
     return {
         filename: _sha256_file(package_root / filename)
-        for filename in ("dataset.py", "labels.py", "targets.py")
+        for filename in ("_authority.py", "dataset.py", "labels.py", "targets.py")
     }
 
 
@@ -171,9 +178,18 @@ def _canonical_data(value: object) -> object:
     """Thaw immutable mappings/tuples without accepting non-JSON containers."""
 
     if isinstance(value, Mapping):
-        return {key: _canonical_data(item) for key, item in value.items()}
+        result = {}
+        for key, item in value.items():
+            if not isinstance(key, str) or not key or key != key.strip():
+                raise TargetDataError(
+                    "JSON contract mapping keys must be exact nonblank strings"
+                )
+            result[key] = _canonical_data(item)
+        return result
     if isinstance(value, (list, tuple)):
         return [_canonical_data(item) for item in value]
+    if isinstance(value, (set, frozenset)):
+        raise TargetDataError("unordered sets are not valid target contract data")
     return value
 
 
@@ -192,19 +208,31 @@ def _canonical_json(value: object) -> str:
 
 def _deep_freeze(value: object) -> object:
     if isinstance(value, Mapping):
-        return MappingProxyType(
-            {str(key): _deep_freeze(item) for key, item in value.items()}
-        )
-    if isinstance(value, (list, tuple, set, frozenset)):
+        result = {}
+        for key, item in value.items():
+            if not isinstance(key, str) or not key or key != key.strip():
+                raise TargetDataError("mapping keys must be exact nonblank strings")
+            result[key] = _deep_freeze(item)
+        return MappingProxyType(result)
+    if isinstance(value, (list, tuple)):
         return tuple(_deep_freeze(item) for item in value)
+    if isinstance(value, (set, frozenset)):
+        raise TargetDataError("unordered sets are not valid target contract data")
     return value
 
 
 def _jsonable(value: object) -> object:
     if isinstance(value, Mapping):
-        return {str(key): _jsonable(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple, set, frozenset)):
+        result = {}
+        for key, item in value.items():
+            if not isinstance(key, str) or not key or key != key.strip():
+                raise TargetDataError("mapping keys must be exact nonblank strings")
+            result[key] = _jsonable(item)
+        return result
+    if isinstance(value, (list, tuple)):
         return [_jsonable(item) for item in value]
+    if isinstance(value, (set, frozenset)):
+        raise TargetDataError("unordered sets are not valid target contract data")
     return value
 
 
@@ -215,11 +243,10 @@ def _clean_mapping(value: Optional[Mapping[str, object]], name: str) -> Dict[str
         raise TypeError("{} must be a mapping".format(name))
     result = {}
     for key, item in value.items():
-        text = str(key).strip()
-        if not text:
+        if not isinstance(key, str) or not key or key != key.strip():
             raise TargetDataError("{} contains an empty target name".format(name))
         _canonical_json(item)
-        result[text] = item
+        result[key] = item
     return result
 
 
@@ -228,17 +255,48 @@ def _clean_columns(values: Optional[Iterable[str]], name: str) -> Optional[Tuple
         return None
     if isinstance(values, str):
         values = (values,)
-    result = tuple(str(value).strip() for value in values)
-    if not result or any(not value for value in result):
+    elif not isinstance(values, (list, tuple)):
+        raise TypeError("{} must be a string, list, or tuple".format(name))
+    result = tuple(values)
+    if not result or any(
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        for value in result
+    ):
         raise TargetDataError("{} must contain non-empty column names".format(name))
     if len(set(result)) != len(result):
         raise TargetDataError("{} contains duplicate column names".format(name))
     return result
 
 
+def _exact_name_tuple(values: object, name: str) -> Tuple[str, ...]:
+    if isinstance(values, str) or not isinstance(values, (list, tuple)):
+        raise TypeError("{} must be a list or tuple of strings".format(name))
+    result = tuple(values)
+    if any(
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        for value in result
+    ):
+        raise TargetDataError(
+            "{} values must be exact nonblank strings".format(name)
+        )
+    if len(set(result)) != len(result):
+        raise TargetDataError("{} must not contain duplicate names".format(name))
+    return result
+
+
 def _infer_format(path: Path, declared: Optional[str]) -> str:
     if declared is not None:
-        value = str(declared).strip().lower()
+        if (
+            not isinstance(declared, str)
+            or not declared
+            or declared != declared.strip()
+        ):
+            raise TargetDataError("target format must be an exact nonblank string")
+        value = declared
     else:
         value = path.suffix.lower().lstrip(".")
         if value == "ndjson":
@@ -275,22 +333,28 @@ class TargetSource:
     def __post_init__(self) -> None:
         path = Path(self.path).expanduser()
         name = self.name if self.name is not None else path.stem
-        name = str(name).strip()
-        id_column = str(self.id_column).strip()
-        if not name:
+        if not isinstance(name, str) or not name or name != name.strip():
             raise TargetDataError("target source name may not be empty")
-        if not id_column:
+        if (
+            not isinstance(self.id_column, str)
+            or not self.id_column
+            or self.id_column != self.id_column.strip()
+        ):
             raise TargetDataError("target id_column may not be empty")
+        id_column = self.id_column
         columns = _clean_columns(self.target_columns, "target_columns")
         raw_target_names = _clean_mapping(self.target_names, "target_names")
         target_names = {}
         for input_column, raw_name in raw_target_names.items():
-            canonical_name = str(raw_name).strip()
-            if not canonical_name:
+            if (
+                not isinstance(raw_name, str)
+                or not raw_name
+                or raw_name != raw_name.strip()
+            ):
                 raise TargetDataError(
                     "target_names contains an empty canonical target name"
                 )
-            target_names[input_column] = canonical_name
+            target_names[input_column] = raw_name
         if columns is not None:
             unknown_names = set(target_names).difference(columns)
             if unknown_names:
@@ -304,7 +368,9 @@ class TargetSource:
         raw_types = _clean_mapping(self.value_types, "value_types")
         value_types = {}
         for target, raw_type in raw_types.items():
-            value_type = str(raw_type).strip().lower()
+            if not isinstance(raw_type, str) or raw_type != raw_type.strip():
+                raise TargetDataError("value_types values must be exact strings")
+            value_type = raw_type
             if value_type not in _VALUE_TYPES:
                 raise TargetDataError(
                     "unknown value type {!r} for {}; choose one of {}".format(
@@ -312,14 +378,20 @@ class TargetSource:
                     )
                 )
             value_types[target] = value_type
-        null_values = tuple(str(value) for value in self.null_values)
+        if isinstance(self.null_values, str) or not isinstance(
+            self.null_values, (list, tuple)
+        ):
+            raise TypeError("null_values must be a list or tuple of strings")
+        null_values = tuple(self.null_values)
+        if any(not isinstance(value, str) for value in null_values):
+            raise TargetDataError("null_values must contain only strings")
         object.__setattr__(self, "path", path)
         object.__setattr__(self, "name", name)
         object.__setattr__(self, "id_column", id_column)
         object.__setattr__(self, "target_columns", columns)
         object.__setattr__(self, "target_names", MappingProxyType(target_names))
-        object.__setattr__(self, "units", MappingProxyType(units))
-        object.__setattr__(self, "conditions", MappingProxyType(conditions))
+        object.__setattr__(self, "units", _deep_freeze(units))
+        object.__setattr__(self, "conditions", _deep_freeze(conditions))
         object.__setattr__(self, "value_types", MappingProxyType(value_types))
         object.__setattr__(self, "null_values", null_values)
         object.__setattr__(self, "format", _infer_format(path, self.format))
@@ -337,9 +409,13 @@ class AliasRegistry:
 
     def __post_init__(self) -> None:
         path = Path(self.path).expanduser()
-        current = str(self.current_id_column).strip()
+        current = self.current_id_column
         aliases = _clean_columns(self.alias_columns, "alias_columns")
-        if not current:
+        if (
+            not isinstance(current, str)
+            or not current
+            or current != current.strip()
+        ):
             raise TargetDataError("alias current_id_column may not be empty")
         if not aliases:
             raise TargetDataError(
@@ -351,9 +427,13 @@ class AliasRegistry:
         object.__setattr__(self, "current_id_column", current)
         object.__setattr__(self, "alias_columns", aliases)
         object.__setattr__(self, "format", _infer_format(path, self.format))
-        object.__setattr__(
-            self, "null_values", tuple(str(value) for value in self.null_values)
-        )
+        if isinstance(self.null_values, str) or not isinstance(
+            self.null_values, (list, tuple)
+        ):
+            raise TypeError("null_values must be a list or tuple of strings")
+        object.__setattr__(self, "null_values", tuple(self.null_values))
+        if any(not isinstance(value, str) for value in self.null_values):
+            raise TargetDataError("null_values must contain only strings")
 
 
 def _read_csv_records(
@@ -407,7 +487,12 @@ def _read_json_records(
                         "JSON scalar maps require exactly one declared target column"
                     )
                 row = {target_columns[0]: item}
-            if id_column in row and str(row[id_column]).strip() != str(raw_id).strip():
+            if not isinstance(raw_id, str) or not raw_id or raw_id != raw_id.strip():
+                raise TargetDataError("JSON keyed identifiers must be exact strings")
+            if id_column in row and (
+                not isinstance(row[id_column], str)
+                or row[id_column] != raw_id
+            ):
                 raise TargetDataError(
                     "{} keyed ID {!r} conflicts with embedded {!r}".format(
                         path, raw_id, row[id_column]
@@ -420,9 +505,10 @@ def _read_json_records(
     fields: List[str] = []
     for row in rows:
         for key in row:
-            text = str(key)
-            if text not in fields:
-                fields.append(text)
+            if not isinstance(key, str) or not key or key != key.strip():
+                raise TargetDataError("JSON field names must be exact strings")
+            if key not in fields:
+                fields.append(key)
     return tuple(fields), [(index, row) for index, row in enumerate(rows, start=1)]
 
 
@@ -546,7 +632,11 @@ def _read_alias_registry(
     lookup = {structure_id: structure_id for structure_id in current_ids}
     alias_count = 0
     for row_number, row in rows:
-        current = str(row[registry.current_id_column]).strip()
+        current = row[registry.current_id_column]
+        if not isinstance(current, str) or not current or current != current.strip():
+            raise TargetDataError(
+                "alias registry identifiers must be exact nonblank strings"
+            )
         if current not in current_set:
             raise TargetDataError(
                 "alias registry row {} refers to unknown current ID {!r}".format(
@@ -557,9 +647,11 @@ def _read_alias_registry(
             raw = row[column]
             if raw is None or (isinstance(raw, str) and raw in registry.null_values):
                 continue
-            alias = str(raw).strip()
-            if not alias:
-                continue
+            if not isinstance(raw, str) or not raw or raw != raw.strip():
+                raise TargetDataError(
+                    "alias registry aliases must be exact nonblank strings"
+                )
+            alias = raw
             existing = lookup.get(alias)
             if existing is not None and existing != current:
                 raise TargetDataError(
@@ -601,12 +693,16 @@ def _read_feature_table(
     feature_columns = tuple(field for field in fields if field != "structure_id")
     indexed: Dict[str, Dict[str, str]] = {}
     for row_number, row in rows:
-        structure_id = str(row["structure_id"]).strip()
-        if not structure_id:
+        structure_id = row["structure_id"]
+        if (
+            not isinstance(structure_id, str)
+            or not structure_id
+            or structure_id != structure_id.strip()
+        ):
             raise TargetDataError("{}:{} has an empty structure_id".format(path, row_number))
         if structure_id in indexed:
             raise TargetDataError("{} has duplicate structure_id {}".format(path, structure_id))
-        indexed[structure_id] = {column: str(row[column]) for column in feature_columns}
+        indexed[structure_id] = {column: row[column] for column in feature_columns}
     expected = set(dataset.structure_ids)
     observed = set(indexed)
     if expected != observed:
@@ -660,19 +756,105 @@ class TargetMergedDataset(CoREMOFDataset):
         target_definitions: Mapping[str, Mapping[str, object]],
         target_receipt: Mapping[str, object],
         input_hashes: Mapping[str, str],
+        *,
+        _factory_token: object = None,
     ) -> None:
+        if _factory_token is not _TARGET_MERGE_FACTORY_TOKEN:
+            raise TargetDataError(
+                "TargetMergedDataset must be created by merge_targets()"
+            )
+        base_is_official = _validate_dataset_generation_if_present(base_dataset)
+        if not isinstance(base_dataset, CoREMOFDataset):
+            raise TypeError("base_dataset must be a CoREMOFDataset")
+        target_columns_tuple = _exact_name_tuple(target_columns, "target_columns")
+        feature_columns_tuple = _exact_name_tuple(feature_columns, "feature_columns")
+        if set(target_columns_tuple).intersection(feature_columns_tuple):
+            raise TargetDataError("target and feature columns must be disjoint")
+        current_ids = tuple(base_dataset.structure_ids)
+        if len(records) != len(current_ids) or tuple(
+            record.structure_id for record in records
+        ) != current_ids:
+            raise TargetDataError(
+                "target-merged records must preserve the base release order and universe"
+            )
+        if set(target_values_by_id) != set(current_ids):
+            raise TargetDataError(
+                "target values must contain exactly the base release structure IDs"
+            )
+
+        frozen_records = []
+        for base_record, record in zip(base_dataset.records, records):
+            if not isinstance(record, StructureRecord) or not isinstance(
+                record.metadata, Mapping
+            ):
+                raise TargetDataError(
+                    "target-merged rows must be StructureRecord values with mappings"
+                )
+            if any(
+                key not in record.metadata
+                or type(record.metadata[key]) is not type(value)
+                or record.metadata[key] != value
+                for key, value in base_record.metadata.items()
+            ):
+                raise TargetDataError(
+                    "target merge changed release metadata for {}".format(
+                        base_record.structure_id
+                    )
+                )
+            expected_columns = set(base_record.metadata).union(
+                feature_columns_tuple, target_columns_tuple
+            )
+            if set(record.metadata) != expected_columns:
+                raise TargetDataError(
+                    "target-merged metadata has missing or unexpected columns"
+                )
+            values = target_values_by_id[record.structure_id]
+            if not isinstance(values, Mapping) or set(values) != set(target_columns_tuple):
+                raise TargetDataError(
+                    "each target-value row must contain exactly the target columns"
+                )
+            for target in target_columns_tuple:
+                if _canonical_json(record.metadata[target]) != _canonical_json(
+                    values[target]
+                ):
+                    raise TargetDataError(
+                        "joined target value differs from its target table"
+                    )
+            frozen_records.append(
+                StructureRecord(
+                    structure_id=record.structure_id,
+                    metadata=_deep_freeze(record.metadata),
+                    parent_groups=_deep_freeze(base_record.parent_groups),
+                    cif_manifest=(
+                        _deep_freeze(base_record.cif_manifest)
+                        if base_record.cif_manifest is not None
+                        else None
+                    ),
+                )
+            )
+        raw_parent_by_id = base_dataset.parent_by_id
+        if not isinstance(raw_parent_by_id, Mapping):
+            raise TypeError("base parent_by_id must be a mapping")
+        normalized_parent_by_id = {}
+        for structure_id in current_ids:
+            row = raw_parent_by_id.get(structure_id, {})
+            if row is None:
+                row = {}
+            if not isinstance(row, Mapping):
+                raise TypeError("base parent_by_id rows must be mappings")
+            normalized_parent_by_id[structure_id] = _deep_freeze(row)
         super().__init__(
             release_root=base_dataset.release_root,
-            records=records,
-            dataset_info=base_dataset.dataset_info,
-            parent_group_methods=base_dataset.parent_group_methods,
-            parent_by_id=base_dataset.parent_by_id,
-            input_hashes=MappingProxyType(dict(input_hashes)),
+            records=frozen_records,
+            dataset_info=_deep_freeze(base_dataset.dataset_info),
+            parent_group_methods=_deep_freeze(base_dataset.parent_group_methods),
+            parent_by_id=MappingProxyType(normalized_parent_by_id),
+            input_hashes=_deep_freeze(input_hashes),
             cif_files_verified=base_dataset.cif_files_verified,
         )
         self.base_dataset = base_dataset
-        self.target_columns = tuple(target_columns)
-        self.feature_columns = tuple(feature_columns)
+        self.target_columns = target_columns_tuple
+        self.feature_columns = feature_columns_tuple
         self.target_values_by_id = _deep_freeze(
             {
                 structure_id: dict(values)
@@ -682,6 +864,106 @@ class TargetMergedDataset(CoREMOFDataset):
         self.target_provenance_by_id = _deep_freeze(target_provenance_by_id)
         self.target_definitions = _deep_freeze(target_definitions)
         self.target_input_receipt = _deep_freeze(target_receipt)
+        self._validate_target_generation_contract()
+        self._authority_extra_state = (
+            "coremof-target-transformation/1",
+            state_fingerprint(self.target_input_receipt),
+            state_fingerprint(self.target_values_by_id),
+            state_fingerprint(self.target_provenance_by_id),
+            state_fingerprint(self.target_definitions),
+            self.target_columns,
+            self.feature_columns,
+        )
+        self._authority_extra_bindings = MappingProxyType(
+            {
+                "base_dataset": self.base_dataset,
+                "target_columns": self.target_columns,
+                "feature_columns": self.feature_columns,
+                "target_values_by_id": self.target_values_by_id,
+                "target_provenance_by_id": self.target_provenance_by_id,
+                "target_definitions": self.target_definitions,
+                "target_input_receipt": self.target_input_receipt,
+            }
+        )
+        _register_dataset_generation(
+            self,
+            kind="target_merged",
+            official_release_source=base_is_official,
+            base_dataset=base_dataset,
+        )
+
+    def _validate_target_generation_contract(self) -> None:
+        receipt = self.target_input_receipt
+        expected_keys = {
+            "schema_version",
+            "target_api_version",
+            "implementation",
+            "dataset_version",
+            "release_structure_count",
+            "target_columns",
+            "target_definitions",
+            "sources",
+            "alias_registry",
+            "feature_tables",
+            "counts",
+            "target_values_sha256",
+            "policies",
+        }
+        if "config" in receipt:
+            expected_keys.add("config")
+        if not isinstance(receipt, Mapping) or set(receipt) != expected_keys:
+            raise TargetDataError("target merge receipt has an invalid closed contract")
+        if (
+            receipt.get("schema_version") != "coremof-target-merge-receipt/1.0"
+            or receipt.get("target_api_version") != TARGET_API_VERSION
+            or receipt.get("dataset_version") != self.dataset_version
+            or receipt.get("release_structure_count") != len(self)
+            or tuple(receipt.get("target_columns", ())) != self.target_columns
+            or _canonical_json(receipt.get("target_definitions"))
+            != _canonical_json(self.target_definitions)
+            or receipt.get("target_values_sha256")
+            != _stable_target_digest(
+                self.structure_ids,
+                self.target_columns,
+                self.target_values_by_id,
+            )
+        ):
+            raise TargetDataError(
+                "target merge receipt differs from the exact joined generation"
+            )
+        implementation = receipt.get("implementation")
+        if not isinstance(implementation, Mapping) or set(implementation) != {
+            "package",
+            "package_version",
+            "target_api_version",
+            "source_sha256",
+        }:
+            raise TargetDataError("target merge receipt implementation is invalid")
+        if (
+            implementation.get("package") != "CoREMOF-tools"
+            or implementation.get("package_version") != __version__
+            or implementation.get("target_api_version") != TARGET_API_VERSION
+            or dict(implementation.get("source_sha256", {}))
+            != dict(_implementation_hashes())
+        ):
+            raise TargetDataError(
+                "target merge receipt implementation does not match executing sources"
+            )
+        if not isinstance(self.target_provenance_by_id, Mapping):
+            raise TargetDataError("target provenance must be a mapping")
+        unknown_ids = set(self.target_provenance_by_id).difference(self.structure_ids)
+        if unknown_ids:
+            raise TargetDataError("target provenance contains unknown structure IDs")
+        for structure_id, by_target in self.target_provenance_by_id.items():
+            if not isinstance(by_target, Mapping) or set(by_target).difference(
+                self.target_columns
+            ):
+                raise TargetDataError("target provenance contains unknown target columns")
+            for target, observations in by_target.items():
+                if not isinstance(observations, (list, tuple)):
+                    raise TargetDataError("target provenance observations must be a sequence")
+                if any(not isinstance(item, Mapping) for item in observations):
+                    raise TargetDataError("target provenance observations must be mappings")
 
     def target_values(self, structure_id: str) -> Mapping[str, object]:
         """Return every target column for one current public structure ID."""
@@ -696,6 +978,7 @@ class TargetMergedDataset(CoREMOFDataset):
     def receipt(self) -> Mapping[str, object]:
         """Return the hash-bound target/feature merge receipt."""
 
+        _validate_dataset_generation_if_present(self)
         return _jsonable(self.target_input_receipt)  # type: ignore[return-value]
 
     @staticmethod
@@ -765,6 +1048,9 @@ class TargetMergedDataset(CoREMOFDataset):
         with an external lock).
         """
 
+        if type(overwrite) is not bool:
+            raise TypeError("overwrite must be a boolean")
+        _validate_dataset_generation_if_present(self)
         if (
             not isinstance(stem, str)
             or not stem
@@ -869,6 +1155,9 @@ def merge_targets(
     alias_registry: Optional[AliasRegistry] = None,
     feature_tables: Sequence[str] = (),
     verify_cif_files: bool = False,
+    *,
+    _config_receipt: Optional[Mapping[str, object]] = None,
+    _config_factory_token: object = None,
 ) -> TargetMergedDataset:
     """Join one or more target files to a complete release universe.
 
@@ -877,6 +1166,8 @@ def merge_targets(
     may not collide with release metadata or selected feature columns.
     """
 
+    if type(verify_cif_files) is not bool:
+        raise TypeError("verify_cif_files must be a boolean")
     if isinstance(dataset, (str, Path)):
         base = CoREMOFDataset.from_release(dataset, verify_cif_files=verify_cif_files)
     elif isinstance(dataset, CoREMOFDataset):
@@ -891,13 +1182,15 @@ def merge_targets(
         raise TargetDataError("target data are already attached to this dataset")
     if isinstance(sources, (str, Path, TargetSource)):
         sources = (sources,)
+    elif not isinstance(sources, (list, tuple)):
+        raise TypeError("sources must be a target source or a list/tuple of sources")
     normalized_sources = tuple(
         source if isinstance(source, TargetSource) else TargetSource(source)
         for source in sources
     )
     if not normalized_sources:
         raise TargetDataError("at least one target source is required")
-    source_names = [str(source.name) for source in normalized_sources]
+    source_names = [source.name for source in normalized_sources]
     if len(set(source_names)) != len(source_names):
         raise TargetDataError("target source names must be unique")
 
@@ -909,7 +1202,16 @@ def merge_targets(
 
     if isinstance(feature_tables, str):
         feature_tables = (feature_tables,)
-    feature_names = tuple(str(name).strip() for name in feature_tables)
+    elif not isinstance(feature_tables, (list, tuple)):
+        raise TypeError("feature_tables must be a string, list, or tuple")
+    feature_names = tuple(feature_tables)
+    if any(
+        not isinstance(name, str)
+        or not name
+        or name != name.strip()
+        for name in feature_names
+    ):
+        raise TargetDataError("feature_tables must contain exact nonblank strings")
     if len(set(feature_names)) != len(feature_names):
         raise TargetDataError("feature_tables contains duplicates")
     feature_columns: List[str] = []
@@ -1018,11 +1320,15 @@ def merge_targets(
                 raise TargetDataError(
                     "{}:{} has a null structure identifier".format(path.name, row_number)
                 )
-            input_id = str(raw_id).strip()
-            if not input_id:
+            if (
+                not isinstance(raw_id, str)
+                or not raw_id
+                or raw_id != raw_id.strip()
+            ):
                 raise TargetDataError(
                     "{}:{} has an empty structure identifier".format(path.name, row_number)
                 )
+            input_id = raw_id
             structure_id = lookup.get(input_id)
             if structure_id is None:
                 raise TargetDataError(
@@ -1170,6 +1476,12 @@ def merge_targets(
             "conflicting_duplicates": "ERROR",
         },
     }
+    if _config_receipt is not None:
+        if _config_factory_token is not _TARGET_MERGE_FACTORY_TOKEN:
+            raise TargetDataError(
+                "target config receipt can be attached only by merge_targets_from_config()"
+            )
+        receipt["config"] = dict(_config_receipt)
     input_hashes = dict(base.input_hashes)
     for item in feature_receipts:
         input_hashes[str(item["release_path"])] = str(item["sha256"])
@@ -1177,6 +1489,8 @@ def merge_targets(
         input_hashes["targets/{}".format(item["name"])] = str(item["sha256"])
     if alias_receipt is not None:
         input_hashes["targets/alias_registry"] = str(alias_receipt["sha256"])
+    if _config_receipt is not None:
+        input_hashes["targets/config"] = _config_receipt["sha256"]
     return TargetMergedDataset(
         base_dataset=base,
         records=records,
@@ -1187,6 +1501,7 @@ def merge_targets(
         target_definitions=definitions,
         target_receipt=receipt,
         input_hashes=input_hashes,
+        _factory_token=_TARGET_MERGE_FACTORY_TOKEN,
     )
 
 
@@ -1228,7 +1543,18 @@ def load_target_config(path: Union[str, Path]) -> Mapping[str, object]:
         if "path" not in raw:
             raise TargetDataError("target config source {} has no path".format(index))
         values = dict(raw)
-        source_path = Path(str(values["path"])).expanduser()
+        raw_source_path = values["path"]
+        if (
+            not isinstance(raw_source_path, str)
+            or not raw_source_path
+            or raw_source_path != raw_source_path.strip()
+        ):
+            raise TargetDataError(
+                "target config source {} path must be an exact nonblank string".format(
+                    index
+                )
+            )
+        source_path = Path(raw_source_path).expanduser()
         if not source_path.is_absolute():
             source_path = config_path.parent / source_path
         values["path"] = source_path
@@ -1247,7 +1573,16 @@ def load_target_config(path: Union[str, Path]) -> Mapping[str, object]:
         if "path" not in raw_alias:
             raise TargetDataError("alias_registry has no path")
         values = dict(raw_alias)
-        alias_path = Path(str(values["path"])).expanduser()
+        raw_alias_path = values["path"]
+        if (
+            not isinstance(raw_alias_path, str)
+            or not raw_alias_path
+            or raw_alias_path != raw_alias_path.strip()
+        ):
+            raise TargetDataError(
+                "alias_registry path must be an exact nonblank string"
+            )
+        alias_path = Path(raw_alias_path).expanduser()
         if not alias_path.is_absolute():
             alias_path = config_path.parent / alias_path
         values["path"] = alias_path
@@ -1255,11 +1590,23 @@ def load_target_config(path: Union[str, Path]) -> Mapping[str, object]:
     raw_features = config.get("feature_tables", ())
     if isinstance(raw_features, str) or not isinstance(raw_features, (list, tuple)):
         raise TargetDataError("feature_tables must be an array")
+    feature_tables = tuple(raw_features)
+    if any(
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        for value in feature_tables
+    ):
+        raise TargetDataError(
+            "feature_tables values must be exact nonblank strings"
+        )
+    if len(set(feature_tables)) != len(feature_tables):
+        raise TargetDataError("feature_tables must not contain duplicates")
     return MappingProxyType(
         {
             "sources": tuple(sources),
             "alias_registry": alias,
-            "feature_tables": tuple(str(value) for value in raw_features),
+            "feature_tables": feature_tables,
             "config_file_name": config_path.name,
             "config_sha256": snapshot.sha256,
             "config_size_bytes": snapshot.size_bytes,
@@ -1275,24 +1622,20 @@ def merge_targets_from_config(
     """Load a JSON configuration and return its merged modelling dataset."""
 
     config = load_target_config(config_path)
-    merged = merge_targets(
+    config_receipt = {
+        "file_name": config["config_file_name"],
+        "sha256": config["config_sha256"],
+        "size_bytes": config["config_size_bytes"],
+    }
+    return merge_targets(
         dataset,
         config["sources"],  # type: ignore[arg-type]
         alias_registry=config["alias_registry"],  # type: ignore[arg-type]
         feature_tables=config["feature_tables"],  # type: ignore[arg-type]
         verify_cif_files=verify_cif_files,
+        _config_receipt=config_receipt,
+        _config_factory_token=_TARGET_MERGE_FACTORY_TOKEN,
     )
-    receipt = dict(merged.target_input_receipt)
-    receipt["config"] = {
-        "file_name": config["config_file_name"],
-        "sha256": config["config_sha256"],
-        "size_bytes": config["config_size_bytes"],
-    }
-    merged.target_input_receipt = _deep_freeze(receipt)
-    merged.input_hashes = MappingProxyType(
-        {**dict(merged.input_hashes), "targets/config": str(config["config_sha256"])}
-    )
-    return merged
 
 
 __all__ = [

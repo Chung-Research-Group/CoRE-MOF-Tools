@@ -23,21 +23,58 @@ untyped or declare it as `"string"`; declaring it as `"float"` intentionally
 uses normal binary64 parsing. Booleans, nulls, NaN, and infinities are never
 ranked.
 
+Current v26 status: the null-unresolved MOFid projection is explicitly
+`STAGE_ONLY`. Parent relations built from it are non-published candidates and
+cannot be promoted by the publication command; screening and splits from
+current live or staged inputs remain exploratory.
+
 When `--split` is used below, `priority_main`, `main_union`, `auto`, and
 `parent_only` are project-defined CoREMOF-tools identifiers rather than
-standard scientific terms. A **release-authorized parent triad** is a
+standard scientific terms. `parent_only` means use only the explicitly
+selected explanatory parent grouping as indivisible split blocks, with no
+cross-method edge. `auto` selects `main_union` for `priority_main` and selects
+`parent_only` for an explicitly chosen direct or reference method; it does
+not invent a third grouping relation. A **release-authorized parent triad** is a
 validated `status/group/size` triple declared by the release. `MATCHED` means
 available with at least two observed members, `UNMATCHED` means available with
 one member, and `NOT_AVAILABLE` supplies no edge; unavailable rows never match.
 Here **exact RAC5** means all 264 ordered finite binary64 values match after
 `-0.0` is mapped to `+0.0` and `float.hex()` is applied, with
 `rtol=atol=0` and no scaling/imputation. **Exact MOFid** means the complete
-string matches after Unicode-whitespace collapse, trim, whole-field
+release-authorized current string matches after Unicode-whitespace collapse,
+trim, whole-field
 missing/execution-placeholder rejection, Unicode NFKC, and case-folding, in
 that order; the case-insensitive rejected tokens are empty, `-`, `nan`,
 `none`, `null`, `n/a`, `na`, `unknown`, `missing`, `timeout`, `timed out`,
 `error`, `failed`, `fail`, `fail process`, `failed process`, and
 `process failed`. It is not partial/fuzzy matching and does not alter a CIF.
+
+Two optional non-decisive reference methods are selectable only when their complete
+release triads exist. `rac5_crystalnets` reads
+`rac_crystalnets_status/group/size`; an `RT-` group requires exact equality of
+the 264-value finite RAC5 key above and a complete successful current
+CrystalNets fingerprint. `mofid_v2_crystalnets` reads
+`mofid2_crystalnets_status/group/size`; an `M2T-` group replaces RAC5 with the
+complete exact canonicalized eligible MOFid-v2 string above and uses the same
+CrystalNets fingerprint. Eligible MOFid-v2 status is exactly `SUCCESS`,
+`SUCCESS_TOPOLOGY_UNKNOWN`, `SUCCESS_TOPOLOGY_ERROR`, or
+`SUCCESS_TOPOLOGY_TIMEOUT`. The latter two are successful calculated
+identifiers whose embedded topology qualifier is ERROR or TIMEOUT, not MOFid
+execution failures; every other MOFid-v2 status adds no edge. Here the
+CrystalNets fingerprint requires `SUCCESS`,
+`topology_available=true`, `error=null`, complete nonempty SingleNodes and
+AllNodes subnets, and count/catenation fields equal to subnet count. It
+contains network dimension, interpenetrated-subnet/catenation/subnet counts,
+top-level single/all nets and agreement, and every canonically sorted subnet's
+agreement plus each node view's status, dimension, topology key/name, and
+genome; duplicate subnets are retained. Runtime, paths/hashes, diagnostics,
+software text, and original subnet order are excluded. Missing, nonfinite,
+partial, timed-out, failed, or otherwise incomplete input adds no group edge;
+two unavailable rows never match. M2T remains provisional whenever its
+release-authorized MOFid-v2 input is provisional. If the release-authorized
+MOFid-v2 values change, rebuild the M2T groups before use. These are optional
+sensitivity alternatives only: neither enters `priority_main` nor
+`main_union`.
 
 `priority_main` builds an explanatory hierarchy over the full release: it
 reads `rac_status/rac_group/rac_size`,
@@ -49,7 +86,9 @@ order. A lower group touching no stronger component creates a component; one
 touching exactly one attaches only its unresolved rows; one touching two or
 more never merges them, records `PARENT_METHOD_CONFLICT`, and leaves
 lower-only rows unresolved. Missing evidence becomes a unique singleton by
-default; this is not row-wise first-nonmissing selection.
+default; this is not row-wise first-nonmissing selection. Here priority means
+parent-evidence precedence, not a queue: it does not rank, schedule, or
+recalculate failed scientific features.
 
 `main_union` is the separate leakage guard, not a parent claim. It reads full
 CIF SHA-256 values from `manifests/cif_manifest.csv` and database-namespaced

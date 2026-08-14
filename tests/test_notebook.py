@@ -48,6 +48,8 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
         text = "\n".join(
             "".join(cell["source"]) for cell in self.notebook["cells"]
         )
+        self.assertNotIn("rac5_topology", text)
+        self.assertNotIn("mofid_v2_topology", text)
         for required in (
             "priority_main",
             "main_union",
@@ -74,8 +76,8 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
             "co2_rosenbluth_weight",
             "n2_rosenbluth_weight",
             "dimensionless Rosenbluth weights",
-            "rac5_topology",
-            "mofid_v2_topology",
+            "rac5_crystalnets",
+            "mofid_v2_crystalnets",
             "structure_matcher_strict",
             "direct symmetric pair edges",
             "historical relaxed matcher",
@@ -124,6 +126,8 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
             "MOFid-v1 groups",
             "PARENT_METHOD_CONFLICT",
             "not row-wise first-nonmissing",
+            "priority means parent-evidence precedence, not a queue",
+            "does not rank, schedule, or recalculate",
             "rac_status/rac_group",
             "mofid2_status/mofid2_group",
             "mofid1_status/mofid1_group",
@@ -148,19 +152,31 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
         )
         self.assertLess(definition_index, first_code_use)
 
+        overview = next(
+            "".join(cell["source"])
+            for cell in cells
+            if cell.get("id") == "overview"
+        )
+        self.assertIn("STAGE_ONLY", overview)
+        self.assertIn("non-published candidates", overview)
+
     def test_notebook_defines_identity_canonicalization_and_prefixes_locally(self):
         cells = {cell["id"]: "".join(cell["source"]) for cell in self.notebook["cells"]}
         definition = cells["parent-hierarchy"]
         for required in (
             "canonicalized identifier text",
+            "release-authorized current value",
+            "priority means parent-evidence precedence, not a queue",
             "collapse each Unicode-whitespace run",
             "Unicode NFKC",
             "case-fold",
             "(source_database, source_id)",
             "never a prefix or fuzzy match",
-            "_ASR_pacman",
-            "MOFidv2.",
-            ".no_ref",
+            "SUCCESS_TOPOLOGY_UNKNOWN",
+            "freshly recomputes every named release",
+            "imports no earlier component",
+            "unresolved-reconciliation",
+            "ambiguous-node",
             "never alter atoms",
             "`identity_union`",
             "provisional source-ID/MOFid transitive groups",
@@ -168,13 +184,15 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
             "identity_size",
             "transitive connected component",
             "not a count of edges or identifiers",
-            "v26.0.1 components",
+            "does not import or seed an earlier v26.0.1 component",
             "no precedence or conflict rule",
-            "Missing identifiers add no edge",
+            "Missing identifiers and non-success MOFid statuses add no edge",
             "uses no RAC5",
             "not proof of structural identity",
             "`RT-`",
             "`M2T-`",
+            "release-authorized MOFid-v2 values change",
+            "rebuild the M2T groups before use",
             "`SM-`",
             "Direct edges are authoritative",
             "not an all-pairs or duplicate-identity claim",

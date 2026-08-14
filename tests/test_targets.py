@@ -1,7 +1,9 @@
 import csv
+import copy
 import hashlib
 import json
 from pathlib import Path
+import pickle
 import tempfile
 from types import MappingProxyType
 import unittest
@@ -15,6 +17,7 @@ from CoREMOF.targets import (
     AliasRegistry,
     TARGET_API_VERSION,
     TargetDataError,
+    TargetMergedDataset,
     TargetSource,
     merge_targets,
     merge_targets_from_config,
@@ -95,8 +98,11 @@ def _dataset(root):
     dataset = CoREMOFDataset(
         release_root=root,
         records=records,
-        dataset_info={"dataset_version": "vtest", "release_status": "FINAL"},
-        parent_group_methods={"release_status": "FINAL"},
+        dataset_info={
+            "dataset_version": "vtest",
+            "release_status": "PROVISIONAL_LATEST_AUDITED_SNAPSHOT",
+        },
+        parent_group_methods={},
         parent_by_id=parent_by_id,
         input_hashes={"metadata/metadata.csv": "b" * 64},
         cif_files_verified=False,
@@ -179,6 +185,86 @@ class TargetMergeTests(unittest.TestCase):
                 },
             ),
         )
+
+    def test_target_generation_is_factory_only_and_authority_bound(self):
+        merged = merge_targets(
+            self.dataset, self._sources(), alias_registry=self.aliases
+        )
+        for operation in (copy.copy, copy.deepcopy, pickle.dumps):
+            with self.subTest(operation=operation.__name__):
+                with self.assertRaisesRegex(TypeError, "cannot be"):
+                    operation(merged)
+
+        with self.assertRaisesRegex(TargetDataError, "must be created by merge_targets"):
+            TargetMergedDataset(
+                merged.base_dataset,
+                merged.records,
+                merged.target_columns,
+                merged.feature_columns,
+                merged.target_values_by_id,
+                merged.target_provenance_by_id,
+                merged.target_definitions,
+                merged.target_input_receipt,
+                merged.input_hashes,
+            )
+
+        with self.assertRaisesRegex(AttributeError, "immutable"):
+            merged.target_columns = ()
+        object.__setattr__(merged, "records", tuple(reversed(merged.records)))
+        with self.assertRaisesRegex(
+            ValueError, "generation changed|fingerprint changed"
+        ):
+            merged.receipt()
+
+    def test_target_writer_overwrite_requires_exact_boolean(self):
+        merged = merge_targets(
+            self.dataset, self._sources(), alias_registry=self.aliases
+        )
+        for value in (None, 0, 1, "false", [], {}):
+            with self.subTest(overwrite=value):
+                with self.assertRaisesRegex(TypeError, "overwrite must be a boolean"):
+                    merged.write(self.root / "invalid-overwrite", overwrite=value)
+
+    def test_target_public_sequence_and_boolean_inputs_are_type_exact(self):
+        source = self._sources()[0]
+        for value in (None, 0, 1, "false", [], {}):
+            with self.subTest(verify_cif_files=value):
+                with self.assertRaisesRegex(TypeError, "verify_cif_files"):
+                    merge_targets(
+                        self.dataset,
+                        (source,),
+                        verify_cif_files=value,
+                    )
+        for value in ({str(source.path)}, iter((source,)), {"source": source}):
+            with self.subTest(sources=type(value).__name__):
+                with self.assertRaisesRegex(TypeError, "sources"):
+                    merge_targets(self.dataset, value)
+        for value in ({"rac5"}, iter(("rac5",)), {"rac5": True}):
+            with self.subTest(feature_tables=type(value).__name__):
+                with self.assertRaisesRegex(TypeError, "feature_tables"):
+                    merge_targets(
+                        self.dataset, (source,), feature_tables=value
+                    )
+
+    def test_target_source_contracts_reject_unordered_or_coerced_values(self):
+        source_path = self.root / "source.csv"
+        source_path.write_text("structure_id,value\n", encoding="utf-8")
+        for kwargs, message in (
+            ({"target_columns": {"value"}}, "target_columns"),
+            ({"null_values": {""}}, "null_values"),
+            ({"units": {"value": {"mol/kg"}}}, "unordered sets"),
+            ({"conditions": {"value": {1: "bad"}}}, "mapping keys"),
+        ):
+            with self.subTest(kwargs=kwargs):
+                with self.assertRaisesRegex((TypeError, TargetDataError), message):
+                    TargetSource(source_path, **kwargs)
+
+        with self.assertRaisesRegex(TypeError, "null_values"):
+            AliasRegistry(
+                self.alias_path,
+                alias_columns=("earlier_id",),
+                null_values={""},
+            )
 
     def test_multiple_files_aliases_features_nulls_and_provenance(self):
         merged = merge_targets(
@@ -318,7 +404,7 @@ class TargetMergeTests(unittest.TestCase):
             filename: hashlib.sha256(
                 (package_root / filename).read_bytes()
             ).hexdigest()
-            for filename in ("dataset.py", "labels.py", "targets.py")
+            for filename in ("_authority.py", "dataset.py", "labels.py", "targets.py")
         }
         self.assertEqual(implementation["source_sha256"], expected)
         self.assertTrue(
@@ -465,7 +551,7 @@ class TargetMergeTests(unittest.TestCase):
         self.assertEqual(
             split_source_hashes["targets.py"], merge_source_hashes["targets.py"]
         )
-        for filename in ("dataset.py", "labels.py"):
+        for filename in ("_authority.py", "dataset.py", "labels.py"):
             self.assertEqual(split_source_hashes[filename], merge_source_hashes[filename])
 
         tampered = json.loads(json.dumps(merged.receipt()))

@@ -73,6 +73,11 @@ licensing, and troubleshooting, see
 For a complete executable walkthrough, open
 [the companion notebook](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/blob/main/examples/CoREMOF_dataset_splitting_quickstart.ipynb).
 
+Current v26 status: the null-unresolved MOFid projection is explicitly
+`STAGE_ONLY`. Parent relations built from it are non-published candidates and
+cannot be promoted by the publication command; splits from current live or
+staged inputs remain exploratory rather than official benchmark assignments.
+
 ### Build CR/NCR train/validation/test splits
 
 Four project-defined API identifiers are used below; none is a standard
@@ -88,9 +93,9 @@ only a table-shape placeholder. Two unavailable rows never match.
 Here **exact RAC5** means equality of all 264 ordered finite depth-5 values
 after binary64 parsing, conversion of `-0.0` to `+0.0`, and `float.hex()`
 serialization (`rtol=atol=0`), with no scaling, deletion, imputation, or
-rounding. **Exact MOFid** means equality of the complete published string after
-converting it to text, collapsing each Unicode-whitespace run to one ASCII
-space, trimming, rejecting an empty or declared whole-field
+rounding. **Exact MOFid** means equality of the complete release-authorized
+current string after converting it to text, collapsing each Unicode-whitespace
+run to one ASCII space, trimming, rejecting an empty or declared whole-field
 missing/execution placeholder, applying Unicode NFKC, and then case-folding;
 it is never prefix, substring, or fuzzy matching and never edits a CIF or its
 chemistry. Placeholder comparison is case-insensitive and rejects `-`, `nan`,
@@ -110,7 +115,9 @@ chemistry. Placeholder comparison is case-insensitive and rejects `-`, `nan`,
   merges those stronger components, records `PARENT_METHOD_CONFLICT`, and
   leaves lower-only rows unresolved. Missing evidence becomes one unique
   singleton per structure unless exclusion is explicitly requested. This is
-  not a row-wise first-nonmissing fallback. Zeo++, topology, source IDs, CIF
+  not a row-wise first-nonmissing fallback. Here priority means parent-evidence
+  precedence, not a queue: it does not rank, schedule, or recalculate failed
+  scientific features. Zeo++, topology, source IDs, CIF
   hashes, common names, provisional source-ID/MOFid transitive groups, and
   StructureMatcher do not enter this hierarchy.
 - `main_union` is the separate conservative leakage guard, not a parent claim.
@@ -160,8 +167,10 @@ partition blocks. Both are computed before applying experiment filters.
 Direct methods such as `rac5`, `mofid_v2`, and
 `mofid_v1` are separately selectable for sensitivity studies. Missing parent
 evidence becomes a unique singleton and never causes missing rows to match.
-Releases may also expose three optional sensitivity criteria. `rac5_topology`
-(`RT-`) means exact equality of all 264 finite RAC5 values plus a complete
+Releases may also expose three optional non-decisive reference criteria.
+`rac5_crystalnets` (`RT-`) reads the public
+`rac_crystalnets_status/group/size` triad and means exact equality of all 264
+finite RAC5 values plus a complete
 successful **current CrystalNets fingerprint**, where current means the
 topology evidence authorized by the loaded release rather than a runtime
 search for newer output. The fingerprint requires `SUCCESS`,
@@ -173,13 +182,21 @@ sorted, duplicate subnets are retained, and SHA-256 is applied. Null top-level
 dimension/net/agreement summaries are retained for heterogeneous subnets, and
 node topology name/genome may be null; runtime, paths, hashes, diagnostics,
 software text, and original subnet order are excluded.
-`mofid_v2_topology` (`M2T-`) replaces RAC5 with exact complete canonicalized
-MOFid-v2 text: convert to text, collapse each Unicode-whitespace run to one
+`mofid_v2_crystalnets` (`M2T-`) reads the public
+`mofid2_crystalnets_status/group/size` triad and replaces RAC5 with exact
+complete canonicalized MOFid-v2 text: convert to text, collapse each
+Unicode-whitespace run to one
 ASCII space, trim, reject empty/whole-field missing or execution placeholders,
 apply Unicode NFKC, and then case-fold. This text processing does not modify a
 CIF, atoms, bonds, occupancies, coordinates, chemistry, or unit cell and is
-not fuzzy matching. This method remains provisional whenever the loaded
-release's MOFid-v2 input is provisional.
+not fuzzy matching. The eligible MOFid-v2 statuses are exactly `SUCCESS`,
+`SUCCESS_TOPOLOGY_UNKNOWN`, `SUCCESS_TOPOLOGY_ERROR`, and
+`SUCCESS_TOPOLOGY_TIMEOUT`. The latter two are successful calculated
+identifiers whose embedded topology qualifier is ERROR or TIMEOUT, not MOFid
+execution failures; every other MOFid-v2 status and every incomplete
+CrystalNets input adds no edge. This reference method remains provisional
+whenever the loaded release's MOFid-v2 input is provisional. If the
+release-authorized MOFid-v2 values change, rebuild the M2T groups before use.
 `structure_matcher_strict` (`SM-`) is a convenience connected component of
 exhaustive composition-compatible pairs whose symmetric forward and reverse
 pymatgen 2024.2.8
@@ -187,10 +204,12 @@ pymatgen 2024.2.8
 `angle_tol=0.01`, `primitive_cell/attempt_supercell=true`,
 `scale/allow_subset=false`, `supercell_size=num_sites`, and no ignored species;
 direct edges are authoritative; the component is not proof that every pair in
-it directly matches or that its members are duplicates. Missing
-or failed input adds no optional edge. The digest after each prefix is only a
+it directly matches or that its members are duplicates. Parser failures,
+timeouts, and execution errors are `NOT_AVAILABLE` rather than unmatched and
+add no optional edge. Missing or failed input adds no optional edge. The digest after each prefix is only a
 group label, not a topology, MOFid, RMSD, or score. These methods do not change
-`priority_main` or `main_union`. The loader accepts `sm_*`
+`priority_main` or `main_union`: the recommended explanatory hierarchy remains
+exact RAC5, then complete MOFid v2, then complete MOFid v1. The loader accepts `sm_*`
 columns only with the exact optional-reference method declaration and its
 hash-verified release-adapter receipt; incomplete components must project to
 unique `NOT_AVAILABLE` singletons, and relaxed evidence cannot be executed or exposed.
@@ -221,11 +240,13 @@ parent method, the requested and resolved leakage guard, machine-readable
 definitions of both project-defined policies, a structured
 lower-versus-stronger parent conflict ledger, and a zero-cross-partition
 leakage audit.
-`provisional_input` becomes false only when both the dataset and parent-method
-release statuses are exactly `FINAL`; missing values, `FINAL_CANDIDATE`, and
-all other tokens remain provisional. A user-generated split is never labelled
-as an official CoRE-MOF split, and `official=True` currently fails closed
-because no audited official assignment manifest exists.
+`provisional_input` is derived from a package-authenticated closed release
+contract, never from caller-supplied status strings. The current authenticated
+RT/M2T reference contract is staged, non-decisive, and explicitly not
+publication-authorized, so current outputs remain provisional; an arbitrary
+`FINAL` token is rejected and cannot clear that flag. A user-generated split
+is never labelled as an official CoRE-MOF split, and `official=True` currently
+fails closed because no audited official assignment manifest exists.
 
 ### Join target results before splitting
 

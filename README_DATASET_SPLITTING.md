@@ -108,7 +108,8 @@ At their first use below, **exact RAC5** means equality of all 264 ordered
 finite values after IEEE-754 binary64 parsing, mapping `-0.0` to `+0.0`, and
 `float.hex()` serialization, with `rtol=atol=0` and no scaling, feature
 deletion, imputation, or rounding. **Exact MOFid** means equality of the
-complete published string after converting to text; collapsing each
+complete release-authorized current string after converting to text;
+collapsing each
 Unicode-whitespace run to one ASCII space; trimming; case-insensitively
 rejecting an empty field or `-`, `nan`, `none`, `null`, `n/a`, `na`,
 `unknown`, `missing`, `timeout`, `timed out`, `error`, `failed`, `fail`,
@@ -129,6 +130,11 @@ computed on the complete release from the parent table's
 3. exact MOFid-v1 groups apply the same rule last; and
 4. a structure still lacking all three inputs becomes its own unique singleton
    unless `missing_parent="exclude"` was explicitly selected.
+
+The word **priority** in `priority_main` means the RAC5 → MOFid-v2 → MOFid-v1
+precedence used to explain parent groups. It does not rank, schedule, or
+recalculate failed scientific features; calculation-retry scheduling is a
+separate curation-operation queue outside this package.
 
 If a MOFid group touches two or more stronger components, those components are
 never merged. The package records `PARENT_METHOD_CONFLICT`; a lower-only row is
@@ -423,7 +429,7 @@ print(rac_parent.available)
 print(rac_parent.matched)
 ```
 
-`StructureRecord.parent_group()` reads published table criteria such as
+`StructureRecord.parent_group()` reads current criteria stored in the loaded release table, such as
 `rac5`, `mofid_v2`, or `source_id`. Computed `priority_main` and `main_union`
 relations are not per-record table fields; inspect them with `ParentResolver`
 or `SplitResult`.
@@ -572,6 +578,11 @@ Unknown structure IDs raise rather than disappearing silently. A filtered view
 remembers its selection steps so a later split can report preselection in its
 receipt.
 
+At the Python API boundary, each filter accepts either one exact string or an
+ordered `list`/`tuple` of exact strings. Sets, frozensets, mappings, byte
+strings, generators, and other one-shot or unordered containers are rejected;
+the package does not repair their order before hashing a receipt.
+
 Filtering does not recompute or modify labels. It also does not erase a parent
 bridge from the complete release when the recommended leakage guard is used.
 
@@ -595,36 +606,31 @@ independently to every row.
 ### 9.2 Available parent methods
 
 In this section, **canonicalized identifier text** has one narrow, exact
-meaning. For current published fields, the release builder converts the value
-to text, collapses each Unicode-whitespace run to one ASCII space, trims it,
-rejects a whole-field missing/execution placeholder, applies Unicode NFKC,
+meaning. For release-authorized current fields, the release builder converts
+the value to text, collapses each Unicode-whitespace run to one ASCII space,
+trims it, rejects a whole-field missing/execution placeholder, applies Unicode NFKC,
 and then applies Unicode case-folding. The rejected case-insensitive whole
 fields are empty text, `-`, `nan`, `none`, `null`, `n/a`, `na`,
 `unknown`, `missing`, `timeout`, `timed out`, `error`, `failed`, `fail`,
-`fail process`, `failed process`, and `process failed`. The inherited v26.0.1
-cleanup additionally rejects a whole-field `*` and the leading
-`MOFid-v1.NA...` and `MOFid-v2.NA...` placeholder families. A source key is the exact ordered pair
-of separately canonicalized `source_database` and `source_id`, so equal text
-from different databases cannot match. A MOFid key is the complete
-canonicalized published MOFid string; there is no prefix, substring, or fuzzy
-match. The already-audited v26.0.1 identity components retained by v26.0.2
-were constructed with their own narrow v11 cleanup. For a v11 refcode, it
-converts to text; removes the first semicolon and everything after it; changes
-backslashes to `/`; removes the path and one terminal `.cif`/`.cif.gz`; trims;
-deletes every Unicode whitespace character; case-folds without NFKC; rejects
-literal placeholders; removes one terminal `_ASR_pacman`, `_FSR_pacman`,
-`_ION_pacman`, `_ION_ASR_pacman`, or `_ION_FSR_pacman`; and rechecks for an
-empty/placeholder result. Those preserved v11 refcode edges did not add a
-database namespace. New v26.0.2 source-ID edges do retain the database.
+`fail process`, `failed process`, and `process failed`. A source key is the
+exact ordered pair of separately canonicalized `source_database` and
+`source_id`, so equal text from different databases cannot match. A MOFid key
+is the complete canonicalized release-authorized current MOFid string; there
+is no prefix, substring, or fuzzy match. MOFid equality is eligible only when
+its release status is `SUCCESS`, `SUCCESS_TOPOLOGY_UNKNOWN`,
+`SUCCESS_TOPOLOGY_ERROR`, or `SUCCESS_TOPOLOGY_TIMEOUT`.
 
-For a v11 MOFid, the seed removes the first semicolon record suffix and trims;
-rewrites only literal `MOFidv2.` to `MOFid-v2.`; collapses Unicode whitespace,
-trims, and case-folds without NFKC; removes terminal `.no_ref` only when a
-MOFid-v1 marker is present; then rejects literal execution placeholders and
-the leading `MOFid-v1.NA...`/`MOFid-v2.NA...` families. This text processing
-does not modify atoms, bonds, occupancies, coordinates, unit cells, general
-chemical punctuation, or CIF bytes. The splitter consumes the resulting
-release group/status/size columns; it does not perform this cleanup itself.
+The release builder recomputes these keys and their connected components
+freshly over every current row of each named release. v26.0.1 is recomputed
+over its 36,628 rows; v26.0.2 is recomputed independently over all 42,574
+superset rows. It does not seed v26.0.2 with a prior v26.0.1 component or
+import an earlier source-ID/MOFid edge. Missing, null, placeholder,
+unresolved-reconciliation, ambiguous-node, timeout, error, no-MOF,
+unmatched-node, and decomposition-error MOFid values add no edge and never
+match through a shared null. This text processing does not modify atoms,
+bonds, occupancies, coordinates, unit cells, general chemical punctuation, or
+CIF bytes. The splitter consumes the resulting release group/status/size
+columns; it does not perform this canonicalization or recompute the relation.
 
 The **RAC5 fingerprint** is exact equality of all 264 finite descriptor columns
 listed, in order, at `criteria.rac5.ordered_descriptors` in
@@ -669,13 +675,13 @@ edge; this is exact fingerprint equality, not a topology-similarity tolerance.
 | `mofid_v2` | Main/direct | Exact equality of the complete canonicalized release-authorized MOFid v2 value; missing values never match |
 | `mofid_v1` | Main/direct | Exact equality of the complete canonicalized release-authorized MOFid v1 value; missing values never match |
 | `rac5_zeo` | Reference | Exact combined RAC5 and selected Zeo++ fingerprint |
-| `rac5_topology` | Optional reference | `RT-` group: exact 264-value RAC5 fingerprint plus a complete successful current CrystalNets scientific fingerprint; missing/failed input creates no evidence |
-| `mofid_v2_topology` | Optional reference | `M2T-` group: exact complete canonicalized MOFid v2 plus that CrystalNets fingerprint; missing/failed input creates no evidence; provisional whenever the release MOFid-v2 input is provisional |
-| `structure_matcher_strict` | Optional reference | `SM-` connected-component view of exhaustive composition-compatible pairs whose forward and reverse pymatgen 2024.2.8 `ElementComparator` fits both pass with `ltol=stol=0.001`, `angle_tol=0.01`, `primitive_cell=true`, `scale=false`, `attempt_supercell=true`, `allow_subset=false`, `supercell_size=num_sites`, and no ignored species; not an all-pairs claim |
+| `rac5_crystalnets` | Optional non-decisive reference | Reads `rac_crystalnets_status/group/size`; an `RT-` group requires exact equality of the full 264-value finite RAC5 fingerprint plus a complete successful current CrystalNets scientific fingerprint; missing, nonfinite, partial, timed-out, or failed input creates no evidence |
+| `mofid_v2_crystalnets` | Optional non-decisive reference | Reads `mofid2_crystalnets_status/group/size`; an `M2T-` group requires exact equality of complete canonicalized MOFid v2 with status exactly `SUCCESS`, `SUCCESS_TOPOLOGY_UNKNOWN`, `SUCCESS_TOPOLOGY_ERROR`, or `SUCCESS_TOPOLOGY_TIMEOUT`, plus that complete CrystalNets fingerprint. The latter two are successful calculated identifiers whose embedded topology qualifier is ERROR or TIMEOUT, not MOFid execution failures. Every other MOFid-v2 status and every incomplete CrystalNets input adds no edge; this reference is provisional whenever the release-authorized MOFid-v2 input is provisional. If the release-authorized MOFid-v2 values change, rebuild the M2T groups before use |
+| `structure_matcher_strict` | Optional reference | `SM-` is a convenience connected component of exhaustive composition-compatible pairs whose forward and reverse pinned strict pymatgen 2024.2.8 `ElementComparator` fits both pass with `fit(..., symmetric=True)`, `ltol=stol=0.001`, `angle_tol=0.01`, `primitive_cell=true`, `scale=false`, `attempt_supercell=true`, `allow_subset=false`, `supercell_size=num_sites`, and no ignored species. Direct symmetric edges are authoritative; a component is not duplicate proof. Parser failures, timeouts, and execution errors are `NOT_AVAILABLE` rather than unmatched; this method enters neither `priority_main` nor `main_union` |
 | `zeo` | Reference | Exact selected Zeo++ fingerprint |
 | `source_id` | Reference | Exact canonicalized `(source_database, source_id)` sibling key; no cross-database match |
 | `common_name` | Reference | Exact NFKC/whitespace/case-folded common-name match; sparse and non-unique |
-| `identity_union` | Reference | Provisional source-ID/MOFid transitive groups: preserve audited v26.0.1 components, then union exact canonicalized source-ID, MOFid-v2, or MOFid-v1 edges across base and additions; no RAC5, Zeo++, topology, CIF hash, common name, or StructureMatcher input |
+| `identity_union` | Reference | Provisional source-ID/MOFid transitive groups: freshly recompute v26.0.1 over its 36,628 current rows and v26.0.2 independently over its 42,574 current rows from exact canonicalized database-namespaced source-ID, eligible complete MOFid-v2, or eligible complete MOFid-v1 edges, then take connected-component closure; no prior component import and no RAC5, Zeo++, topology, CIF hash, common name, or StructureMatcher input |
 | `none` | Control | Treat every structure as an independent singleton |
 
 RAC/Zeo equality is fingerprint equivalence, not proof of a common synthetic
@@ -685,12 +691,14 @@ and therefore each value counted by `identity_size`, is one transitive
 connected component of structures joined by those identifier-equality edges;
 it is not a count of edges or identifiers. All three edge types have equal
 union status—there is no priority or conflict rule—and one type can bridge
-components formed by another. A null or rejected
-placeholder adds no edge, so missing identifiers never match. The criterion
-is not proof that members are chemically or geometrically identical, and it
-is excluded from both `priority_main` and `main_union`. The current v26
-relation remains provisional until the pinned MOFid bundle is promoted and the
-parent table is rebuilt.
+components formed by another. Each named release is rebuilt independently
+from its current rows; no earlier component or MOFid edge is imported. A null,
+rejected placeholder, or non-success MOFid status adds no edge, so missing or
+unresolved identifiers never match. The criterion is not proof that members
+are chemically or geometrically identical, and it is excluded from both
+`priority_main` and `main_union`. A relation built from stage-only MOFid
+evidence remains a staged candidate and must be rebuilt if the authorized
+MOFid evidence changes.
 
 The prefixes are criterion labels, not scientific results: `RT-` means an
 exact RAC5-plus-current-CrystalNets group, `M2T-` means an exact
@@ -705,9 +713,13 @@ colliding prefix one character at a time until unique in the v26.0.2 superset.
 The optional criteria are accepted only when the release declares and
 validates their columns. They are sensitivity relations and do not alter
 `priority_main` or `main_union`. A missing, partial, timed-out, or failed
-CrystalNets result is not group evidence. `mofid_v2_topology` is also
+CrystalNets result is not group evidence. `mofid_v2_crystalnets` is also
 provisional whenever its MOFid v2 input bundle is provisional; the release
-method file is authoritative.
+method file is authoritative. If release-authorized MOFid-v2 values change,
+rebuild the M2T groups before use. These optional non-decisive reference alternatives do
+not enter `priority_main`, whose explanatory precedence remains exact RAC5,
+then complete MOFid v2, then complete MOFid v1, and they add no `main_union`
+edge.
 
 `structure_matcher_strict` is derived from an audited direct-pair edge ledger
 using Python 3.9, pymatgen 2024.2.8, and NumPy 1.26.4. Candidate blocking uses
@@ -1203,9 +1215,11 @@ split = splitter.train_valid_test_split((0.8, 0.1, 0.1))
 `classified.split(...)` is an alias for
 `classified.train_valid_test_split(...)`.
 
-Fractions must be finite, non-negative, contain exactly three values, sum to
-one within numerical tolerance, and contain at least one positive value. Zero
-validation or test fractions are allowed deliberately:
+Fractions must be an ordered `list`/`tuple` of exactly three finite,
+non-boolean numeric values, be non-negative, sum to one within numerical
+tolerance, and contain at least one positive value. Numeric text such as
+`"0.8"` is rejected instead of being coerced. Zero validation or test
+fractions are allowed deliberately:
 
 ```python
 train_only = classified.train_valid_test_split(
@@ -1233,7 +1247,10 @@ split = classified.train_valid_test_split(
 
 Every non-`label` key must exist in the metadata table. More or smaller strata
 can make exact proportions harder to achieve. Leakage protection always takes
-priority over ratio or stratum balance.
+priority over ratio or stratum balance. Like the filters, `stratify_by` accepts
+one exact string or an ordered `list`/`tuple` of exact strings; unordered and
+one-shot containers are rejected so receipt hashes cannot depend on iteration
+order.
 
 ## 13. Understanding `SplitResult`
 
@@ -1730,9 +1747,12 @@ That frozen-extension feature is not yet implemented.
 
 ### 17.5 Provisional parent inputs
 
-`provisional_input` becomes false only when both the dataset and parent-method
-artifacts declare the exact release status `FINAL`. Values such as
-`FINAL_CANDIDATE`, missing status, or any other token remain provisional.
+`provisional_input` is derived only from a package-authenticated closed release
+contract. Public or caller-supplied `release_status` text is descriptive and
+cannot authenticate publication or clear the provisional flag. The current
+closed RT/M2T contract is staged, non-decisive, and explicitly
+`publication_authorized=false`; an arbitrary `FINAL` or `FINAL_CANDIDATE`
+token is rejected rather than treated as authority.
 
 Current v26 parent tables remain provisional pending the final approved MOFid
 evidence and parent rebuild. The package is usable now for exploratory work,
@@ -1820,24 +1840,22 @@ except (FileNotFoundError, ReleaseValidationError) as error:
 
 ## 20. Current validation status and limitations
 
-The package and this handbook have been validated with:
+The package and this handbook are validated at release-candidate freeze with
+the full focused package/notebook/target/screen/parent suite under both normal
+Python and `python -S` without site-packages, dependency-complete discovery,
+and opt-in real-release integration tests. Exact interpreter versions, test
+counts, hashes, timings, and generated-output comparisons belong in the
+immutable validation receipt produced for that freeze; this handbook avoids
+embedding counts that become stale whenever a fail-closed regression is added.
+The validation also includes:
 
-- 134 focused package/notebook/target/screen/parent tests under normal
-  Python;
-- the same 134 focused tests under `python -S` without site-packages;
-- a 151-test dependency-complete Python 3.11 discovery run with 148 passing and
-  the three opt-in real-release tests skipped, followed by a separate real
-  v26.0.1/v26.0.2 run where all three passed;
-- exact loading of 36,628 v26.0.1 and 42,574 v26.0.2 structures;
-- strict byte-level rehashing of all 42,574 v26.0.2 CIFs;
-- a real 42,574-row v26.0.2 target join with all 308 current RAC5, Zeo++,
-  zero-probe, and topology feature columns, 17,245 target-complete structures,
-  and 137,960 historical Rosenbluth observations;
-- execution of all 24 code cells (47 cells total) in the target-aware companion
-  notebook against v26.0.2 and the real historical target configuration;
-- a real unattended five-checker CR COD/SI screen that retained 4,287 finite
-  target-complete candidates, emitted a deterministic top 1,000, and split
-  them 800/100/100 with zero crossed leakage blocks;
+- exact loading of 36,628 v26.0.1 and 42,574 v26.0.2 structures from the
+  terminal staged pair;
+- strict byte-level CIF-manifest verification;
+- the full target/feature join, all notebook code cells, and deterministic
+  target-aware split and screening examples against that same staged pair;
+- byte-for-byte comparisons of scientific CSV outputs plus semantic
+  comparisons of regenerated JSON receipts, with zero crossed leakage blocks;
 - empty-environment wheel installation and `pip check`;
 - fail-closed synthetic tests for ambiguous aliases, duplicate conflicts,
   canonical target renaming, target nulls, hidden leakage bridges, unrelated
@@ -1862,7 +1880,8 @@ the five-checker counts are:
 | AMBIGUOUS | 7,367 |
 | UNCHECKED | 26,614 |
 
-The current parent audit records 4,128 lower-versus-stronger group conflicts:
+That same dated 2026-08-03 parent audit recorded 4,128
+lower-versus-stronger group conflicts:
 
 - 1,991 MOFid-v2 conflicts;
 - 2,137 MOFid-v1 conflicts;
@@ -1872,13 +1891,23 @@ The current parent audit records 4,128 lower-versus-stronger group conflicts:
 They remain leakage-safe under the default full union and are now explicit in
 the receipt.
 
-Remaining publication gates are:
+At the current release-candidate freeze, strict documentation rendering and
+the Python 3.9/3.10/3.11 package matrices are completed checks rather than
+open gates. Remaining authorization or publication gates are:
 
-- final approved MOFid evidence and rebuilt parent tables;
-- rerunning the release integrations after that rebuild;
-- audited official/frozen-base assignment-manifest support;
-- Sphinx documentation rendering; and
-- a Python 3.10 package test matrix.
+- independent red-team verification of the frozen source, artifact, and
+  generated-output hashes before any downstream terminal replay;
+- a fresh terminal target/split/screen run after that independent GO;
+- an explicitly audited assignment manifest before any split can be called
+  official (the package intentionally emits exploratory splits otherwise);
+- separate release-level publication authorization and publication-eligible
+  MOFid evidence: the currently validated MOFid projection remains
+  `STAGE_ONLY`, so it is a non-published candidate. The RT/M2T CrystalNets
+  relations remain staged optional non-decisive references and are not
+  consumed by `priority_main` or `main_union`; and
+- asset-level redistribution clearance for any SI archives. The distributable
+  wheel and source archive exclude those archives while that clearance is not
+  established; the internal checkout remains unchanged.
 
 ## 21. Developer checks
 

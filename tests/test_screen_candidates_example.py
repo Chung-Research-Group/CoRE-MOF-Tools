@@ -1,11 +1,16 @@
 import contextlib
+import copy
 import csv
+from dataclasses import replace
 from decimal import Decimal
 import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
+import pickle
+import subprocess
 import sys
 import tempfile
 from types import MappingProxyType
@@ -108,8 +113,11 @@ def _base_dataset(root, screening_scores=None):
     dataset = CoREMOFDataset(
         release_root=root,
         records=records,
-        dataset_info={"dataset_version": "v-test", "release_status": "FINAL"},
-        parent_group_methods={"release_status": "FINAL"},
+        dataset_info={
+            "dataset_version": "v-test",
+            "release_status": "PROVISIONAL_LATEST_AUDITED_SNAPSHOT",
+        },
+        parent_group_methods={},
         parent_by_id=parents,
         input_hashes={"metadata/metadata.csv": "a" * 64},
         cif_files_verified=False,
@@ -187,6 +195,43 @@ class ScreeningExampleTests(unittest.TestCase):
         options.update(overrides)
         return SCREEN.screen_dataset(self.dataset, **options)
 
+    def _mutable_dataset_clone(self):
+        """Return a generic protocol object with the same scientific rows.
+
+        The target-merge factory result is intentionally immutable.  Type-trap
+        tests therefore use a non-authoritative public dataset construction so
+        they exercise screening's generic-protocol validation without trying to
+        corrupt an authenticated generation in place.
+        """
+
+        clone = CoREMOFDataset(
+            self.dataset.release_root,
+            self.dataset.records,
+            self.dataset.dataset_info,
+            self.dataset.parent_group_methods,
+            self.dataset.parent_by_id,
+            self.dataset.input_hashes,
+            self.dataset.cif_files_verified,
+        )
+        clone.target_columns = tuple(self.dataset.target_columns)
+        clone.feature_columns = tuple(self.dataset.feature_columns)
+        clone.target_input_receipt = self.dataset.target_input_receipt
+        return clone
+
+    def _screen_clone(self, clone, **overrides):
+        options = {
+            "rank_by": "screening_score",
+            "order": "descending",
+            "checkers": "5checker",
+            "labels": ("CR",),
+            "sources": ("COD",),
+            "variants": ("ASR",),
+            "metals": ("Cu",),
+            "required_targets": ("uptake",),
+        }
+        options.update(overrides)
+        return SCREEN.screen_dataset(clone, **options)
+
     def test_parser_help_defines_parent_leakage_and_auto_terms(self):
         output = io.StringIO()
         with contextlib.redirect_stdout(output), self.assertRaises(SystemExit) as raised:
@@ -198,12 +243,22 @@ class ScreeningExampleTests(unittest.TestCase):
         self.assertIn("priority_main is the project-defined", help_text)
         self.assertIn("RAC5 anchors, then MOFid v2, then MOFid v1", help_text)
         self.assertIn("never merges multiple stronger components", help_text)
+        self.assertIn("priority means parent-evidence precedence", help_text)
+        self.assertIn("does not rank, schedule, or recalculate", help_text)
         self.assertIn("identity_union selects the separate project-defined", help_text)
         self.assertIn("source-ID/MOFid transitive groups", help_text)
         self.assertIn("identity_size count one transitive connected component", help_text)
         self.assertIn("Unicode NFKC and casefold", help_text)
-        self.assertIn("rac5_topology (RT-)", help_text)
-        self.assertIn("mofid_v2_topology (M2T-)", help_text)
+        self.assertIn("each named release is freshly recomputed", help_text)
+        self.assertIn("without importing an earlier component", help_text)
+        self.assertIn("unsuccessful MOFid statuses add no edge", help_text)
+        self.assertIn("SUCCESS_TOPOLOGY_UNKNOWN", help_text)
+        self.assertIn("rac5_crystalnets (RT-)", help_text)
+        self.assertIn("mofid_v2_crystalnets (M2T-)", help_text)
+        self.assertIn("release-authorized MOFid-v2 values change", help_text)
+        self.assertIn("rebuilt before use", help_text)
+        self.assertNotIn("rac5_topology", help_text)
+        self.assertNotIn("mofid_v2_topology", help_text)
         self.assertIn("structure_matcher_strict (SM-)", help_text)
         self.assertIn("main_union is the project-defined", help_text)
         self.assertIn("parent_only is the project-defined", help_text)
@@ -280,7 +335,7 @@ class ScreeningExampleTests(unittest.TestCase):
             "coremof_source_sha256"
         ]
         self.assertEqual(
-            set(source_hashes), {"dataset.py", "labels.py", "targets.py"}
+            set(source_hashes), {"_authority.py", "dataset.py", "labels.py", "targets.py"}
         )
         package_root = Path(__file__).resolve().parents[1] / "CoREMOF"
         for filename, digest in source_hashes.items():
@@ -311,7 +366,7 @@ class ScreeningExampleTests(unittest.TestCase):
         )
         output = self.root / "forged-screening"
         with self.assertRaisesRegex(
-            SCREEN.ScreeningError, "rows and selected_ids differ"
+            ValueError, "not produced by screen_dataset"
         ):
             SCREEN.write_screening(forged, output)
         self.assertFalse(output.exists())
@@ -326,7 +381,7 @@ class ScreeningExampleTests(unittest.TestCase):
             filters=SCREEN._json_safe(result.filters),
         )
         with self.assertRaisesRegex(
-            SCREEN.ScreeningError, "differs from classified dataset field"
+            ValueError, "not produced by screen_dataset"
         ):
             SCREEN.write_screening(forged, output)
         self.assertFalse(output.exists())
@@ -347,7 +402,7 @@ class ScreeningExampleTests(unittest.TestCase):
             (
                 "checker-view kind",
                 lambda receipt: receipt.__setitem__(
-                    "checker_view_kind", "USER_DEFINED"
+                    "checker_view_kind", "OFFICIAL_RELEASE_VIEW"
                 ),
             ),
             (
@@ -372,9 +427,29 @@ class ScreeningExampleTests(unittest.TestCase):
                     classified_dataset=result.classified_dataset,
                     filters=SCREEN._json_safe(result.filters),
                 )
-                with self.assertRaisesRegex(SCREEN.ScreeningError, expected_error):
+                with self.assertRaisesRegex(ValueError, "not produced by screen_dataset"):
                     SCREEN.write_screening(forged, output)
                 self.assertFalse(output.exists())
+
+        for operation in (copy.copy, copy.deepcopy, pickle.dumps):
+            with self.subTest(operation=operation.__name__):
+                with self.assertRaisesRegex(TypeError, "cannot be"):
+                    operation(result)
+
+        replaced = replace(result, selected_ids=tuple(reversed(result.selected_ids)))
+        with self.assertRaisesRegex(
+            ValueError, "does not transfer|not produced by screen_dataset"
+        ):
+            SCREEN.write_screening(replaced, output)
+        self.assertFalse(output.exists())
+
+        mutated = self._screen()
+        object.__setattr__(
+            mutated, "selected_ids", tuple(reversed(mutated.selected_ids))
+        )
+        with self.assertRaisesRegex(ValueError, "changed after construction"):
+            SCREEN.write_screening(mutated, output)
+        self.assertFalse(output.exists())
 
     def test_python_api_rejects_non_integer_and_non_positive_limits(self):
         for invalid in (True, False, 1.2, "2", 0, -1):
@@ -383,6 +458,227 @@ class ScreeningExampleTests(unittest.TestCase):
                     SCREEN.ScreeningError, "positive integer"
                 ):
                     self._screen(limit=invalid)
+
+    def test_screen_filter_elements_must_be_exact_strings(self):
+        for name in ("labels", "sources", "variants", "metals", "required_targets"):
+            for value in ((True,), (1,), (1.5,), ([],), ({},), (" x",), ("x ",)):
+                with self.subTest(name=name, value=value):
+                    with self.assertRaisesRegex(
+                        SCREEN.ScreeningError, "strings|exact non-empty"
+                    ):
+                        self._screen(**{name: value})
+            for value in (
+                {"x", "y"},
+                frozenset(("x", "y")),
+                {"x": True},
+                (item for item in ("x", "y")),
+                b"xy",
+            ):
+                with self.subTest(name=name, container=type(value).__name__):
+                    with self.assertRaisesRegex(
+                        SCREEN.ScreeningError, "ordered list/tuple"
+                    ):
+                        self._screen(**{name: value})
+
+    def test_ordered_screen_receipt_is_independent_of_python_hash_seed(self):
+        seed_root = self.root / "hash_seed_screen"
+        script = r'''
+import hashlib
+import json
+from pathlib import Path
+from tests.test_screen_candidates_example import SCREEN, _base_dataset
+root = Path(%r)
+root.mkdir(parents=True, exist_ok=True)
+dataset = _base_dataset(root)
+result = SCREEN.screen_dataset(
+    dataset,
+    rank_by="screening_score",
+    order="descending",
+    checkers="5checker",
+    labels=["CR"],
+    sources=["COD"],
+    variants=["ASR"],
+    metals=["Cu"],
+    required_targets=["uptake"],
+)
+payload = json.dumps(
+    SCREEN._json_safe(result.receipt),
+    sort_keys=True,
+    separators=(",", ":"),
+)
+print(hashlib.sha256(payload.encode("utf-8")).hexdigest())
+''' % str(seed_root)
+        outputs = []
+        for seed in ("1", "2", "3", "918273"):
+            environment = dict(os.environ)
+            environment["PYTHONHASHSEED"] = seed
+            outputs.append(
+                subprocess.check_output(
+                    [sys.executable, "-c", script],
+                    cwd=str(Path(__file__).resolve().parents[1]),
+                    env=environment,
+                    text=True,
+                )
+            )
+        self.assertEqual(len(set(outputs)), 1)
+
+    def test_screen_receipt_claim_inputs_require_exact_bool_and_mapping_types(self):
+        attribute_cases = (
+            ("cif_files_verified", 1, "cif_files_verified must be a boolean"),
+            ("cif_files_verified", "false", "cif_files_verified must be a boolean"),
+            ("input_hashes", False, "input_hashes must be a mapping"),
+            ("input_hashes", [], "input_hashes must be a mapping"),
+            ("dataset_info", False, "dataset_info must be a mapping"),
+            ("parent_group_methods", [], "parent_group_methods must be a mapping"),
+        )
+        for attribute, value, message in attribute_cases:
+            with self.subTest(attribute=attribute, value=value):
+                clone = self._mutable_dataset_clone()
+                setattr(clone, attribute, value)
+                with self.assertRaisesRegex(SCREEN.ScreeningError, message):
+                    self._screen_clone(clone)
+
+        for value in (1, "false", None):
+            with self.subTest(checker_view_official=value):
+                clone = self._mutable_dataset_clone()
+                classified = clone.classify("5checker")
+                classified.checker_view_official = value
+                clone.classify = lambda checkers: classified
+                with self.assertRaisesRegex(
+                    SCREEN.ScreeningError,
+                    "checker_view_official must be a boolean",
+                ):
+                    self._screen_clone(clone)
+
+        for attribute in ("target_columns", "feature_columns"):
+            for value in (False, 0, "", {}, {"column"}, [True], [" column"]):
+                with self.subTest(attribute=attribute, value=value):
+                    clone = self._mutable_dataset_clone()
+                    setattr(clone, attribute, value)
+                    with self.assertRaisesRegex(
+                        SCREEN.ScreeningError, attribute
+                    ):
+                        self._screen_clone(clone)
+
+        for value in (True, 1, 1.5, [], {}, "", " 5checker"):
+            with self.subTest(checker_view=value):
+                clone = self._mutable_dataset_clone()
+                classified = clone.classify("5checker")
+                classified.checker_view = value
+                clone.classify = lambda checkers: classified
+                with self.assertRaisesRegex(
+                    SCREEN.ScreeningError,
+                    "checker_view must be an exact nonblank string",
+                ):
+                    self._screen_clone(clone)
+
+        class DatasetProxy:
+            def __init__(self, wrapped, dataset_version):
+                self._wrapped = wrapped
+                self.dataset_version = dataset_version
+
+            def __getattr__(self, name):
+                return getattr(self._wrapped, name)
+
+        for value in (True, 1, 1.5, [], {}, "", " v-test"):
+            with self.subTest(dataset_version=value):
+                with self.assertRaisesRegex(
+                    SCREEN.ScreeningError,
+                    "dataset_version must be an exact nonblank string",
+                ):
+                    SCREEN.screen_dataset(
+                        DatasetProxy(self.dataset, value),
+                        rank_by="screening_score",
+                    )
+
+        for attribute, value, message in (
+            (
+                "dataset_info",
+                {"release_status": False},
+                "retired or reserved declaration key",
+            ),
+            (
+                "dataset_info",
+                {"release_status": " FINAL"},
+                "retired or reserved declaration key",
+            ),
+            (
+                "parent_group_methods",
+                {"release_status": 1},
+                "retired or reserved declaration key",
+            ),
+            (
+                "parent_group_methods",
+                {"release_status": ""},
+                "retired or reserved declaration key",
+            ),
+            (
+                "dataset_info",
+                {"release_status": "FINAL"},
+                "retired or reserved declaration key",
+            ),
+            (
+                "parent_group_methods",
+                {"release_status": "FINAL"},
+                "retired or reserved declaration key",
+            ),
+        ):
+            with self.subTest(attribute=attribute, value=value):
+                clone = self._mutable_dataset_clone()
+                setattr(clone, attribute, value)
+                with self.assertRaisesRegex(SCREEN.ScreeningError, message):
+                    self._screen_clone(clone)
+
+    def test_screening_result_rejects_nonstring_selected_ids_at_origin(self):
+        for value in (True, 1, 1.5, [], {}, b"id", "", " id", "id "):
+            with self.subTest(value=value):
+                with self.assertRaisesRegex(
+                    SCREEN.ScreeningError, "selected structure_id"
+                ):
+                    SCREEN.ScreeningResult(
+                        rows=(),
+                        selected_ids=(value,),
+                        receipt={},
+                        classified_dataset=object(),
+                        filters={},
+                    )
+
+    def test_screen_validator_rechecks_uncoerced_bool_and_mapping_claims(self):
+        output = self.root / "invalid_external_claim"
+        cases = (
+            ("cif_files_verified", "false", "cif_files_verified must be a boolean"),
+            ("input_hashes", False, "input_hashes must be a mapping"),
+            ("dataset_info", [], "dataset_info must be a mapping"),
+            ("parent_group_methods", False, "parent_group_methods must be a mapping"),
+        )
+        for attribute, value, message in cases:
+            with self.subTest(attribute=attribute):
+                clone = self._mutable_dataset_clone()
+                result = self._screen_clone(clone)
+                setattr(clone, attribute, value)
+                with self.assertRaisesRegex(
+                    ValueError, "generic screening source changed"
+                ):
+                    SCREEN.write_screening(result, output)
+                self.assertFalse(output.exists())
+
+        clone = self._mutable_dataset_clone()
+        result = self._screen_clone(clone)
+        classified = result.classified_dataset
+        classified.checker_view_official = "false"
+        with self.assertRaisesRegex(ValueError, "generic screening source changed"):
+            SCREEN.write_screening(result, output)
+        self.assertFalse(output.exists())
+
+    def test_screen_input_hash_keys_and_values_are_not_string_coerced(self):
+        for hashes in ({1: "a"}, {"metadata.csv": True}, {"": "a"}, {"a": " "}):
+            with self.subTest(hashes=hashes):
+                clone = self._mutable_dataset_clone()
+                clone.input_hashes = hashes
+                with self.assertRaisesRegex(
+                    SCREEN.ScreeningError, "exact non-empty strings"
+                ):
+                    self._screen_clone(clone)
 
     def test_plain_release_receipt_hashes_only_classification_sources(self):
         result = SCREEN.screen_dataset(
@@ -395,13 +691,51 @@ class ScreeningExampleTests(unittest.TestCase):
         )
         self.assertEqual(
             set(result.receipt["implementation"]["coremof_source_sha256"]),
-            {"dataset.py", "labels.py"},
+            {"_authority.py", "dataset.py", "labels.py"},
         )
         self.assertIsNone(result.receipt["target_merge_receipt"])
         self.assertEqual(
             result.receipt["implementation"]["source_capture"],
             "MODULE_IMPORT_BOUND",
         )
+
+    def test_missing_official_marker_never_infers_an_official_view(self):
+        clone = self._mutable_dataset_clone()
+        classified = clone.classify("5checker")
+        del classified.checker_view_official
+        clone.classify = lambda checkers: classified
+        result = self._screen_clone(clone)
+        self.assertEqual(result.receipt["checker_view_kind"], "USER_DEFINED")
+
+    def test_custom_checker_view_cannot_claim_official_status(self):
+        clone = self._mutable_dataset_clone()
+        classified = clone.classify("5checker")
+        classified.checker_view = "custom:evil"
+        classified.checker_view_official = True
+        clone.classify = lambda checkers: classified
+        with self.assertRaisesRegex(
+            SCREEN.ScreeningError,
+            "checker_view_official=True requires a canonical official checker preset",
+        ):
+            self._screen_clone(clone)
+
+        output = self.root / "forged-custom-view"
+        result = self._screen()
+        result.classified_dataset.checker_view = "custom:evil"
+        result.classified_dataset.checker_view_official = True
+        with self.assertRaisesRegex(ValueError, "generic screening source changed"):
+            SCREEN.write_screening(result, output)
+        self.assertFalse(output.exists())
+
+        clone = self._mutable_dataset_clone()
+        classified = clone.classify("5checker")
+        classified.checker_view_official = True
+        clone.classify = lambda checkers: classified
+        with self.assertRaisesRegex(
+            SCREEN.ScreeningError,
+            "internally authenticated recomputed release view",
+        ):
+            self._screen_clone(clone)
 
     def test_import_bound_source_drift_refuses_screening_and_publication(self):
         original_hash = SCREEN._sha256_file
@@ -430,7 +764,7 @@ class ScreeningExampleTests(unittest.TestCase):
             classified_dataset=result.classified_dataset,
             filters=SCREEN._json_safe(result.filters),
         )
-        with self.assertRaisesRegex(SCREEN.ScreeningError, "source closure"):
+        with self.assertRaisesRegex(ValueError, "not produced by screen_dataset"):
             SCREEN.write_screening(
                 forged,
                 self.root / "forged-source-closure",
@@ -722,6 +1056,10 @@ class ScreeningExampleTests(unittest.TestCase):
             receipt["split"]["leakage_guard_definition"]["identifier"],
             "parent_only",
         )
+        self.assertIn(
+            "selected explanatory parent relation",
+            receipt["split"]["contract_definitions"]["parent_only"],
+        )
         self.assertEqual(receipt["outputs"]["ranked_csv"]["row_count"], 2)
         self.assertEqual(
             receipt["csv_output"]["required_target_columns"],
@@ -733,6 +1071,7 @@ class ScreeningExampleTests(unittest.TestCase):
         self.assertEqual(
             set(split_source_hashes),
             {
+                "_authority.py",
                 "dataset.py",
                 "labels.py",
                 "parents.py",
@@ -755,6 +1094,20 @@ class ScreeningExampleTests(unittest.TestCase):
                 stem="cu_candidates",
                 split_result=split,
             )
+        original = {name: path.read_bytes() for name, path in paths.items()}
+        for invalid in ("false", 1, None):
+            with self.subTest(overwrite=invalid):
+                with self.assertRaisesRegex(TypeError, "overwrite must be a boolean"):
+                    SCREEN.write_screening(
+                        result,
+                        output_directory,
+                        stem="cu_candidates",
+                        split_result=split,
+                        overwrite=invalid,
+                    )
+                self.assertEqual(
+                    original, {name: path.read_bytes() for name, path in paths.items()}
+                )
 
     def test_unrelated_split_is_rejected_before_publication(self):
         full_result = self._screen()
@@ -964,6 +1317,14 @@ class ScreeningExampleTests(unittest.TestCase):
         self.assertEqual(split_summary["leakage_guard"], "main_union")
         self.assertEqual(
             split_summary["leakage_guard_definition"]["identifier"], "main_union"
+        )
+        self.assertIn(
+            "provisional source-ID/MOFid transitive groups",
+            split_summary["contract_definitions"]["identity_union"],
+        )
+        self.assertIn(
+            "not a parent or explanatory method",
+            split_summary["contract_definitions"]["main_union"],
         )
 
     def test_cli_selects_target_config_and_returns_error_when_nothing_rankable(self):

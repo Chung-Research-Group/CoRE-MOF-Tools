@@ -11,6 +11,25 @@ The implementation uses only the Python standard library and operates on a
 small dataset protocol (``metadata_rows``, ``parent_by_id`` and
 ``cif_hashes``).  It therefore remains importable without any of the optional
 scientific dependencies used elsewhere in :mod:`CoREMOF`.
+
+Project-defined terms used by this module are deliberately defined here before
+their machine keys.  ``identity_union`` is the provisional source-ID/MOFid
+transitive group: it forms connected components from exact database-namespaced
+``source_database``/``source_id`` equality plus eligible complete MOFid-v2 or
+MOFid-v1 equality, treats missing values as no edge, and does not use RAC5,
+Zeo++, CrystalNets, CIF hashes, or StructureMatcher.  It is not proof of
+identity and is excluded from ``main_union``.  ``main_union`` is the split-
+leakage guard, not a parent or explanatory method and not proof of identity or
+parentage: before filtering it forms transitive connected components over the
+complete release from exact full lowercase 64-hex CIF SHA-256, database-
+namespaced source siblings, and available RAC5, MOFid-v2, and MOFid-v1 edges.
+Missing or malformed CIF hashes fail closed; missing optional evidence adds no
+edge.  The strict StructureMatcher reference is the pinned strict pymatgen
+protocol: symmetric forward-and-reverse direct edges are authoritative, while
+its connected components are convenience views rather than duplicate proof.
+Parser, timeout, OOM, matcher, asymmetric, or execution errors are
+NOT_AVAILABLE rather than unmatched, and this reference enters neither
+``priority_main`` nor ``main_union``.
 """
 
 from __future__ import annotations
@@ -22,14 +41,17 @@ from typing import Dict, Iterable, List, Mapping, Optional, Set, Tuple
 
 
 DIRECT_PARENT_METHODS = ("rac5", "mofid_v2", "mofid_v1")
-OPTIONAL_TOPOLOGY_PARENT_METHODS = ("rac5_topology", "mofid_v2_topology")
-OPTIONAL_REFERENCE_PARENT_METHODS = OPTIONAL_TOPOLOGY_PARENT_METHODS + (
+OPTIONAL_CRYSTALNETS_PARENT_METHODS = (
+    "rac5_crystalnets",
+    "mofid_v2_crystalnets",
+)
+OPTIONAL_REFERENCE_PARENT_METHODS = OPTIONAL_CRYSTALNETS_PARENT_METHODS + (
     "structure_matcher_strict",
 )
 REFERENCE_PARENT_METHODS = (
     "rac5_zeo",
-    "rac5_topology",
-    "mofid_v2_topology",
+    "rac5_crystalnets",
+    "mofid_v2_crystalnets",
     "structure_matcher_strict",
     "zeo",
     "source_id",
@@ -49,17 +71,17 @@ _METHOD_KEYS = {
     "mofid_v2": ("mofid_v2", "mofid2", "mofid_v2_group", "mofid2_group"),
     "mofid_v1": ("mofid_v1", "mofid1", "mofid_v1_group", "mofid1_group"),
     "rac5_zeo": ("rac5_zeo", "rac_zeo", "rac5_zeo_group", "rac_zeo_group"),
-    "rac5_topology": (
-        "rac5_topology",
-        "rac_topology",
-        "rac5_topology_group",
-        "rac_topology_group",
+    "rac5_crystalnets": (
+        "rac5_crystalnets",
+        "rac_crystalnets",
+        "rac5_crystalnets_group",
+        "rac_crystalnets_group",
     ),
-    "mofid_v2_topology": (
-        "mofid_v2_topology",
-        "mofid2_topology",
-        "mofid_v2_topology_group",
-        "mofid2_topology_group",
+    "mofid_v2_crystalnets": (
+        "mofid_v2_crystalnets",
+        "mofid2_crystalnets",
+        "mofid_v2_crystalnets_group",
+        "mofid2_crystalnets_group",
     ),
     "structure_matcher_strict": (
         "structure_matcher_strict",
@@ -85,8 +107,8 @@ _RELEASE_BASE = {
     "mofid_v2": "mofid2",
     "mofid_v1": "mofid1",
     "rac5_zeo": "rac_zeo",
-    "rac5_topology": "rac_topology",
-    "mofid_v2_topology": "mofid2_topology",
+    "rac5_crystalnets": "rac_crystalnets",
+    "mofid_v2_crystalnets": "mofid2_crystalnets",
     "structure_matcher_strict": "sm",
     "zeo": "zeo",
     "source_id": "source",
@@ -98,7 +120,7 @@ _RELEASE_BASE = {
 _MISSING_TEXT = {"", "NA", "N/A", "NONE", "NULL", "NOT_AVAILABLE", "UNAVAILABLE"}
 
 
-PARENT_METHOD_CONTRACT_VERSION = "coremof-parent-method/1.1"
+PARENT_METHOD_CONTRACT_VERSION = "coremof-parent-method/1.5"
 LEAKAGE_GUARD_CHOICES = ("auto", "main_union", "parent_only")
 
 _PARENT_METHOD_DISPLAY_NAMES = {
@@ -107,8 +129,8 @@ _PARENT_METHOD_DISPLAY_NAMES = {
     "mofid_v2": "exact MOFid-v2 groups",
     "mofid_v1": "exact MOFid-v1 groups",
     "rac5_zeo": "exact RAC5-plus-Zeo++ groups",
-    "rac5_topology": "exact RAC5-plus-CrystalNets groups",
-    "mofid_v2_topology": "exact MOFid-v2-plus-CrystalNets groups",
+    "rac5_crystalnets": "exact RAC5-plus-CrystalNets groups",
+    "mofid_v2_crystalnets": "exact MOFid-v2-plus-CrystalNets groups",
     "structure_matcher_strict": "strict StructureMatcher component view",
     "zeo": "exact selected-Zeo++ groups",
     "source_id": "exact namespaced source-ID groups",
@@ -142,11 +164,12 @@ CANONICALIZED_IDENTIFIER_TEXT_DEFINITION = _freeze_contract(
         "display_name": "canonicalized identifier text",
         "project_defined_term": True,
         "purpose": (
-            "Make already published identifier text comparable by exact equality; "
-            "this is text cleanup only, not crystal-structure normalization."
+            "Make release-authorized current identifier text comparable by exact "
+            "equality; this is text cleanup only, not crystal-structure "
+            "normalization."
         ),
         "current_release_text_steps_in_order": (
-            "convert_the_published_value_to_text",
+            "convert_the_release_authorized_current_value_to_text",
             "collapse_each_Unicode_whitespace_run_to_one_ASCII_space",
             "trim_leading_and_trailing_whitespace",
             "reject_a_whole_field_missing_or_execution_placeholder",
@@ -180,59 +203,18 @@ CANONICALIZED_IDENTIFIER_TEXT_DEFINITION = _freeze_contract(
             ),
             "database_namespace_prevents_cross_database_ID_matches": True,
             "scope": (
-                "current_release_source_keys_only; the preserved v26.0.1 seed "
-                "uses the separately recorded v11 refcode procedure below"
+                "freshly_recomputed_over_every_current_row_of_each_named_release; "
+                "no_prior_component_or_earlier-version_source_key_is_imported"
             ),
         },
         "mofid_key": {
             "input_fields": ("metadata.mofid_v2", "metadata.mofid_v1"),
             "algorithm": (
-                "canonicalize_the_complete_published_MOFid_string_then_compare_"
+                "canonicalize_the_complete_release_authorized_current_MOFid_string_"
+                "then_compare_"
                 "by_exact_equality"
             ),
             "fuzzy_or_partial_string_matching": False,
-        },
-        "inherited_v2601_identity_component_cleanup": {
-            "scope": (
-                "only_the_already_audited_v26.0.1_components_preserved_by_"
-                "identity_union"
-            ),
-            "record_or_source_ID_steps": (
-                "convert_the_v11_value_to_text",
-                "remove_everything_from_the_first_semicolon_record_suffix_onward",
-                "replace_backslashes_with_forward_slashes",
-                "remove_any_directory_path",
-                "remove_one_terminal_.cif_or_.cif.gz_case_insensitively",
-                "trim_leading_and_trailing_whitespace",
-                "delete_every_Unicode_whitespace_character",
-                "apply_Unicode_default_casefold_without_NFKC",
-                "reject_a_whole_field_literal_placeholder",
-                "remove_only_one_recognized_terminal_processing_bundle_"
-                "ASR_pacman_FSR_pacman_ION_pacman_ION_ASR_pacman_or_ION_FSR_pacman",
-                "reject_an_empty_or_whole_field_literal_placeholder_again",
-            ),
-            "mofid_steps": (
-                "convert_the_v11_value_to_text",
-                "remove_the_semicolon_record_ID_suffix",
-                "trim_leading_and_trailing_whitespace",
-                "rewrite_only_the_literal_MOFidv2._marker_as_MOFid-v2.",
-                "collapse_each_Unicode_whitespace_run_to_one_ASCII_space",
-                "trim_leading_and_trailing_whitespace_again",
-                "apply_Unicode_default_casefold_without_NFKC",
-                "remove_terminal_.no_ref_only_from_a_MOFid-v1_value",
-                "reject_literal_execution_and_leading_MOFid_NA_placeholders",
-            ),
-            "v11_refcode_edges_are_database_namespaced": False,
-            "v11_refcode_namespace_note": (
-                "the preserved audited seed compared its cleaned v11 refcode key "
-                "without adding source_database; v26.0.2 adds new source-ID edges "
-                "only with the database namespace retained"
-            ),
-            "additional_rejected_placeholders": (
-                "whole_field_asterisk",
-                "leading_MOFid-v1.NA_family",
-                "leading_MOFid-v2.NA_family",
-            ),
         },
         "missing_behavior": (
             "a_null_or_rejected_whole-field_placeholder_supplies_no_equality_edge; "
@@ -250,6 +232,13 @@ CANONICALIZED_IDENTIFIER_TEXT_DEFINITION = _freeze_contract(
             "group/status/size columns and does not recalculate these text keys; "
             "the resolver's compatibility source fallback has its own narrower "
             "algorithm in the main_union definition"
+        ),
+        "user_facing_definition": (
+            "Canonical identifier text is text processing only: convert a non-null "
+            "value to text, collapse each Unicode whitespace run to one ASCII space, "
+            "trim leading and trailing whitespace, reject empty or declared placeholder "
+            "values, apply Unicode NFKC, and then casefold. It does not change a CIF, "
+            "coordinates, atoms, occupancies, bonding, chemistry, topology, or unit cell."
         ),
     }
 )
@@ -274,8 +263,11 @@ PARENT_GROUP_TRIAD_DEFINITION = _freeze_contract(
             ),
         },
         "validation": (
-            "status_must_be_MATCHED_UNMATCHED_or_NOT_AVAILABLE; group_must_be_nonblank; "
-            "size_must_be_a_positive_integer_equal_to_the_number_of_release_rows_with_"
+            "status_must_be_MATCHED_UNMATCHED_or_NOT_AVAILABLE; group_must_be_a_nonblank_"
+            "string_and_MATCHED_or_UNMATCHED_group_must_not_be_a_missing_placeholder; "
+            "size_must_be_a_non-boolean_positive_integer_or_canonical_ASCII-decimal-"
+            "text_without_sign_whitespace_or_leading_zero_"
+            "and_equal_to_the_number_of_release_rows_with_"
             "that_group; MATCHED_requires_size_at_least_2; UNMATCHED_and_NOT_AVAILABLE_"
             "require_size_1"
         ),
@@ -561,13 +553,28 @@ PRIORITY_MAIN_DEFINITION = _freeze_contract(
         "role": "explanatory_parent_resolution",
         "purpose": (
             "Choose one conflict-aware explanatory parent component for each "
-            "structure from the three approved parent criteria."
+            "structure from the three approved parent criteria. The word priority "
+            "describes parent-evidence precedence; it does not rank, schedule, or "
+            "recalculate failed scientific features."
         ),
         "summary": (
             "Conflict-aware hierarchy over release-authorized RAC5, MOFid v2, "
             "and MOFid v1 parent groups; it is not a row-by-row first-nonmissing "
             "fallback and it is separate from the leakage guard."
         ),
+        "user_facing_definition": (
+            "priority_main is the conflict-aware explanatory hierarchy over the full "
+            "release: available exact RAC5 groups seed components, then exact MOFid-v2 "
+            "groups and exact MOFid-v1 groups are processed in that precedence. A lower "
+            "group touching zero stronger components creates a new component; one touching "
+            "exactly one attaches only its unresolved rows; one touching two or more records "
+            "PARENT_METHOD_CONFLICT, never merges the stronger components, and leaves "
+            "lower-only rows unresolved. Remaining missing evidence becomes a structure-"
+            "specific singleton or is explicitly excluded. "
+            "It does not use Zeo++, CrystalNets, source ID, common name, CIF hash, "
+            "identity_union, or StructureMatcher evidence."
+        ),
+        "not_feature_recalculation_queue": True,
         "input_fields": {
             "rac5": (
                 "parent_groups.rac_status",
@@ -648,18 +655,23 @@ PRIORITY_MAIN_DEFINITION = _freeze_contract(
             "MISSING_PARENT_EVIDENCE_exclusion"
         ),
         "output_group_ids": {
-            "rac5_anchor": "RAC5:<published_rac5_group>",
-            "mofid_v2_component": "MOFID_V2:<published_mofid_v2_group>",
-            "mofid_v1_component": "MOFID_V1:<published_mofid_v1_group>",
+            "rac5_anchor": "RAC5:<release_authorized_current_rac5_group>",
+            "mofid_v2_component": "MOFID_V2:<release_authorized_current_mofid_v2_group>",
+            "mofid_v1_component": "MOFID_V1:<release_authorized_current_mofid_v1_group>",
             "missing_singleton": "SINGLETON:<structure_id>",
             "attached_member_rule": "keep_the_stronger_component_group_id",
             "published_group_text_is_preserved": True,
+            "published_group_text_is_preserved_compatibility_note": (
+                "the_key_name_is_retained_for_API_compatibility; it_means_the_group_"
+                "text_stored_in_the_loaded_release_table_is_used_verbatim_even_when_"
+                "that_release_is_a_non-published_stage-only_candidate"
+            ),
         },
         "available_evidence_only": True,
         "excluded_inputs": (
             "rac5_zeo",
-            "rac5_topology",
-            "mofid_v2_topology",
+            "rac5_crystalnets",
+            "mofid_v2_crystalnets",
             "structure_matcher_strict",
             "zeo",
             "source_id",
@@ -691,6 +703,16 @@ MAIN_UNION_DEFINITION = _freeze_contract(
             "Full-release transitive union used to keep related structures in one "
             "split block; it is deliberately broader than priority_main and is not "
             "the explanatory parent assignment."
+        ),
+        "user_facing_definition": (
+            "main_union is the split-leakage guard, not a parent or explanatory method "
+            "and not proof of identity or parentage. Before any label, source, variant, "
+            "metal, ID, or target filter, it takes transitive connected components over "
+            "the complete release from exact full CIF SHA-256, database-namespaced source "
+            "siblings, and available release-authorized RAC5, MOFid-v2, and MOFid-v1 "
+            "edges. A complete lowercase 64-hex full CIF SHA-256 is mandatory for every "
+            "row, and missing or malformed input fails closed; missing optional evidence "
+            "adds no edge."
         ),
         "input_fields": {
             "cif_identity": "manifests/cif_manifest.csv.sha256",
@@ -728,15 +750,11 @@ MAIN_UNION_DEFINITION = _freeze_contract(
                 "fields_for_that_structure; a_loaded_release_never_uses_this_path"
             ),
             "source_database_steps": (
-                "convert_to_text",
-                "trim_whitespace",
+                "require_exact_nonblank_string",
                 "apply_upper",
-                "use_UNKNOWN_only_if_the_result_is_empty",
             ),
             "source_id_steps": (
-                "convert_to_text",
-                "trim_whitespace",
-                "return_missing_if_empty",
+                "require_exact_nonblank_string",
                 "apply_casefold",
                 "split_on_Unicode_whitespace_and_join_with_one_ASCII_space",
             ),
@@ -812,8 +830,8 @@ MAIN_UNION_DEFINITION = _freeze_contract(
         },
         "excluded_inputs": (
             "rac5_zeo",
-            "rac5_topology",
-            "mofid_v2_topology",
+            "rac5_crystalnets",
+            "mofid_v2_crystalnets",
             "structure_matcher_strict",
             "zeo",
             "common_name",
@@ -842,6 +860,10 @@ PARENT_ONLY_DEFINITION = _freeze_contract(
         "summary": (
             "Use the selected explanatory parent groups themselves as split blocks; "
             "do not add the broader main_union relations."
+        ),
+        "user_facing_definition": (
+            "parent_only uses only each group from the selected explanatory parent "
+            "relation as one split block; it adds no relation from another method."
         ),
         "input_fields": "resolved_selected_parent_method.group_by_id",
         "algorithm": "use_each_resolved_selected_parent_group_as_one_split_block",
@@ -929,7 +951,10 @@ _PUBLISHED_METHOD_DETAILS = {
         ),
     },
     "mofid_v2": {
-        "purpose": "Use exact published MOFid-v2 identifier groups as the explanation.",
+        "purpose": (
+            "Use exact release-authorized current MOFid-v2 identifier groups as "
+            "the explanation."
+        ),
         "package_input_fields": (
             "parent_groups.mofid2_status",
             "parent_groups.mofid2_group",
@@ -943,7 +968,10 @@ _PUBLISHED_METHOD_DETAILS = {
         ),
     },
     "mofid_v1": {
-        "purpose": "Use exact published MOFid-v1 identifier groups as the explanation.",
+        "purpose": (
+            "Use exact release-authorized current MOFid-v1 identifier groups as "
+            "the explanation."
+        ),
         "package_input_fields": (
             "parent_groups.mofid1_status",
             "parent_groups.mofid1_group",
@@ -1023,7 +1051,10 @@ _PUBLISHED_METHOD_DETAILS = {
         ),
     },
     "common_name": {
-        "purpose": "Inspect records with the same canonicalized published common name.",
+        "purpose": (
+            "Inspect records with the same canonicalized current common name in "
+            "the loaded release."
+        ),
         "package_input_fields": (
             "parent_groups.name_status",
             "parent_groups.name_group",
@@ -1038,22 +1069,22 @@ _PUBLISHED_METHOD_DETAILS = {
             "sparse_nonunique_reference_only; excluded_from_priority_main_and_main_union"
         ),
     },
-    "rac5_topology": {
+    "rac5_crystalnets": {
         "purpose": "Inspect exact RAC5 plus current CrystalNets topology agreement.",
         "package_input_fields": (
-            "parent_groups.rac_topology_status",
-            "parent_groups.rac_topology_group",
-            "parent_groups.rac_topology_size",
+            "parent_groups.rac_crystalnets_status",
+            "parent_groups.rac_crystalnets_group",
+            "parent_groups.rac_crystalnets_size",
         ),
         "release_relation": (
             "exact equality of all 264 finite RAC5 descriptors plus a complete "
             "successful current CrystalNets scientific fingerprint"
         ),
         "rac5_fingerprint": RAC5_NUMERIC_FINGERPRINT_DEFINITION,
-        "topology_fingerprint": CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION,
+        "crystalnets_fingerprint": CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION,
         "group_prefix_meaning": (
-            "RT- identifies this RAC5-plus-topology criterion; the following compact "
-            "digest labels a group and is not a topology name"
+            "RT- identifies this RAC5-plus-CrystalNets criterion; the following "
+            "compact digest labels a group and is not a CrystalNets topology name"
         ),
         "missing_behavior": (
             "any missing_or_nonfinite_RAC5_value_or_incomplete_unsuccessful_topology_"
@@ -1069,22 +1100,35 @@ _PUBLISHED_METHOD_DETAILS = {
             "optional_reference_only; excluded_from_priority_main_and_main_union"
         ),
     },
-    "mofid_v2_topology": {
+    "mofid_v2_crystalnets": {
         "purpose": "Inspect exact MOFid-v2 plus current CrystalNets topology agreement.",
         "package_input_fields": (
-            "parent_groups.mofid2_topology_status",
-            "parent_groups.mofid2_topology_group",
-            "parent_groups.mofid2_topology_size",
+            "parent_groups.mofid2_crystalnets_status",
+            "parent_groups.mofid2_crystalnets_group",
+            "parent_groups.mofid2_crystalnets_size",
         ),
         "release_relation": (
             "exact equality of complete canonicalized MOFid-v2 text plus a complete "
             "successful current CrystalNets scientific fingerprint"
         ),
+        "eligible_mofid_v2_statuses": (
+            "SUCCESS",
+            "SUCCESS_TOPOLOGY_UNKNOWN",
+            "SUCCESS_TOPOLOGY_ERROR",
+            "SUCCESS_TOPOLOGY_TIMEOUT",
+        ),
+        "ineligible_mofid_v2_status_behavior": (
+            "every_other_MOFid-v2_status_adds_no_edge_including_unresolved_timeout_"
+            "error_no-MOF_unmatched-node_decomposition-error_and_ambiguous-node"
+        ),
+        "mofid_v2_crystalnets_rebuild_trigger": (
+            "REBUILD_M2T_IF_AUTHORIZED_MOFID_V2_VALUES_CHANGE"
+        ),
         "canonicalized_identifier_text": CANONICALIZED_IDENTIFIER_TEXT_DEFINITION,
-        "topology_fingerprint": CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION,
+        "crystalnets_fingerprint": CURRENT_CRYSTALNETS_FINGERPRINT_DEFINITION,
         "group_prefix_meaning": (
-            "M2T- identifies this MOFid-v2-plus-topology criterion; the following "
-            "compact digest labels a group and is not a topology name"
+            "M2T- identifies this MOFid-v2-plus-CrystalNets criterion; the following "
+            "compact digest labels a group and is not a CrystalNets topology name"
         ),
         "missing_behavior": (
             "missing_MOFid-v2_or_incomplete_unsuccessful_topology_supplies_no_group_evidence"
@@ -1114,6 +1158,17 @@ _PUBLISHED_METHOD_DETAILS = {
         "release_relation": (
             "add an undirected edge only for an audited pair whose forward and reverse "
             "strict fits both succeed, then report graph connected components"
+        ),
+        "direct_edge_authority": (
+            "the_pinned_strict_pymatgen_symmetric_direct_pair_edge_ledger_is_authoritative"
+        ),
+        "component_interpretation": (
+            "SM-_connected_components_are_convenience_views_for_a_non-transitive_"
+            "tolerance_relation_and_are_not_duplicate_proof"
+        ),
+        "failure_projection": (
+            "parser_timeout_OOM_matcher_or_execution_error_is_NOT_AVAILABLE_rather_than_"
+            "unmatched"
         ),
         "strict_method": STRICT_STRUCTURE_MATCHER_DEFINITION,
         "strict_matcher_settings": STRICT_STRUCTURE_MATCHER_DEFINITION[
@@ -1147,15 +1202,24 @@ _PUBLISHED_METHOD_DETAILS = {
         ),
         "release_construction": {
             "v26.0.1": (
-                "project the audited full-universe transitive components formed from "
-                "exact cleaned v11 refcode without a database namespace, MOFid-v2, "
-                "and MOFid-v1 keys"
+                "freshly recompute equality edges and connected components over all "
+                "and only the 36,628 current rows of this named release"
             ),
             "v26.0.2": (
-                "seed the audited v26.0.1 identity components, then union every base or "
-                "addition pair sharing an exact canonicalized database-namespaced source "
-                "ID, complete MOFid-v2, or complete MOFid-v1 value"
+                "freshly recompute equality edges and connected components over all "
+                "42,574 current superset rows; do not seed or import a v26.0.1 component"
             ),
+            "direct_edges": (
+                "equal canonical database-namespaced source key; equal complete canonical "
+                "MOFid-v2; or equal complete canonical MOFid-v1"
+            ),
+            "eligible_mofid_statuses": (
+                "SUCCESS",
+                "SUCCESS_TOPOLOGY_UNKNOWN",
+                "SUCCESS_TOPOLOGY_ERROR",
+                "SUCCESS_TOPOLOGY_TIMEOUT",
+            ),
+            "earlier_component_or_edge_import": False,
         },
         "algorithm": (
             "take transitive connected components of every available listed equality "
@@ -1167,8 +1231,11 @@ _PUBLISHED_METHOD_DETAILS = {
         ),
         "canonicalized_identifier_text": CANONICALIZED_IDENTIFIER_TEXT_DEFINITION,
         "missing_behavior": (
-            "a missing_or_rejected_identifier_adds_no_edge_and_common_nulls_never_match; "
-            "a release NOT_AVAILABLE row follows the selected singleton_or_exclude policy"
+            "a missing_or_rejected_identifier_or_a_non-success_MOFid_status_adds_no_edge; "
+            "unresolved_reconciliation_ambiguous_node_timeout_error_no-MOF_unmatched-node_"
+            "and_decomposition-error_values_never_match; common_nulls_never_match; "
+            "a release NOT_AVAILABLE row "
+            "follows the selected singleton_or_exclude policy"
         ),
         "conflict_behavior": "none_all_available_listed_edges_are_unioned_transitively",
         "excluded_inputs": (
@@ -1184,6 +1251,19 @@ _PUBLISHED_METHOD_DETAILS = {
             "and is excluded as an edge source from both priority_main and main_union; "
             "it_remains_provisional_until_the_pinned_MOFid_bundle_is_promoted_and_the_"
             "parent_table_is_rebuilt"
+        ),
+        "user_facing_definition": (
+            "identity_union is the compatibility key for provisional source-ID/MOFid "
+            "transitive groups, freshly recomputed over all current rows of each named "
+            "release without importing an earlier component or edge. Each group is one "
+            "connected component of direct edges from equal canonical database-namespaced "
+            "source_database/source_id pairs or equal complete canonical MOFid-v2 and "
+            "MOFid-v1 strings whose status is exactly SUCCESS, SUCCESS_TOPOLOGY_UNKNOWN, "
+            "SUCCESS_TOPOLOGY_ERROR, or SUCCESS_TOPOLOGY_TIMEOUT. Every other status and "
+            "missing or rejected evidence adds no edge. It does not use CIF coordinates "
+            "or hashes, RAC5, Zeo++, CrystalNets, common names, DOI, or StructureMatcher; "
+            "it is not proof of identity or common parentage, is candidate-only when its "
+            "MOFid input is STAGE_ONLY, and is not main_union."
         ),
         "provisional_scope": (
             "current_v26_identity_components_are_provisional_while_their_MOFid_"
@@ -1209,7 +1289,6 @@ def parent_method_definition(method: str) -> Mapping[str, object]:
 
     if not isinstance(method, str):
         raise TypeError("parent method must be a string")
-    method = method.strip().lower()
     if method not in PARENT_METHODS or method == "main_union":
         raise ValueError("%r is not an explanatory parent method" % method)
     if method == "priority_main":
@@ -1237,8 +1316,8 @@ def parent_method_definition(method: str) -> Mapping[str, object]:
             "algorithm": details.get(
                 "algorithm",
                 (
-                    "use each available release-authorized group exactly as published; "
-                    "do not combine it with another criterion"
+                    "use each available release-authorized group exactly as stored in "
+                    "the loaded release table; do not combine it with another criterion"
                 ),
             ),
             "conflict_behavior": details.get(
@@ -1267,7 +1346,6 @@ def leakage_guard_definition(guard: str) -> Mapping[str, object]:
 
     if not isinstance(guard, str):
         raise TypeError("leakage guard must be a string")
-    guard = guard.strip().lower()
     if guard == "auto":
         return AUTO_LEAKAGE_GUARD_DEFINITION
     if guard == "main_union":
@@ -1279,17 +1357,71 @@ def leakage_guard_definition(guard: str) -> Mapping[str, object]:
     )
 
 
+def generated_output_terminology_definitions() -> Mapping[str, object]:
+    """Return compact, locally complete definitions for generated receipts.
+
+    Receipt writers place this closure before method-valued fields when keys
+    are serialized in sorted order.  That makes the first machine-key use
+    self-defining without duplicating the full scientific contracts.
+    """
+
+    return _freeze_contract(
+        {
+            "auto": (
+                "auto is the parent-method-aware leakage-guard selector: it resolves "
+                "priority_main to main_union and resolves every explicitly selected "
+                "direct or reference explanatory parent method to parent_only before "
+                "split blocks are constructed."
+            ),
+            "canonical_identifier_text": CANONICALIZED_IDENTIFIER_TEXT_DEFINITION[
+                "user_facing_definition"
+            ],
+            "identity_union": parent_method_definition("identity_union")[
+                "user_facing_definition"
+            ],
+            "main_union": MAIN_UNION_DEFINITION["user_facing_definition"],
+            "mofid_v2_crystalnets": (
+                "mofid_v2_crystalnets uses M2T- for an optional non-decisive reference "
+                "group requiring exact equality of the complete canonical current "
+                "MOFid-v2 string plus the same complete current-success CrystalNets "
+                "fingerprint. Eligible MOFid-v2 statuses are exactly SUCCESS, "
+                "SUCCESS_TOPOLOGY_UNKNOWN, SUCCESS_TOPOLOGY_ERROR, and "
+                "SUCCESS_TOPOLOGY_TIMEOUT; the latter two are successful calculated "
+                "identifiers whose embedded topology qualifier is ERROR or TIMEOUT, not "
+                "MOFid execution failures. Every other status or incomplete input adds "
+                "no edge. It is provisional/reference-only, must be rebuilt if authorized "
+                "MOFid-v2 values change, and enters neither priority_main nor main_union."
+            ),
+            "parent_only": PARENT_ONLY_DEFINITION["user_facing_definition"],
+            "priority_main": PRIORITY_MAIN_DEFINITION["user_facing_definition"],
+            "rac5_crystalnets": (
+                "rac5_crystalnets uses RT- for an optional non-decisive reference group "
+                "requiring exact equality of all 264 available finite depth-5 RAC5 "
+                "binary64 values plus the complete current-success CrystalNets fingerprint. "
+                "Missing, nonfinite, partial, timed-out, failed, or otherwise incomplete "
+                "input adds no match; it enters neither priority_main nor main_union."
+            ),
+            "structure_matcher_strict": (
+                "structure_matcher_strict uses SM- for an optional convenience connected-"
+                "component view over symmetric direct matches from the pinned strict "
+                "pymatgen protocol. Direct edges are authoritative; components are not "
+                "duplicate proof. Parser failures, timeout, OOM, matcher, and execution "
+                "errors are NOT_AVAILABLE rather than unmatched. It enters neither "
+                "priority_main nor main_union."
+            ),
+        }
+    )
+
+
 def resolve_leakage_guard(guard: str, parent_method: str) -> str:
     """Resolve ``auto`` without duplicating its project-defined policy."""
 
     # Validate both public identifiers through their authoritative lookups.
     leakage_guard_definition(guard)
     parent_method_definition(parent_method)
-    normalized_guard = guard.strip().lower()
-    normalized_parent = parent_method.strip().lower()
-    if normalized_guard == "auto":
-        return "main_union" if normalized_parent == "priority_main" else "parent_only"
-    return normalized_guard
+    if guard == "auto":
+        return "main_union" if parent_method == "priority_main" else "parent_only"
+    return guard
 
 
 class _DisjointSet:
@@ -1417,22 +1549,158 @@ class ParentResolver:
     """
 
     def __init__(self, dataset, missing_parent: str = "singleton"):
+        # A validated release generation must still be byte-for-byte and
+        # structure-for-structure identical to the generation sealed by the
+        # loader.  Generic dataset-like inputs remain supported but carry no
+        # release authority.
+        from CoREMOF.dataset import (
+            _reject_retired_or_reserved_keys,
+            _validate_dataset_generation_if_present,
+        )
+
+        _validate_dataset_generation_if_present(dataset)
         self.dataset = dataset
         self.missing_parent = self._validate_missing_parent(missing_parent)
         rows = tuple(getattr(dataset, "metadata_rows"))
         self._rows = rows
         self._row_by_id: Dict[str, Mapping[str, object]] = {}
         self._ids: List[str] = []
-        for row in rows:
-            structure_id = str(row.get("structure_id", "")).strip()
-            if not structure_id:
-                raise ValueError("Every metadata row must have a non-empty structure_id")
+        for row_index, row in enumerate(rows):
+            if not isinstance(row, Mapping):
+                raise TypeError("Every metadata row must be a mapping")
+            _reject_retired_or_reserved_keys(
+                row, "metadata_rows[%d]" % row_index
+            )
+            raw_structure_id = row.get("structure_id")
+            if (
+                not isinstance(raw_structure_id, str)
+                or not raw_structure_id
+                or raw_structure_id != raw_structure_id.strip()
+            ):
+                raise ValueError(
+                    "Every metadata row must have an exact nonblank string structure_id"
+                )
+            structure_id = raw_structure_id
             if structure_id in self._row_by_id:
                 raise ValueError("Duplicate structure_id in metadata_rows: %s" % structure_id)
             self._ids.append(structure_id)
             self._row_by_id[structure_id] = row
-        self._parent_by_id = getattr(dataset, "parent_by_id", {}) or {}
-        self._cif_hashes = getattr(dataset, "cif_hashes", {}) or {}
+        parent_by_id = getattr(dataset, "parent_by_id", None)
+        if parent_by_id is None:
+            parent_by_id = {}
+        if not isinstance(parent_by_id, Mapping):
+            raise TypeError("parent_by_id must be a mapping when present")
+        _reject_retired_or_reserved_keys(parent_by_id, "parent_by_id")
+        for declaration_name in ("parent_group_methods", "dataset_info"):
+            declaration = getattr(dataset, declaration_name, None)
+            if declaration is not None:
+                if not isinstance(declaration, Mapping):
+                    raise TypeError("%s must be a mapping when present" % declaration_name)
+                _reject_retired_or_reserved_keys(declaration, declaration_name)
+        if any(not isinstance(key, str) or not key or key != key.strip() for key in parent_by_id):
+            raise ValueError(
+                "parent_by_id top-level keys must be exact nonblank strings"
+            )
+        allowed_entry_keys = {"structure_id"}
+        for method, keys in _METHOD_KEYS.items():
+            allowed_entry_keys.update(keys)
+            base = _RELEASE_BASE[method]
+            for stem in (base, method):
+                allowed_entry_keys.update(
+                    {
+                        "%s_status" % stem,
+                        "%s_group" % stem,
+                        "%s_size" % stem,
+                    }
+                )
+        for structure_id in self._ids:
+            if structure_id not in parent_by_id:
+                continue
+            entry = parent_by_id[structure_id]
+            if entry is not None and not isinstance(entry, (Mapping, str)):
+                raise TypeError(
+                    "parent_by_id entry for %s must be a mapping, a legacy "
+                    "identity_union string, or None" % structure_id
+                )
+            if isinstance(entry, str) and (not entry or entry != entry.strip()):
+                raise ValueError(
+                    "legacy identity_union parent group must be an exact nonblank string"
+                )
+            if isinstance(entry, Mapping):
+                if any(
+                    not isinstance(key, str)
+                    or not key
+                    or key != key.strip()
+                    for key in entry
+                ):
+                    raise ValueError(
+                        "parent entry keys must be exact nonblank strings"
+                    )
+                unknown_entry_keys = set(entry).difference(allowed_entry_keys)
+                if unknown_entry_keys:
+                    raise ValueError(
+                        "parent entry for %s contains unsupported, retired, or "
+                        "reserved keys: %s"
+                        % (
+                            structure_id,
+                            ", ".join(sorted(unknown_entry_keys)),
+                        )
+                    )
+                if (
+                    "structure_id" in entry
+                    and entry["structure_id"] != structure_id
+                ):
+                    raise ValueError(
+                        "parent entry structure_id differs from its table key"
+                    )
+        method_major_keys = {
+            key for keys in _METHOD_KEYS.values() for key in keys
+        }
+        universe_ids = set(self._ids)
+        ambiguous_top_level = universe_ids.intersection(method_major_keys).intersection(
+            parent_by_id
+        )
+        if ambiguous_top_level:
+            raise ValueError(
+                "parent_by_id top-level keys are ambiguous between structure IDs "
+                "and method-major aliases: %s"
+                % ", ".join(sorted(ambiguous_top_level))
+            )
+        unknown_top_level = set(parent_by_id).difference(
+            universe_ids.union(method_major_keys)
+        )
+        if unknown_top_level:
+            raise ValueError(
+                "parent_by_id contains unknown top-level ID/method keys: %s"
+                % ", ".join(sorted(map(str, unknown_top_level)))
+            )
+        for key in method_major_keys.intersection(parent_by_id):
+            method_map = parent_by_id[key]
+            if method_map is not None and not isinstance(method_map, Mapping):
+                raise TypeError(
+                    "method-major parent table %s must be a mapping or None" % key
+                )
+            if isinstance(method_map, Mapping):
+                unknown_ids = set(method_map).difference(universe_ids)
+                if unknown_ids:
+                    raise ValueError(
+                        "method-major parent table %s contains unknown structure IDs: %s"
+                        % (key, ", ".join(sorted(map(str, unknown_ids))))
+                    )
+        self._parent_by_id = parent_by_id
+
+        cif_hashes = getattr(dataset, "cif_hashes", None)
+        if cif_hashes is None:
+            cif_hashes = {}
+        if not isinstance(cif_hashes, Mapping):
+            raise TypeError("cif_hashes must be a mapping when present")
+        unknown_hash_ids = set(cif_hashes).difference(universe_ids)
+        if unknown_hash_ids:
+            raise ValueError(
+                "cif_hashes contains unknown structure IDs: %s"
+                % ", ".join(sorted(map(str, unknown_hash_ids)))
+            )
+        self._cif_hashes = cif_hashes
         self._validate_release_parent_table()
 
     @staticmethod
@@ -1450,31 +1718,94 @@ class ParentResolver:
 
         if not isinstance(self._parent_by_id, Mapping):
             return
+        from CoREMOF.dataset import _canonical_complete_mofid_v2
+
         for method, keys in _METHOD_KEYS.items():
-            group_keys = tuple(key for key in keys if key.endswith("_group"))
-            declared: List[Tuple[str, Mapping[str, object], str]] = []
+            base = _RELEASE_BASE[method]
+            group_keys = tuple(
+                dict.fromkeys(("%s_group" % base, "%s_group" % method))
+            )
+            status_keys = tuple(
+                dict.fromkeys(("%s_status" % base, "%s_status" % method))
+            )
+            size_keys = tuple(
+                dict.fromkeys(("%s_size" % base, "%s_size" % method))
+            )
+            release_keys = set(group_keys + status_keys + size_keys)
+            declared: List[Tuple[str, Mapping[str, object], str, str]] = []
+            m2t_mofid_by_group: Dict[str, str] = {}
             for structure_id in self._ids:
                 entry = self._parent_by_id.get(structure_id)
                 if not isinstance(entry, Mapping):
                     continue
-                for key in group_keys:
-                    if key in entry:
-                        group = str(entry[key]).strip()
-                        if not group:
-                            raise ValueError("%s release parent group may not be empty" % method)
-                        declared.append((structure_id, entry, group))
-                        break
+                present_release_keys = release_keys.intersection(entry)
+                if not present_release_keys:
+                    continue
+                if not (
+                    any(key in entry for key in group_keys)
+                    and any(key in entry for key in status_keys)
+                    and any(key in entry for key in size_keys)
+                ):
+                    raise ValueError(
+                        "%s release parent entry for %s must contain a complete "
+                        "status/group/size triad" % (method, structure_id)
+                    )
+                status = self._release_status(entry, method)
+                group = self._release_group(entry, method, status)
+                self._release_size(entry, method, status)
+                if (
+                    method == "mofid_v2_crystalnets"
+                    and status in {"MATCHED", "UNMATCHED"}
+                ):
+                    mofid_status = self._row_by_id[structure_id].get(
+                        "mofid_v2_status"
+                    )
+                    eligible = {
+                        "SUCCESS",
+                        "SUCCESS_TOPOLOGY_UNKNOWN",
+                        "SUCCESS_TOPOLOGY_ERROR",
+                        "SUCCESS_TOPOLOGY_TIMEOUT",
+                    }
+                    if mofid_status not in eligible:
+                        raise ValueError(
+                            "mofid_v2_crystalnets %s row for %s requires an exact "
+                            "eligible mofid_v2_status" % (status, structure_id)
+                        )
+                    canonical_mofid = _canonical_complete_mofid_v2(
+                        self._row_by_id[structure_id].get("mofid_v2"),
+                        structure_id,
+                    )
+                    previous_mofid = m2t_mofid_by_group.setdefault(
+                        group, canonical_mofid
+                    )
+                    if previous_mofid != canonical_mofid:
+                        raise ValueError(
+                            "mofid_v2_crystalnets group %s spans conflicting "
+                            "canonical mofid_v2 values" % group
+                        )
+                for key in keys:
+                    if key in entry and key not in release_keys:
+                        raise ValueError(
+                            "%s release parent entry for %s mixes a validated triad "
+                            "with legacy alias %s" % (method, structure_id, key)
+                        )
+                declared.append((structure_id, entry, group, status))
             if not declared:
                 continue
+            if method in OPTIONAL_CRYSTALNETS_PARENT_METHODS and len(declared) != len(
+                self._ids
+            ):
+                raise ValueError(
+                    "%s release parent criterion must contain a complete validated "
+                    "status/group/size triad for every structure" % method
+                )
             counts: Dict[str, int] = {}
-            for _, _, group in declared:
+            for _, _, group, _ in declared:
                 counts[group] = counts.get(group, 0) + 1
-            for structure_id, entry, group in declared:
-                status = self._release_status(entry, method)
+            for structure_id, entry, group, status in declared:
                 self._validate_release_size(entry, method, status)
-                base = _RELEASE_BASE[method]
-                advertised = entry.get("%s_size" % base, entry.get("%s_size" % method))
-                if int(advertised) != counts[group]:
+                advertised = self._release_size(entry, method, status)
+                if advertised != counts[group]:
                     raise ValueError(
                         "%s release parent size for %s does not match observed group %s"
                         % (method, structure_id, group)
@@ -1499,19 +1830,37 @@ class ParentResolver:
 
         if not isinstance(method, str):
             raise TypeError("parent method must be a string")
-        method = method.strip().lower()
         if method not in PARENT_METHODS:
             raise ValueError(
                 "Unknown parent method %r; choose one of %s"
                 % (method, ", ".join(PARENT_METHODS))
             )
-        missing = self._validate_missing_parent(missing_parent or self.missing_parent)
+        missing = (
+            self.missing_parent
+            if missing_parent is None
+            else self._validate_missing_parent(missing_parent)
+        )
         if method in OPTIONAL_REFERENCE_PARENT_METHODS and not self._method_is_declared(
             method
         ):
             raise ValueError(
                 "Parent method %r is not present in this release" % method
             )
+        if method in OPTIONAL_CRYSTALNETS_PARENT_METHODS:
+            # Import lazily so the lightweight parent module retains a simple
+            # dependency boundary while sharing the loader's exact trusted
+            # terminal RT/M2T contract.
+            from CoREMOF.dataset import (
+                _has_authenticated_crystalnets_reference_contract,
+            )
+
+            if not _has_authenticated_crystalnets_reference_contract(
+                self.dataset, method
+            ):
+                raise ValueError(
+                    "Parent method %r requires the exact validated release "
+                    "criterion, definition, and integration contracts" % method
+                )
         if method == "none":
             resolution = self._resolve_none(missing)
         elif method == "priority_main":
@@ -1522,7 +1871,25 @@ class ParentResolver:
             resolution = self._resolve_direct(method, missing)
         if structure_ids is None:
             return resolution
-        requested = set(structure_ids)
+        if isinstance(structure_ids, str):
+            requested_values = (structure_ids,)
+        elif isinstance(structure_ids, (list, tuple)):
+            requested_values = tuple(structure_ids)
+        else:
+            raise TypeError(
+                "structure_ids must be an exact string or ordered list/tuple "
+                "of strings"
+            )
+        if any(
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            for value in requested_values
+        ):
+            raise ValueError(
+                "structure_ids must contain exact nonblank strings"
+            )
+        requested = set(requested_values)
         unknown = requested.difference(self._row_by_id)
         if unknown:
             raise KeyError("Unknown structure_id(s): %s" % ", ".join(sorted(unknown)))
@@ -1555,14 +1922,22 @@ class ParentResolver:
     def _method_is_declared(self, method: str) -> bool:
         """Return whether any release row declares the optional criterion."""
 
-        keys = _METHOD_KEYS[method]
         if not isinstance(self._parent_by_id, Mapping):
             return False
+        base = _RELEASE_BASE[method]
+        triad_keys = {
+            "%s_status" % base,
+            "%s_group" % base,
+            "%s_size" % base,
+            "%s_status" % method,
+            "%s_group" % method,
+            "%s_size" % method,
+        }
         for structure_id in self._ids:
             entry = self._parent_by_id.get(structure_id)
-            if isinstance(entry, Mapping) and any(key in entry for key in keys):
+            if isinstance(entry, Mapping) and any(key in entry for key in triad_keys):
                 return True
-        return any(isinstance(self._parent_by_id.get(key), Mapping) for key in keys)
+        return False
 
     def _parent_value(self, structure_id: str, method: str) -> Optional[str]:
         """Read either ID-major or method-major parent metadata."""
@@ -1576,11 +1951,21 @@ class ParentResolver:
             entry = source.get(structure_id)
             if isinstance(entry, Mapping):
                 release_entry = entry
-                for key in keys:
+                base = _RELEASE_BASE[method]
+                release_group_keys = tuple(
+                    dict.fromkeys(("%s_group" % base, "%s_group" % method))
+                )
+                for key in release_group_keys:
                     if key in entry:
                         candidate = entry[key]
                         candidate_key = key
                         break
+                if candidate_key is None:
+                    for key in keys:
+                        if key in entry:
+                            candidate = entry[key]
+                            candidate_key = key
+                            break
             elif entry is not None and method == "identity_union":
                 candidate = entry
             if candidate is None:
@@ -1596,7 +1981,8 @@ class ParentResolver:
             and candidate_key.endswith("_group")
         ):
             status = self._release_status(release_entry, method)
-            self._validate_release_size(release_entry, method, status)
+            self._release_size(release_entry, method, status)
+            candidate = self._release_group(release_entry, method, status)
             if status == "NOT_AVAILABLE":
                 return None
         if isinstance(candidate, Mapping):
@@ -1605,22 +1991,33 @@ class ParentResolver:
                     candidate = candidate[key]
                     break
             else:
-                candidate = None
+                raise ValueError("%s parent group must be a nonblank string" % method)
         if candidate is None:
             return None
-        text = str(candidate).strip()
-        if text.upper() in _MISSING_TEXT:
+        if not isinstance(candidate, str):
+            raise ValueError("%s parent group must be a nonblank string" % method)
+        if not candidate or candidate != candidate.strip():
+            raise ValueError("%s parent group must be a nonblank string" % method)
+        if candidate.upper() in _MISSING_TEXT:
             return None
-        return text
+        return candidate
 
     @staticmethod
     def _release_status(entry: Mapping[str, object], method: str) -> str:
         base = _RELEASE_BASE[method]
-        status = None
-        for key in ("%s_status" % base, "%s_status" % method):
-            if key in entry:
-                status = str(entry[key]).strip().upper()
-                break
+        values = [
+            entry[key]
+            for key in tuple(
+                dict.fromkeys(("%s_status" % base, "%s_status" % method))
+            )
+            if key in entry
+        ]
+        if not values or any(not isinstance(value, str) for value in values):
+            status = None
+        else:
+            if len(set(values)) != 1:
+                raise ValueError("%s release parent status aliases conflict" % method)
+            status = values[0]
         if status not in {"MATCHED", "UNMATCHED", "NOT_AVAILABLE"}:
             raise ValueError(
                 "%s release parent status must be MATCHED, UNMATCHED, or "
@@ -1629,18 +2026,111 @@ class ParentResolver:
         return status
 
     @staticmethod
+    def _validate_release_group(value: object, method: str, status: str) -> str:
+        if not isinstance(value, str):
+            raise ValueError("%s release parent group must be a nonblank string" % method)
+        if not value or not value.strip():
+            raise ValueError("%s release parent group must be a nonblank string" % method)
+        if value != value.strip():
+            raise ValueError(
+                "%s release parent group must be an exact canonical string" % method
+            )
+        group = value
+        if status in {"MATCHED", "UNMATCHED"} and group.upper() in _MISSING_TEXT:
+            raise ValueError(
+                "%s %s release parent group must not be a missing placeholder"
+                % (method, status)
+            )
+        optional_prefixes = {
+            "rac5_crystalnets": "RT-",
+            "mofid_v2_crystalnets": "M2T-",
+        }
+        prefix = optional_prefixes.get(method)
+        if prefix is not None and (
+            not group.startswith(prefix)
+            or len(group) < len(prefix) + 8
+            or len(group) > len(prefix) + 64
+            or any(character not in "0123456789ABCDEF" for character in group[len(prefix) :])
+        ):
+            raise ValueError(
+                "%s release parent group must use %s plus 8 to 64 uppercase "
+                "hexadecimal characters" % (method, prefix)
+            )
+        return group
+
+    @classmethod
+    def _release_group(
+        cls, entry: Mapping[str, object], method: str, status: str
+    ) -> str:
+        base = _RELEASE_BASE[method]
+        keys = tuple(dict.fromkeys(("%s_group" % base, "%s_group" % method)))
+        groups = [
+            cls._validate_release_group(entry[key], method, status)
+            for key in keys
+            if key in entry
+        ]
+        if not groups:
+            raise ValueError("%s release parent group must be a nonblank string" % method)
+        if len(set(groups)) != 1:
+            raise ValueError("%s release parent group aliases conflict" % method)
+        return groups[0]
+
+    @classmethod
+    def _release_size(
+        cls, entry: Mapping[str, object], method: str, status: str
+    ) -> int:
+        base = _RELEASE_BASE[method]
+        keys = tuple(dict.fromkeys(("%s_size" % base, "%s_size" % method)))
+        values = []
+        for key in keys:
+            if key in entry:
+                cls._validate_release_size_value(entry[key], method, status)
+                value = entry[key]
+                values.append(int(value.strip()) if isinstance(value, str) else value)
+        if not values:
+            raise ValueError("%s release parent size must be a positive integer" % method)
+        if len(set(values)) != 1:
+            raise ValueError("%s release parent size aliases conflict" % method)
+        return values[0]
+
+    @staticmethod
     def _validate_release_size(
         entry: Mapping[str, object], method: str, status: str
     ) -> None:
         base = _RELEASE_BASE[method]
-        value = None
-        for key in ("%s_size" % base, "%s_size" % method):
-            if key in entry:
-                value = entry[key]
-                break
-        try:
-            size = int(value)  # type: ignore[arg-type]
-        except (TypeError, ValueError):
+        values = [
+            entry[key]
+            for key in tuple(dict.fromkeys(("%s_size" % base, "%s_size" % method)))
+            if key in entry
+        ]
+        if not values:
+            raise ValueError("%s release parent size must be a positive integer" % method)
+        parsed = [
+            ParentResolver._validate_release_size_value(value, method, status)
+            for value in values
+        ]
+        if len(set(parsed)) != 1:
+            raise ValueError("%s release parent size aliases conflict" % method)
+
+    @staticmethod
+    def _validate_release_size_value(value: object, method: str, status: str) -> int:
+        if isinstance(value, bool):
+            raise ValueError("%s release parent size must be a positive integer" % method)
+        if isinstance(value, int):
+            size = value
+        elif isinstance(value, str):
+            text = value
+            if (
+                not text
+                or not text.isascii()
+                or not text.isdigit()
+                or (len(text) > 1 and text.startswith("0"))
+            ):
+                raise ValueError(
+                    "%s release parent size must be a positive integer" % method
+                )
+            size = int(text)
+        else:
             raise ValueError("%s release parent size must be a positive integer" % method)
         if size < 1:
             raise ValueError("%s release parent size must be a positive integer" % method)
@@ -1648,12 +2138,22 @@ class ParentResolver:
             raise ValueError("%s MATCHED parent group must have size >= 2" % method)
         if status in {"UNMATCHED", "NOT_AVAILABLE"} and size != 1:
             raise ValueError("%s %s parent group must have size 1" % (method, status))
+        return size
 
     def _source_evidence(self, structure_id: str) -> Optional[str]:
         """Return a database-namespaced source group."""
 
         row = self._row_by_id[structure_id]
-        database = str(row.get("source_database", "")).strip().upper()
+        raw_database = row.get("source_database")
+        if raw_database is not None and not isinstance(raw_database, str):
+            raise ValueError("source_database must be a string when present")
+        if raw_database in (None, ""):
+            return None
+        if raw_database != raw_database.strip():
+            raise ValueError(
+                "source_database must be an exact nonblank string when present"
+            )
+        database = raw_database.upper()
         source_group = self._parent_value(structure_id, "source_id")
         if source_group is None:
             entry = (
@@ -1668,12 +2168,17 @@ class ParentResolver:
                 # A release row explicitly declared this criterion
                 # unavailable.  Do not resurrect it from display metadata.
                 return None
-            source_id = str(row.get("source_id", "")).strip()
-            if not source_id:
+            raw_source_id = row.get("source_id")
+            if raw_source_id is not None and not isinstance(raw_source_id, str):
+                raise ValueError("source_id must be a string when present")
+            if raw_source_id in (None, ""):
                 return None
+            if raw_source_id != raw_source_id.strip():
+                raise ValueError(
+                    "source_id must be an exact nonblank string when present"
+                )
+            source_id = raw_source_id
             source_group = " ".join(source_id.casefold().split())
-        if not database:
-            database = "UNKNOWN"
         return "%s:%s" % (database, source_group)
 
     def _full_cif_hash(self, structure_id: str) -> Optional[str]:
@@ -1688,7 +2193,11 @@ class ParentResolver:
                     break
         if candidate is None:
             return None
-        text = str(candidate).strip().lower()
+        if not isinstance(candidate, str):
+            raise ValueError(
+                "CIF integrity hashes used for main_union must be full lowercase SHA-256"
+            )
+        text = candidate
         if len(text) != 64 or any(character not in "0123456789abcdef" for character in text):
             raise ValueError(
                 "CIF integrity hashes used for main_union must be full lowercase SHA-256"
@@ -1931,7 +2440,7 @@ __all__ = [
     "LEAKAGE_GUARD_CHOICES",
     "MAIN_UNION_DEFINITION",
     "OPTIONAL_REFERENCE_PARENT_METHODS",
-    "OPTIONAL_TOPOLOGY_PARENT_METHODS",
+    "OPTIONAL_CRYSTALNETS_PARENT_METHODS",
     "PARENT_METHODS",
     "PARENT_METHOD_CONTRACT_VERSION",
     "PARENT_GROUP_TRIAD_DEFINITION",
@@ -1945,6 +2454,7 @@ __all__ = [
     "ParentConflict",
     "ParentResolution",
     "ParentResolver",
+    "generated_output_terminology_definitions",
     "leakage_guard_definition",
     "parent_method_definition",
     "resolve_leakage_guard",

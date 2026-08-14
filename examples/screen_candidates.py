@@ -11,7 +11,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter
 import csv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 import hashlib
 import json
@@ -33,15 +33,29 @@ if (_REPOSITORY_ROOT / "CoREMOF").is_dir():
         sys.path.insert(0, repository_text)
 
 from CoREMOF import __version__
+from CoREMOF._authority import (
+    AuthorityStateError,
+    IdentitySealRegistry,
+    reject_sealed_copy,
+    state_fingerprint,
+)
 import CoREMOF.dataset as _coremof_dataset_module
-from CoREMOF.dataset import CoREMOFDataset, ReleaseValidationError
+from CoREMOF.dataset import (
+    CoREMOFDataset,
+    ReleaseValidationError,
+    _is_authenticated_official_checker_view,
+    _release_receipt_state,
+    _validate_classified_generation_if_present,
+    _validate_dataset_generation_if_present,
+)
+from CoREMOF.labels import CHECKER_PRESETS
 from CoREMOF.parents import LEAKAGE_GUARD_CHOICES, SELECTABLE_PARENT_METHODS
 from CoREMOF.targets import TargetDataError, merge_targets_from_config
 
 
 SCHEMA_VERSION = "coremof-screening-receipt/1.0"
 _COREMOF_PACKAGE_ROOT = Path(_coremof_dataset_module.__file__).resolve().parent
-_CLASSIFICATION_SOURCE_FILES = ("dataset.py", "labels.py")
+_CLASSIFICATION_SOURCE_FILES = ("_authority.py", "dataset.py", "labels.py")
 _TARGET_SOURCE_FILES = _CLASSIFICATION_SOURCE_FILES + ("targets.py",)
 _SPLIT_SOURCE_FILES = _CLASSIFICATION_SOURCE_FILES + (
     "parents.py",
@@ -49,6 +63,8 @@ _SPLIT_SOURCE_FILES = _CLASSIFICATION_SOURCE_FILES + (
 )
 _REQUIRED_TARGET_CSV_PREFIX = "required_target:"
 _MISSING_TEXT = frozenset({""})
+_SCREENING_RESULT_FACTORY_TOKEN = object()
+_SCREENING_RESULTS = IdentitySealRegistry("screening result generation")
 _NONFINITE_TEXT = frozenset(
     {
         "nan",
@@ -66,19 +82,51 @@ class ScreeningError(ValueError):
     """Raised when a requested screening operation cannot be audited safely."""
 
 
+def _exact_nonblank_string(value: object, name: str) -> str:
+    """Return one already-canonical string without coercion or repair."""
+
+    if (
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+    ):
+        raise ScreeningError("{} must be an exact nonblank string".format(name))
+    return value
+
+
+def _optional_exact_string(value: object, name: str) -> Optional[str]:
+    """Validate an optional exact nonblank string receipt claim."""
+
+    if value is None:
+        return None
+    return _exact_nonblank_string(value, name)
+
+
+def _screen_release_receipt_state(
+    dataset: object,
+) -> Tuple[Optional[str], Optional[str], bool]:
+    """Translate the package's closed release-state contract to screen errors."""
+
+    try:
+        return _release_receipt_state(dataset)
+    except (TypeError, ValueError) as exc:
+        raise ScreeningError(str(exc)) from exc
+
+
 def _deep_freeze(value: object) -> object:
     """Copy one result value into a recursively immutable representation."""
 
     if isinstance(value, Mapping):
-        return MappingProxyType(
-            {str(key): _deep_freeze(item) for key, item in value.items()}
-        )
+        result = {}
+        for key, item in value.items():
+            if not isinstance(key, str) or not key or key != key.strip():
+                raise ScreeningError("mapping keys must be exact nonblank strings")
+            result[key] = _deep_freeze(item)
+        return MappingProxyType(result)
     if isinstance(value, (list, tuple)):
         return tuple(_deep_freeze(item) for item in value)
     if isinstance(value, (set, frozenset)):
-        return tuple(
-            _deep_freeze(item) for item in sorted(value, key=lambda item: str(item))
-        )
+        raise ScreeningError("unordered sets are not valid screening result data")
     return value
 
 
@@ -91,10 +139,16 @@ class ScreeningResult:
     receipt: Mapping[str, object]
     classified_dataset: object
     filters: Mapping[str, object]
+    _authority_factory_token: object = field(
+        default=None, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         """Detach result evidence from mutable caller-owned containers."""
 
+        selected_ids = tuple(self.selected_ids)
+        for structure_id in selected_ids:
+            _exact_nonblank_string(structure_id, "selected structure_id")
         object.__setattr__(
             self,
             "rows",
@@ -103,10 +157,22 @@ class ScreeningResult:
         object.__setattr__(
             self,
             "selected_ids",
-            tuple(str(structure_id) for structure_id in self.selected_ids),
+            selected_ids,
         )
         object.__setattr__(self, "receipt", _deep_freeze(self.receipt))
         object.__setattr__(self, "filters", _deep_freeze(self.filters))
+
+    def __copy__(self):
+        reject_sealed_copy(self, "copied")
+        raise TypeError("unsealed screening results cannot be copied")
+
+    def __deepcopy__(self, memo):
+        reject_sealed_copy(self, "deep-copied")
+        raise TypeError("unsealed screening results cannot be deep-copied")
+
+    def __reduce_ex__(self, protocol):
+        reject_sealed_copy(self, "pickled")
+        raise TypeError("screening results are point-in-time non-serializable objects")
 
 
 RankingNumber = Union[int, float, Decimal]
@@ -116,13 +182,82 @@ def _as_tuple(values: Optional[Iterable[str]]) -> Optional[Tuple[str, ...]]:
     if values is None:
         return None
     if isinstance(values, str):
-        values = (values,)
-    result = tuple(str(value).strip() for value in values)
-    if not result or any(not value for value in result):
+        result = (values,)
+    else:
+        if not isinstance(values, (list, tuple)):
+            raise ScreeningError(
+                "filter values must be an exact string or ordered list/tuple "
+                "of strings"
+            )
+        result = tuple(values)
+    if not result or any(not isinstance(value, str) for value in result):
         raise ScreeningError("filter values must be non-empty strings")
+    if any(not value or value != value.strip() for value in result):
+        raise ScreeningError("filter values must be exact non-empty strings")
     if len(set(result)) != len(result):
         raise ScreeningError("filter values must not contain duplicates")
     return result
+
+
+def _optional_mapping_attribute(value: object, name: str) -> Mapping[str, object]:
+    """Return an optional mapping attribute without truthiness coercion."""
+
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ScreeningError("{} must be a mapping when present".format(name))
+    return value
+
+
+def _input_hash_mapping(dataset) -> Mapping[str, str]:
+    values = _optional_mapping_attribute(
+        getattr(dataset, "input_hashes", None), "input_hashes"
+    )
+    if any(
+        not isinstance(key, str)
+        or not key
+        or key != key.strip()
+        or not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        for key, value in values.items()
+    ):
+        raise ScreeningError(
+            "input_hashes keys and values must be exact non-empty strings"
+        )
+    return values  # type: ignore[return-value]
+
+
+def _column_name_tuple(value: object, name: str) -> Tuple[str, ...]:
+    """Validate an optional dataset-like column-name sequence."""
+
+    if value is None:
+        return ()
+    if isinstance(value, str) or not isinstance(value, (list, tuple)):
+        raise ScreeningError(
+            "{} must be a list or tuple of strings when present".format(name)
+        )
+    result = tuple(value)
+    if any(
+        not isinstance(item, str) or not item or item != item.strip()
+        for item in result
+    ):
+        raise ScreeningError(
+            "{} values must be exact nonblank strings".format(name)
+        )
+    if len(set(result)) != len(result):
+        raise ScreeningError("{} must not contain duplicate names".format(name))
+    return result
+
+
+def _boolean_attribute(obj: object, name: str, default: bool) -> bool:
+    marker = object()
+    value = getattr(obj, name, marker)
+    if value is marker:
+        return default
+    if type(value) is not bool:
+        raise ScreeningError("{} must be a boolean when present".format(name))
+    return value
 
 
 def _sha256_file(path: Path) -> str:
@@ -316,11 +451,14 @@ def _ids_sha256(values: Iterable[str]) -> str:
 
 def _json_safe(value: object) -> object:
     if isinstance(value, Mapping):
-        return {str(key): _json_safe(item) for key, item in value.items()}
+        result = {}
+        for key, item in value.items():
+            if not isinstance(key, str) or not key or key != key.strip():
+                raise ScreeningError("receipt mapping keys must be exact nonblank strings")
+            result[key] = _json_safe(item)
+        return result
     if isinstance(value, (set, frozenset)):
-        return [
-            _json_safe(item) for item in sorted(value, key=lambda item: str(item))
-        ]
+        raise ScreeningError("unordered sets are not valid receipt values")
     if isinstance(value, (list, tuple)):
         return [_json_safe(item) for item in value]
     if value is None or isinstance(value, (str, int, bool)):
@@ -333,7 +471,11 @@ def _json_safe(value: object) -> object:
         if not math.isfinite(value):
             raise ScreeningError("non-finite value cannot be written to a receipt")
         return value
-    return str(value)
+    raise ScreeningError(
+        "receipt value type {} is unsupported without coercion".format(
+            type(value).__name__
+        )
+    )
 
 
 def _target_available(value: object) -> bool:
@@ -450,9 +592,13 @@ def screen_dataset(
     source/variant/metal filters are delegated to ``CoREMOFDataset``.
     """
 
-    if not isinstance(rank_by, str) or not rank_by.strip():
+    _validate_dataset_generation_if_present(dataset)
+    if (
+        not isinstance(rank_by, str)
+        or not rank_by
+        or rank_by != rank_by.strip()
+    ):
         raise ScreeningError("rank_by must be a non-empty column name")
-    rank_by = rank_by.strip()
     if order not in ("ascending", "descending"):
         raise ScreeningError("order must be 'ascending' or 'descending'")
     if required_target_mode not in ("all", "any"):
@@ -468,8 +614,25 @@ def screen_dataset(
     metals_tuple = _as_tuple(metals)
     required_tuple = _as_tuple(required_targets) or ()
 
-    target_columns = tuple(getattr(dataset, "target_columns", ()) or ())
-    feature_columns = tuple(getattr(dataset, "feature_columns", ()) or ())
+    (
+        parent_input_status,
+        dataset_input_status,
+        _provisional_input,
+    ) = _screen_release_receipt_state(dataset)
+    input_hashes = _input_hash_mapping(dataset)
+    cif_files_verified = _boolean_attribute(
+        dataset, "cif_files_verified", False
+    )
+    dataset_version = _exact_nonblank_string(
+        getattr(dataset, "dataset_version", None), "dataset_version"
+    )
+
+    target_columns = _column_name_tuple(
+        getattr(dataset, "target_columns", None), "target_columns"
+    )
+    feature_columns = _column_name_tuple(
+        getattr(dataset, "feature_columns", None), "feature_columns"
+    )
     unknown_required = set(required_tuple).difference(target_columns)
     if unknown_required:
         if not target_columns:
@@ -496,6 +659,40 @@ def screen_dataset(
         ranking_kind = "RELEASE_METADATA"
 
     classified = dataset.classify(checkers)
+    checker_view = _exact_nonblank_string(
+        getattr(classified, "checker_view", None), "checker_view"
+    )
+    classified_dataset_version = _exact_nonblank_string(
+        getattr(classified, "dataset_version", None),
+        "classified dataset_version",
+    )
+    if classified_dataset_version != dataset_version:
+        raise ScreeningError(
+            "classified dataset_version differs from its source dataset"
+        )
+    checker_view_official_marker = object()
+    checker_view_official_value = getattr(
+        classified, "checker_view_official", checker_view_official_marker
+    )
+    if (
+        checker_view_official_value is not checker_view_official_marker
+        and type(checker_view_official_value) is not bool
+    ):
+        raise ScreeningError(
+            "checker_view_official must be a boolean when present"
+        )
+    if checker_view_official_value is True and checker_view not in CHECKER_PRESETS:
+        raise ScreeningError(
+            "checker_view_official=True requires a canonical official checker preset"
+        )
+    if (
+        checker_view_official_value is True
+        and not _is_authenticated_official_checker_view(classified)
+    ):
+        raise ScreeningError(
+            "checker_view_official=True requires an internally authenticated "
+            "recomputed release view"
+        )
     filtered = classified.filter(
         labels=labels_tuple,
         sources=sources_tuple,
@@ -506,12 +703,15 @@ def screen_dataset(
     required_ids = []
     required_excluded = []
     for record in filtered:
+        structure_id = _exact_nonblank_string(
+            getattr(record, "structure_id", None), "screening structure_id"
+        )
         if not required_tuple or _passes_required_targets(
             record.metadata, required_tuple, required_target_mode
         ):
-            required_ids.append(record.structure_id)
+            required_ids.append(structure_id)
         else:
-            required_excluded.append(record.structure_id)
+            required_excluded.append(structure_id)
 
     required_view = filtered.filter(structure_ids=required_ids)
     numeric = []
@@ -549,7 +749,7 @@ def screen_dataset(
             "structure_id": record.structure_id,
             "ranking_column": rank_by,
             "ranking_value": value,
-            "checker_view": classified.checker_view,
+            "checker_view": checker_view,
             "classification_label": record.label,
             "source_database": record.source_database,
             "source_id": record.metadata.get("source_id", ""),
@@ -561,11 +761,27 @@ def screen_dataset(
             row[_required_target_csv_column(target)] = record.metadata.get(target)
         rows.append(row)
 
-    selected_ids = tuple(str(row["structure_id"]) for row in rows)
+    selected_ids = tuple(
+        _exact_nonblank_string(row["structure_id"], "screening structure_id")
+        for row in rows
+    )
     exclusion_counts = Counter(ranking_exclusions.values())
-    dataset_info = getattr(dataset, "dataset_info", {}) or {}
-    parent_methods = getattr(dataset, "parent_group_methods", {}) or {}
-    input_hashes = getattr(dataset, "input_hashes", {}) or {}
+    checker_view_official = _boolean_attribute(
+        classified,
+        "checker_view_official",
+        False,
+    )
+    if checker_view_official and checker_view not in CHECKER_PRESETS:
+        raise ScreeningError(
+            "checker_view_official=True requires a canonical official checker preset"
+        )
+    if checker_view_official and not _is_authenticated_official_checker_view(
+        classified
+    ):
+        raise ScreeningError(
+            "checker_view_official=True requires an internally authenticated "
+            "recomputed release view"
+        )
     target_receipt = getattr(dataset, "target_input_receipt", None)
     coremof_source_hashes = _screening_source_hashes(target_receipt)
     filters = {
@@ -587,16 +803,14 @@ def screen_dataset(
                 sorted(coremof_source_hashes.items())
             ),
         },
-        "dataset_version": str(getattr(dataset, "dataset_version", "")),
-        "dataset_input_status": dataset_info.get("release_status"),
-        "parent_input_status": parent_methods.get("release_status"),
-        "cif_files_verified": bool(
-            getattr(dataset, "cif_files_verified", False)
-        ),
-        "checker_view": classified.checker_view,
+        "dataset_version": dataset_version,
+        "dataset_input_status": dataset_input_status,
+        "parent_input_status": parent_input_status,
+        "cif_files_verified": cif_files_verified,
+        "checker_view": checker_view,
         "checker_view_kind": (
             "OFFICIAL_RELEASE_VIEW"
-            if getattr(classified, "checker_view_official", False)
+            if checker_view_official
             else "USER_DEFINED"
         ),
         "filters": filters,
@@ -630,9 +844,7 @@ def screen_dataset(
             sorted(required_view.structure_ids)
         ),
         "emitted_ids_sha256": _ids_sha256(selected_ids),
-        "input_hashes": {
-            str(key): str(value) for key, value in sorted(input_hashes.items())
-        },
+        "input_hashes": dict(sorted(input_hashes.items())),
         "target_merge_receipt": (
             _json_safe(target_receipt) if target_receipt is not None else None
         ),
@@ -650,13 +862,159 @@ def screen_dataset(
             "ranking_changes_scientific_labels": False,
         },
     }
-    return ScreeningResult(
+    result = ScreeningResult(
         rows=tuple(rows),
         selected_ids=selected_ids,
         receipt=receipt,
         classified_dataset=classified,
         filters=filters,
+        _authority_factory_token=_SCREENING_RESULT_FACTORY_TOKEN,
     )
+    return _register_screening_result(result)
+
+
+def _screen_source_payload(classified: object) -> Tuple[object, ...]:
+    dataset = getattr(classified, "dataset", None)
+    if dataset is None:
+        raise AuthorityStateError("screening source has no dataset")
+    metadata_rows = getattr(dataset, "metadata_rows", None)
+    records = getattr(classified, "records", None)
+    if not isinstance(metadata_rows, (list, tuple)) or not isinstance(
+        records, (list, tuple)
+    ):
+        raise AuthorityStateError("screening source rows must be sequences")
+    if any(not isinstance(row, Mapping) for row in metadata_rows):
+        raise AuthorityStateError("screening metadata rows must be mappings")
+    record_payload = []
+    for record in records:
+        structure_id = _exact_nonblank_string(
+            getattr(record, "structure_id", None), "classified structure_id"
+        )
+        metadata = getattr(record, "metadata", None)
+        if not isinstance(metadata, Mapping):
+            raise AuthorityStateError("classified record metadata must be a mapping")
+        record_payload.append(
+            (
+                structure_id,
+                getattr(record, "checker_view", None),
+                getattr(record, "label", None),
+                getattr(record, "checker_statuses", None),
+                metadata,
+            )
+        )
+    return (
+        "coremof-generic-screen-source/1",
+        getattr(classified, "checker_view", None),
+        getattr(classified, "checker_view_official", False),
+        tuple(record_payload),
+        getattr(classified, "selection_filters", None),
+        tuple(metadata_rows),
+        getattr(dataset, "parent_by_id", None),
+        getattr(dataset, "cif_hashes", None),
+        getattr(dataset, "input_hashes", None),
+        getattr(dataset, "dataset_info", None),
+        getattr(dataset, "parent_group_methods", None),
+        getattr(dataset, "dataset_version", None),
+        getattr(dataset, "cif_files_verified", None),
+        getattr(dataset, "target_columns", None),
+        getattr(dataset, "feature_columns", None),
+        getattr(dataset, "target_input_receipt", None),
+    )
+
+
+def _screening_identity_snapshot(result: ScreeningResult) -> Tuple[object, ...]:
+    return (
+        id(result.rows),
+        id(result.selected_ids),
+        id(result.receipt),
+        id(result.classified_dataset),
+        id(result.filters),
+        result._authority_factory_token is _SCREENING_RESULT_FACTORY_TOKEN,
+        tuple(
+            (
+                id(row),
+                row.get("structure_id"),
+                row.get("rank"),
+                type(row.get("ranking_value")).__name__,
+                row.get("ranking_value"),
+            )
+            for row in result.rows
+        ),
+    )
+
+
+def _screening_seal_fingerprint(result: ScreeningResult) -> str:
+    """Bind all ranked rows, filters, and receipt claims without coercion."""
+
+    return state_fingerprint(
+        (
+            "coremof-screening-result-generation/2",
+            result.rows,
+            result.selected_ids,
+            result.receipt,
+            result.filters,
+        )
+    )
+
+
+def _register_screening_result(result: ScreeningResult) -> ScreeningResult:
+    if result._authority_factory_token is not _SCREENING_RESULT_FACTORY_TOKEN:
+        raise AuthorityStateError("cannot register a non-factory screening result")
+    _verify_result_implementation(result.receipt)
+    _validate_screening_result(result)
+    source = result.classified_dataset
+    official = _validate_classified_generation_if_present(source)
+    source_fingerprint = None
+    if not official:
+        source_fingerprint = state_fingerprint(_screen_source_payload(source))
+    fingerprint = _screening_seal_fingerprint(result)
+    _SCREENING_RESULTS.register(
+        result,
+        fingerprint,
+        {
+            "source": source,
+            "source_official": official,
+            "source_fingerprint": source_fingerprint,
+            "identity_snapshot": _screening_identity_snapshot(result),
+        },
+    )
+    return result
+
+
+def _require_screening_result(result: ScreeningResult) -> None:
+    current = _SCREENING_RESULTS.entry(result)
+    if current is None:
+        raise AuthorityStateError(
+            "screening result was not produced by screen_dataset()"
+        )
+    expected_fingerprint, context = current
+    if not isinstance(context, Mapping):  # pragma: no cover
+        raise AuthorityStateError("screening authority context is malformed")
+    if _screening_identity_snapshot(result) != context.get("identity_snapshot"):
+        raise AuthorityStateError(
+            "screening result changed after construction; recompute it"
+        )
+    if _screening_seal_fingerprint(result) != expected_fingerprint:
+        raise AuthorityStateError(
+            "screening result fingerprint changed after construction; recompute it"
+        )
+    source = context.get("source")
+    if context.get("source_official") is True:
+        if not _validate_classified_generation_if_present(source):
+            raise AuthorityStateError("official screening source lost authentication")
+    else:
+        try:
+            source_fingerprint = state_fingerprint(_screen_source_payload(source))
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise AuthorityStateError(
+                "generic screening source changed after result construction"
+            ) from exc
+        if source_fingerprint != context.get("source_fingerprint"):
+            raise AuthorityStateError(
+                "generic screening source changed after result construction"
+            )
+    _verify_result_implementation(result.receipt)
+    _validate_screening_result(result)
 
 
 def make_parent_aware_split(
@@ -674,10 +1032,12 @@ def make_parent_aware_split(
     The default ``priority_main`` is a conflict-aware hierarchy over exact RAC5,
     then complete MOFid-v2, then complete MOFid-v1 release triads.  A lower group
     never merges two stronger components: it records ``PARENT_METHOD_CONFLICT``.
-    Missing evidence becomes a singleton unless exclusion is requested.  Zeo++,
-    topology, source IDs, common names, CIF hashes, provisional source-ID/MOFid
-    transitive groups,
-    and StructureMatcher evidence do not enter that explanatory hierarchy.
+    Missing evidence becomes a singleton unless exclusion is requested.
+    ``priority_main`` does not use and explicitly excludes Zeo++, topology,
+    source IDs, common names, CIF hashes, provisional source-ID/MOFid transitive
+    groups, and StructureMatcher evidence from that explanatory hierarchy.  Here
+    priority means parent-evidence precedence; it does not rank, schedule, or
+    recalculate failed scientific features.
 
     ``leakage_guard="auto"`` selects ``main_union`` for ``priority_main`` and
     ``parent_only`` otherwise.  ``main_union`` is a full-release transitive
@@ -687,6 +1047,7 @@ def make_parent_aware_split(
     selected parent method's groups as split blocks.
     """
 
+    _require_screening_result(result)
     filters = result.filters
     return result.classified_dataset.train_valid_test_split(
         parent_method=parent_method,
@@ -703,7 +1064,7 @@ def make_parent_aware_split(
         required_targets=(
             filters["required_targets"] or None
         ),
-        required_target_mode=str(filters["required_target_mode"]),
+        required_target_mode=filters["required_target_mode"],
     )
 
 
@@ -884,7 +1245,10 @@ def _validate_split_correspondence(
         raise ScreeningError("split target filters differ from screening result")
 
     classified_ids = tuple(
-        str(record.structure_id) for record in result.classified_dataset
+        _exact_nonblank_string(
+            getattr(record, "structure_id", None), "classified structure_id"
+        )
+        for record in result.classified_dataset
     )
     preselection = split_filters.get("preselection")
     if not isinstance(preselection, Mapping):
@@ -898,9 +1262,18 @@ def _validate_split_correspondence(
         raise ScreeningError("split full-release universe differs from screening result")
 
     try:
-        assignment_ids = {str(value) for value in split_result.assignments}
-        exclusion_ids = {str(value) for value in split_result.exclusions}
-        index_ids = {str(value) for value in split_result.index_by_id}
+        assignment_ids = {
+            _exact_nonblank_string(value, "split assignment structure_id")
+            for value in split_result.assignments
+        }
+        exclusion_ids = {
+            _exact_nonblank_string(value, "split exclusion structure_id")
+            for value in split_result.exclusions
+        }
+        index_ids = {
+            _exact_nonblank_string(value, "split index structure_id")
+            for value in split_result.index_by_id
+        }
     except (AttributeError, TypeError) as exc:
         raise ScreeningError("split result lacks auditable assignment mappings") from exc
     release_ids = set(classified_ids)
@@ -918,7 +1291,12 @@ def _validate_screening_result(result: ScreeningResult) -> None:
 
     rows = tuple(result.rows)
     selected_ids = tuple(result.selected_ids)
-    row_ids = tuple(str(row.get("structure_id", "")) for row in rows)
+    for structure_id in selected_ids:
+        _exact_nonblank_string(structure_id, "selected structure_id")
+    row_ids = tuple(
+        _exact_nonblank_string(row.get("structure_id"), "screening row structure_id")
+        for row in rows
+    )
     if row_ids != selected_ids:
         raise ScreeningError(
             "screening rows and selected_ids differ; rebuild the screening result"
@@ -953,6 +1331,18 @@ def _validate_screening_result(result: ScreeningResult) -> None:
         raise ScreeningError("screening receipt has an invalid top-level contract")
     if receipt.get("schema_version") != SCHEMA_VERSION:
         raise ScreeningError("screening receipt has an invalid schema version")
+    receipt_dataset_version = _exact_nonblank_string(
+        receipt.get("dataset_version"), "receipt dataset_version"
+    )
+    receipt_checker_view = _exact_nonblank_string(
+        receipt.get("checker_view"), "receipt checker_view"
+    )
+    _optional_exact_string(
+        receipt.get("dataset_input_status"), "receipt dataset_input_status"
+    )
+    _optional_exact_string(
+        receipt.get("parent_input_status"), "receipt parent_input_status"
+    )
     implementation = receipt.get("implementation")
     if not isinstance(implementation, Mapping) or set(implementation) != {
         "package",
@@ -997,7 +1387,14 @@ def _validate_screening_result(result: ScreeningResult) -> None:
         value, reason = _finite_number(row.get("ranking_value"))
         if reason is not None or value is None:
             raise ScreeningError("screening result contains an invalid ranking value")
-        parsed.append((str(row["structure_id"]), value))
+        parsed.append(
+            (
+                _exact_nonblank_string(
+                    row["structure_id"], "screening row structure_id"
+                ),
+                value,
+            )
+        )
 
     expected_order = sorted(parsed, key=lambda item: item[0])
     expected_order.sort(
@@ -1064,22 +1461,59 @@ def _validate_screening_result(result: ScreeningResult) -> None:
     try:
         classified_records = tuple(classified)
         classified_by_id = {
-            str(record.structure_id): record for record in classified_records
+            _exact_nonblank_string(
+                getattr(record, "structure_id", None),
+                "classified structure_id",
+            ): record
+            for record in classified_records
         }
         dataset = classified.dataset
     except (AttributeError, TypeError) as exc:
         raise ScreeningError("screening result lacks an auditable classified dataset") from exc
+    # Validate every external receipt-claim source before comparing derived
+    # fields, so a malformed container or boolean cannot be masked by an
+    # earlier secondary mismatch.
+    input_hashes = _input_hash_mapping(dataset)
+    (
+        expected_parent_status,
+        expected_dataset_status,
+        _expected_provisional,
+    ) = _screen_release_receipt_state(dataset)
+    expected_cif_files_verified = _boolean_attribute(
+        dataset, "cif_files_verified", False
+    )
+    checker_view_official = _boolean_attribute(
+        classified,
+        "checker_view_official",
+        False,
+    )
     if len(classified_by_id) != len(classified_records):
         raise ScreeningError("classified dataset contains duplicate structure IDs")
     if len(classified_records) != counts["release"]:
         raise ScreeningError("screening release count differs from classified dataset")
-    if getattr(classified, "checker_view", None) != receipt.get("checker_view"):
-        raise ScreeningError("screening checker view differs from classified dataset")
-    if str(getattr(classified, "dataset_version", "")) != str(
-        receipt.get("dataset_version", "")
+    classified_checker_view = _exact_nonblank_string(
+        getattr(classified, "checker_view", None), "classified checker_view"
+    )
+    if checker_view_official and classified_checker_view not in CHECKER_PRESETS:
+        raise ScreeningError(
+            "checker_view_official=True requires a canonical official checker preset"
+        )
+    if checker_view_official and not _is_authenticated_official_checker_view(
+        classified
     ):
+        raise ScreeningError(
+            "checker_view_official=True requires an internally authenticated "
+            "recomputed release view"
+        )
+    if classified_checker_view != receipt_checker_view:
+        raise ScreeningError("screening checker view differs from classified dataset")
+    classified_dataset_version = _exact_nonblank_string(
+        getattr(classified, "dataset_version", None),
+        "classified dataset_version",
+    )
+    if classified_dataset_version != receipt_dataset_version:
         raise ScreeningError("screening dataset version differs from classified dataset")
-    if _json_safe(getattr(dataset, "input_hashes", {})) != _json_safe(
+    if _json_safe(input_hashes) != _json_safe(
         receipt.get("input_hashes")
     ):
         raise ScreeningError("screening input hashes differ from classified dataset")
@@ -1087,36 +1521,26 @@ def _validate_screening_result(result: ScreeningResult) -> None:
         receipt.get("target_merge_receipt")
     ):
         raise ScreeningError("screening target receipt differs from classified dataset")
-    dataset_info = getattr(dataset, "dataset_info", {}) or {}
-    parent_methods = getattr(dataset, "parent_group_methods", {}) or {}
-    expected_dataset_status = (
-        dataset_info.get("release_status")
-        if isinstance(dataset_info, Mapping)
-        else None
-    )
-    expected_parent_status = (
-        parent_methods.get("release_status")
-        if isinstance(parent_methods, Mapping)
-        else None
-    )
     if receipt.get("dataset_input_status") != expected_dataset_status:
         raise ScreeningError("screening dataset status differs from classified dataset")
     if receipt.get("parent_input_status") != expected_parent_status:
         raise ScreeningError("screening parent status differs from classified dataset")
-    if receipt.get("cif_files_verified") is not bool(
-        getattr(dataset, "cif_files_verified", False)
-    ):
+    if receipt.get("cif_files_verified") is not expected_cif_files_verified:
         raise ScreeningError("screening CIF-verification claim differs from dataset")
     expected_view_kind = (
         "OFFICIAL_RELEASE_VIEW"
-        if bool(getattr(classified, "checker_view_official", False))
+        if checker_view_official
         else "USER_DEFINED"
     )
     if receipt.get("checker_view_kind") != expected_view_kind:
         raise ScreeningError("screening checker-view kind differs from classified dataset")
 
-    target_columns = tuple(getattr(dataset, "target_columns", ()) or ())
-    feature_columns = tuple(getattr(dataset, "feature_columns", ()) or ())
+    target_columns = _column_name_tuple(
+        getattr(dataset, "target_columns", None), "target_columns"
+    )
+    feature_columns = _column_name_tuple(
+        getattr(dataset, "feature_columns", None), "feature_columns"
+    )
     expected_ranking_kind = (
         "TARGET"
         if ranking_column in target_columns
@@ -1284,8 +1708,9 @@ def write_screening(
     replacement inode during rollback.
     """
 
-    _verify_result_implementation(result.receipt)
-    _validate_screening_result(result)
+    if type(overwrite) is not bool:
+        raise TypeError("overwrite must be a boolean")
+    _require_screening_result(result)
     split_receipt = None
     split_hashes = None
     if split_result is not None:
@@ -1372,6 +1797,7 @@ def write_screening(
         if split_receipt is not None:
             output_receipt["split"] = {
                 "enabled": True,
+                "contract_definitions": split_receipt["contract_definitions"],
                 "assignment_csv": final["split_csv"].name,
                 "receipt_json": final["split_json"].name,
                 "assignment_csv_sha256": _sha256_file(staged["split_csv"]),
@@ -1483,7 +1909,9 @@ def build_parser() -> argparse.ArgumentParser:
             "Missing evidence is a unique singleton or explicit exclusion; Zeo++, "
             "topology, source ID, common name, CIF hash, provisional "
             "source-ID/MOFid transitive groups, and "
-            "StructureMatcher are excluded. rac5 uses all 264 finite binary64 values "
+            "StructureMatcher are excluded. Here priority means parent-evidence "
+            "precedence; it does not rank, schedule, or recalculate failed scientific "
+            "features. rac5 uses all 264 finite binary64 values "
             "after -0.0 to +0.0 and float.hex with rtol=atol=0; mofid_v2/mofid_v1 "
             "compare complete canonicalized strings. rac5_zeo combines RAC5 and zeo; "
             "zeo uses exact float.hex equality for 13 intensive N2/He fields (radii "
@@ -1493,32 +1921,41 @@ def build_parser() -> argparse.ArgumentParser:
             "identity_union selects the separate project-defined provisional "
             "source-ID/MOFid transitive groups read from identity "
             "status/group/size: "
-            "v26.0.2 preserves audited v26.0.1 components then transitively unions "
-            "exact database-namespaced source ID, complete MOFid-v2, or complete "
-            "MOFid-v1 text edges with no precedence. Each group and identity_size count "
+            "each named release is freshly recomputed over all its current rows by "
+            "transitively unioning exact database-namespaced source ID plus eligible "
+            "complete MOFid-v2 or MOFid-v1 text edges with no precedence and without "
+            "importing an earlier component. Each group and identity_size count "
             "one transitive connected component of structures, not edges or identifiers. "
-            "Missing identifiers add no edge. "
+            "Missing identifiers and unsuccessful MOFid statuses add no edge. "
             "It is not proof of structural identity and does not enter main_union. "
             "Canonicalized text means convert to text, collapse Unicode whitespace, "
             "trim, reject case-insensitive empty, -, nan, none, null, n/a, na, "
             "unknown, missing, timeout, timed out, error, failed, fail, fail process, "
             "failed process, or process failed whole fields, then apply Unicode NFKC and casefold, "
+            "so those declared whole-field placeholders never compare; "
             "with no fuzzy match. This text processing only compares identifiers and "
             "does not modify a CIF, atom, bond, occupancy, coordinate, chemistry, or "
-            "unit cell. The preserved v26.0.1 seed applies "
-            "its v11-only refcode steps: semicolon removal, slash/path/CIF stripping, "
-            "trim, all-whitespace deletion, casefold without NFKC, placeholder check, "
-            "one terminal _ASR_pacman/_FSR_pacman/_ION_pacman/_ION_ASR_pacman/"
-            "_ION_FSR_pacman removal, and recheck; those refcode edges had no database "
-            "namespace. Its v11 MOFid steps are semicolon removal/trim, literal "
-            "MOFidv2. repair, whitespace collapse/casefold without NFKC, terminal-v1 "
-            ".no_ref removal, then execution/leading-NA rejection. "
-            "rac5_topology (RT-) and "
-            "mofid_v2_topology (M2T-) require exact complete RAC5/MOFid plus successful "
+            "unit cell. Eligible MOFid statuses are SUCCESS, "
+            "SUCCESS_TOPOLOGY_UNKNOWN, SUCCESS_TOPOLOGY_ERROR, and "
+            "SUCCESS_TOPOLOGY_TIMEOUT; unresolved reconciliation, ambiguous node, "
+            "timeout, error, no-MOF, unmatched-node, and decomposition-error values "
+            "never match through a shared null. "
+            "rac5_crystalnets (RT-) reads rac_crystalnets_status/group/size and "
+            "requires exact equality of all 264 finite RAC5 values plus the complete "
+            "successful current CrystalNets fingerprint; "
+            "mofid_v2_crystalnets (M2T-) reads mofid2_crystalnets_status/group/size. "
+            "They require exact complete RAC5/MOFid plus successful "
             "release-authorized current CrystalNets network/count/net/agreement and "
             "every subnet node status/dimension/key/name/genome field; counts equal "
-            "subnet count and valid heterogeneous summary nulls are retained. M2T is "
-            "provisional whenever MOFid-v2 is. structure_matcher_strict (SM-) is a "
+            "subnet count and valid heterogeneous summary nulls are retained. Missing, "
+            "nonfinite, partial, timed-out, failed, or otherwise incomplete input adds "
+            "no edge. M2T is provisional whenever MOFid-v2 is and must be rebuilt "
+            "before use if release-authorized MOFid-v2 values change. Its eligible statuses "
+            "are exactly SUCCESS, SUCCESS_TOPOLOGY_UNKNOWN, SUCCESS_TOPOLOGY_ERROR, "
+            "and SUCCESS_TOPOLOGY_TIMEOUT; the latter two are successful calculated "
+            "identifiers with embedded topology qualifiers, while every other status "
+            "adds no edge. "
+            "structure_matcher_strict (SM-) is a "
             "Python 3.9/pymatgen 2024.2.8/NumPy 1.26.4 component view of pairs "
             "exhaustively blocked by parsed ElementComparator "
             "fractional composition and tested in both directions with "
@@ -1528,9 +1965,10 @@ def build_parser() -> argparse.ArgumentParser:
             "parser expands symmetry, uses site/frac tolerances 1e-4, checks occupancy, "
             "sorts, and preserves disorder without manual repair, occupancy selection, "
             "atom deletion, or chemistry editing; parser, timeout, OOM, matcher, and "
-            "asymmetric cases are unavailable. Directional "
+            "asymmetric cases are NOT_AVAILABLE rather than unmatched. Directional "
             "displacement/(V/Nsites)^(1/3) is dimensionless, not angstrom RMSD; SM is "
-            "not an all-pairs claim and direct edges are authoritative. RT/M2T/SM "
+            "a convenience component view rather than duplicate proof or an all-pairs "
+            "claim, and direct edges are authoritative. RT/M2T/SM "
             "prefix digests are criterion-bound length-delimited UTF-8 SHA-256 with "
             "at least eight uppercase hex characters, extended only on collision. Receipts "
             "store exact per-method semantics (default: priority_main)"

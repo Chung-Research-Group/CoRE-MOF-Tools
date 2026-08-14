@@ -3,16 +3,31 @@
 This module intentionally has no NumPy, pandas, scikit-learn, or chemistry
 imports.  It can be used on a login node or in a lightweight downstream ML
 environment as long as release metadata have already been loaded.
+
+The project-defined default ``priority_main`` is the conflict-aware hierarchy
+over exact RAC5, then MOFid-v2, then MOFid-v1 groups; conflicting lower groups
+never merge stronger components, and missing evidence becomes a singleton or
+is explicitly excluded.  It does not use optional reference methods.
+``main_union`` is the broader split-leakage guard, not a parent or explanatory
+method and not proof of identity or parentage: before filtering it takes
+transitive connected components over the complete release from exact full CIF
+SHA-256, database-namespaced source, RAC5, MOFid-v2, and MOFid-v1 edges.
+``parent_only`` is the narrower guard that uses only groups from the selected
+explanatory parent relation as split blocks.  ``auto`` selects ``main_union``
+for ``priority_main`` and ``parent_only`` for every explicitly selected direct
+or reference method.
 """
 
 from __future__ import annotations
 
 import csv
 from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, field, fields
+from decimal import Decimal
 import hashlib
 import json
 import math
+from numbers import Real
 import os
 from pathlib import Path
 import re
@@ -22,11 +37,24 @@ from types import MappingProxyType
 from typing import Dict, List, Mapping, Optional, Sequence, Set, Tuple
 
 from CoREMOF import __version__
+from CoREMOF._authority import (
+    AuthorityStateError,
+    IdentitySealRegistry,
+    reject_sealed_copy,
+    state_fingerprint,
+)
+from CoREMOF.dataset import (
+    _is_authenticated_official_checker_view,
+    _release_receipt_state,
+    _validate_classified_generation_if_present,
+    _validate_dataset_generation_if_present,
+)
 from CoREMOF.labels import CHECKER_PRESETS, LABELS, resolve_checker_view
 from CoREMOF.parents import (
     LEAKAGE_GUARD_CHOICES,
     SELECTABLE_PARENT_METHODS,
     ParentResolver,
+    generated_output_terminology_definitions,
     leakage_guard_definition,
     parent_method_definition,
     resolve_leakage_guard,
@@ -34,7 +62,9 @@ from CoREMOF.parents import (
 
 
 _SPLIT_NAMES = ("train", "validation", "test")
-SPLIT_API_VERSION = "0.1.0"
+SPLIT_API_VERSION = "0.2.0"
+_SPLIT_RESULT_FACTORY_TOKEN = object()
+_SPLIT_RESULTS = IdentitySealRegistry("split result generation")
 
 
 class OfficialSplitUnavailableError(RuntimeError):
@@ -43,9 +73,12 @@ class OfficialSplitUnavailableError(RuntimeError):
 
 def _deep_freeze(value):
     if isinstance(value, Mapping):
-        return MappingProxyType(
-            {str(key): _deep_freeze(item) for key, item in value.items()}
-        )
+        result = {}
+        for key, item in value.items():
+            if not isinstance(key, str) or not key or key != key.strip():
+                raise TypeError("mapping keys must be exact nonblank strings")
+            result[key] = _deep_freeze(item)
+        return MappingProxyType(result)
     if isinstance(value, (list, tuple, set, frozenset)):
         return tuple(_deep_freeze(item) for item in value)
     return value
@@ -53,19 +86,30 @@ def _deep_freeze(value):
 
 def _jsonable(value):
     if isinstance(value, Mapping):
-        return {str(key): _jsonable(item) for key, item in value.items()}
+        result = {}
+        for key, item in value.items():
+            if not isinstance(key, str) or not key or key != key.strip():
+                raise TypeError("mapping keys must be exact nonblank strings")
+            result[key] = _jsonable(item)
+        return result
     if isinstance(value, (list, tuple, set, frozenset)):
         return [_jsonable(item) for item in value]
     return value
 
 
 _BASE_IMPLEMENTATION_FILES = (
+    "_authority.py",
     "dataset.py",
     "labels.py",
     "parents.py",
     "splitters.py",
 )
-_TARGET_IMPLEMENTATION_FILES = ("dataset.py", "labels.py", "targets.py")
+_TARGET_IMPLEMENTATION_FILES = (
+    "_authority.py",
+    "dataset.py",
+    "labels.py",
+    "targets.py",
+)
 
 
 def _current_base_implementation_hashes() -> Dict[str, str]:
@@ -143,7 +187,7 @@ def _implementation_hashes(
             "target-aware implementation hashing requires the target merge receipt"
         )
     target_hashes = _target_receipt_implementation_hashes(target_receipt)
-    for filename in ("dataset.py", "labels.py"):
+    for filename in ("_authority.py", "dataset.py", "labels.py"):
         if target_hashes[filename] != imported[filename]:
             raise ValueError(
                 "{} changed between target merge and split import".format(filename)
@@ -152,17 +196,117 @@ def _implementation_hashes(
     return result
 
 
-def _as_optional_tuple(values) -> Optional[Tuple[str, ...]]:
+def _as_optional_tuple(values, name: str) -> Optional[Tuple[str, ...]]:
     if values is None:
         return None
     if isinstance(values, str):
-        return (values,)
-    return tuple(str(value) for value in values)
+        result = (values,)
+    else:
+        if not isinstance(values, (list, tuple)):
+            raise TypeError(
+                "%s must be an exact string or ordered list/tuple of strings"
+                % name
+            )
+        result = tuple(values)
+    if not result:
+        raise ValueError("%s must not be empty; use None for no filter" % name)
+    if any(not isinstance(value, str) for value in result):
+        raise TypeError("%s values must be strings" % name)
+    if any(not value or value != value.strip() for value in result):
+        raise ValueError("%s values must be exact nonblank strings" % name)
+    return result
+
+
+def _column_name_tuple(value: object, name: str) -> Tuple[str, ...]:
+    """Validate one optional externally supplied column-name sequence."""
+
+    if value is None:
+        return ()
+    if isinstance(value, str) or not isinstance(value, (list, tuple)):
+        raise TypeError("%s must be a list or tuple of strings when present" % name)
+    result = tuple(value)
+    if any(
+        not isinstance(item, str) or not item or item != item.strip()
+        for item in result
+    ):
+        raise ValueError("%s values must be exact nonblank strings" % name)
+    if len(set(result)) != len(result):
+        raise ValueError("%s must not contain duplicate names" % name)
+    return result
 
 
 def _stable_digest(*values: object) -> str:
     text = "\0".join(str(value) for value in values)
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _split_source_payload(classified: object) -> Tuple[object, ...]:
+    """Return exact generic-protocol state on which a split can depend."""
+
+    dataset = getattr(classified, "dataset", None)
+    if dataset is None:
+        raise AuthorityStateError("split source has no dataset")
+    metadata_rows = getattr(dataset, "metadata_rows", None)
+    if not isinstance(metadata_rows, (list, tuple)):
+        raise AuthorityStateError("split source metadata_rows must be a sequence")
+    if any(not isinstance(row, Mapping) for row in metadata_rows):
+        raise AuthorityStateError("split source metadata rows must be mappings")
+    labels = getattr(classified, "label_by_id", None)
+    if labels is None:
+        labels = getattr(classified, "labels", None)
+    if not isinstance(labels, (Mapping, list, tuple)):
+        raise AuthorityStateError("split source labels must be a mapping or sequence")
+    official = getattr(classified, "checker_view_official", False)
+    if type(official) is not bool:
+        raise AuthorityStateError("checker_view_official must be a boolean")
+    return (
+        "coremof-generic-split-source/1",
+        getattr(classified, "checker_view", None),
+        official,
+        tuple(getattr(classified, "structure_ids", ())),
+        labels,
+        getattr(classified, "selection_filters", None),
+        tuple(metadata_rows),
+        getattr(dataset, "parent_by_id", None),
+        getattr(dataset, "cif_hashes", None),
+        getattr(dataset, "input_hashes", None),
+        getattr(dataset, "dataset_info", None),
+        getattr(dataset, "parent_group_methods", None),
+        getattr(dataset, "dataset_version", None),
+        getattr(dataset, "cif_files_verified", None),
+        getattr(dataset, "target_columns", None),
+        getattr(dataset, "feature_columns", None),
+        getattr(dataset, "target_input_receipt", None),
+    )
+
+
+def _split_result_identity_snapshot(result: object) -> Tuple[object, ...]:
+    snapshot = []
+    for definition in fields(result):
+        name = definition.name
+        if name == "_authority_factory_token":
+            continue
+        value = getattr(result, name)
+        if name == "_authority_source":
+            snapshot.append((name, "identity", id(value)))
+        elif isinstance(value, Mapping):
+            snapshot.append((name, "mapping", id(value)))
+        elif type(value) is tuple:
+            snapshot.append((name, "tuple", id(value)))
+        else:
+            snapshot.append((name, type(value).__module__, type(value).__qualname__, value))
+    return tuple(snapshot)
+
+
+def _split_result_seal_fingerprint(result: object) -> str:
+    """Bind every public dataclass field, including nested receipt evidence."""
+
+    payload = tuple(
+        (definition.name, getattr(result, definition.name))
+        for definition in fields(result)
+        if definition.name not in {"_authority_factory_token", "_authority_source"}
+    )
+    return state_fingerprint(("coremof-split-result-generation/2", payload))
 
 
 @dataclass(frozen=True)
@@ -210,8 +354,23 @@ class SplitResult:
     provisional_input: bool
     target_data: Optional[Mapping[str, object]] = None
     official_split: bool = False
+    _authority_factory_token: object = field(
+        default=None, repr=False, compare=False
+    )
+    _authority_source: object = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
+        for field_name in (
+            "train_ids",
+            "validation_ids",
+            "test_ids",
+            "train_indices",
+            "validation_indices",
+            "test_indices",
+            "fractions",
+            "stratify_by",
+        ):
+            object.__setattr__(self, field_name, tuple(getattr(self, field_name)))
         for field_name in (
             "assignments",
             "exclusions",
@@ -237,6 +396,18 @@ class SplitResult:
             "parent_conflicts",
             tuple(_deep_freeze(conflict) for conflict in self.parent_conflicts),
         )
+
+    def __copy__(self):
+        reject_sealed_copy(self, "copied")
+        raise TypeError("unsealed split results cannot be copied")
+
+    def __deepcopy__(self, memo):
+        reject_sealed_copy(self, "deep-copied")
+        raise TypeError("unsealed split results cannot be deep-copied")
+
+    def __reduce_ex__(self, protocol):
+        reject_sealed_copy(self, "pickled")
+        raise TypeError("split results are point-in-time non-serializable objects")
 
     def __iter__(self):
         return iter((self.train_indices, self.validation_indices, self.test_indices))
@@ -364,6 +535,7 @@ class SplitResult:
     def assignment_rows(self) -> List[Mapping[str, object]]:
         """Return deterministic rows used by :meth:`to_csv`."""
 
+        _require_split_result(self)
         rows: List[Mapping[str, object]] = []
         for structure_id, index in sorted(self.index_by_id.items(), key=lambda item: item[1]):
             rows.append(
@@ -402,6 +574,7 @@ class SplitResult:
     def receipt(self) -> Mapping[str, object]:
         """Return a JSON-serializable reproducibility receipt."""
 
+        _require_split_result(self)
         partitions = {
             "train": {
                 "ids": list(self.train_ids),
@@ -420,7 +593,7 @@ class SplitResult:
             },
         }
         receipt = {
-            "schema_version": "coremof-split-receipt/1.0",
+            "schema_version": "coremof-split-receipt/1.1",
             "implementation": {
                 "package": "CoREMOF-tools",
                 "package_version": self.implementation_package_version,
@@ -438,6 +611,9 @@ class SplitResult:
                 "OFFICIAL_RELEASE_VIEW"
                 if self.checker_view_official
                 else "USER_DEFINED"
+            ),
+            "contract_definitions": _jsonable(
+                generated_output_terminology_definitions()
             ),
             "parent_input_status": self.parent_input_status,
             "dataset_input_status": self.dataset_input_status,
@@ -501,6 +677,8 @@ class SplitResult:
 
     @staticmethod
     def _atomic_target(path, overwrite: bool) -> Tuple[Path, Path]:
+        if type(overwrite) is not bool:
+            raise TypeError("overwrite must be a boolean")
         output = Path(path)
         output.parent.mkdir(parents=True, exist_ok=True)
         if output.exists() and not overwrite:
@@ -525,6 +703,7 @@ class SplitResult:
     def to_csv(self, path, overwrite: bool = False) -> Path:
         """Write assignment rows, including explicit exclusions."""
 
+        _require_split_result(self)
         output, temporary = self._atomic_target(path, overwrite)
         fieldnames = (
             "structure_id",
@@ -553,6 +732,7 @@ class SplitResult:
     def to_json(self, path, overwrite: bool = False) -> Path:
         """Write the point-in-time split receipt."""
 
+        _require_split_result(self)
         output, temporary = self._atomic_target(path, overwrite)
         try:
             with temporary.open("w", encoding="utf-8") as handle:
@@ -613,6 +793,9 @@ class SplitResult:
         semantics; callers must serialize writers for the same stem.
         """
 
+        _require_split_result(self)
+        if type(overwrite) is not bool:
+            raise TypeError("overwrite must be a boolean")
         if (
             not isinstance(stem, str)
             or not stem
@@ -689,6 +872,230 @@ class SplitResult:
         return csv_path, json_path
 
 
+def _validate_split_result_contract(result: SplitResult, source: object) -> None:
+    """Reverse-check every public result/receipt claim against its source."""
+
+    if result._authority_factory_token is not _SPLIT_RESULT_FACTORY_TOKEN:
+        raise AuthorityStateError(
+            "split result was not produced by ParentGroupSplitter"
+        )
+    for name in (
+        "checker_view_official",
+        "cif_files_verified",
+        "provisional_input",
+        "official_split",
+    ):
+        if type(getattr(result, name)) is not bool:
+            raise AuthorityStateError("{} must be an exact boolean".format(name))
+    if result.official_split:
+        raise AuthorityStateError(
+            "official_split requires a separately authenticated assignment manifest; "
+            "none is available"
+        )
+    for name in (
+        "parent_method",
+        "requested_leakage_guard",
+        "leakage_guard",
+        "missing_parent",
+        "random_state",
+        "implementation_package_version",
+        "implementation_split_api_version",
+    ):
+        value = getattr(result, name)
+        if not isinstance(value, str) or not value or value != value.strip():
+            raise AuthorityStateError("{} must be an exact nonblank string".format(name))
+    for name in ("dataset_version", "checker_view", "parent_input_status", "dataset_input_status"):
+        value = getattr(result, name)
+        if value is not None and (
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+        ):
+            raise AuthorityStateError(
+                "{} must be an exact nonblank string or None".format(name)
+            )
+    if (
+        result.parent_method not in SELECTABLE_PARENT_METHODS
+        or result.requested_leakage_guard not in LEAKAGE_GUARD_CHOICES
+        or result.leakage_guard
+        != resolve_leakage_guard(result.requested_leakage_guard, result.parent_method)
+        or result.missing_parent not in {"singleton", "exclude"}
+    ):
+        raise AuthorityStateError("split parent/leakage policy is invalid")
+    if result.implementation_package_version != __version__ or (
+        result.implementation_split_api_version != SPLIT_API_VERSION
+    ):
+        raise AuthorityStateError("split implementation version claim is invalid")
+
+    partition_ids = (
+        tuple(result.train_ids),
+        tuple(result.validation_ids),
+        tuple(result.test_ids),
+    )
+    flat_ids = tuple(value for partition in partition_ids for value in partition)
+    if any(
+        not isinstance(value, str) or not value or value != value.strip()
+        for value in flat_ids
+    ) or len(set(flat_ids)) != len(flat_ids):
+        raise AuthorityStateError("split partitions contain invalid or duplicate IDs")
+    assignment_ids = set(result.assignments)
+    if assignment_ids != set(flat_ids):
+        raise AuthorityStateError("split assignments differ from partition IDs")
+    for split, ids in zip(_SPLIT_NAMES, partition_ids):
+        if any(result.assignments.get(structure_id) != split for structure_id in ids):
+            raise AuthorityStateError("split assignment label differs from its partition")
+    if set(result.exclusions).intersection(assignment_ids):
+        raise AuthorityStateError("assigned and excluded structure IDs overlap")
+    if set(result.index_by_id) != assignment_ids.union(result.exclusions):
+        raise AuthorityStateError("split result does not cover its release universe")
+    if any(
+        not isinstance(key, str)
+        or not key
+        or key != key.strip()
+        or not isinstance(value, int)
+        or isinstance(value, bool)
+        or value < 0
+        for key, value in result.index_by_id.items()
+    ):
+        raise AuthorityStateError("split release index mapping is invalid")
+    if sorted(result.index_by_id.values()) != list(range(len(result.index_by_id))):
+        raise AuthorityStateError("split release indices must be contiguous and unique")
+    for ids, indices in zip(
+        partition_ids,
+        (result.train_indices, result.validation_indices, result.test_indices),
+    ):
+        if tuple(result.view_index_by_id[value] for value in ids) != tuple(indices):
+            raise AuthorityStateError("split view indices differ from partition IDs")
+    if result.leakage_audit.get("passed") is not True:
+        raise AuthorityStateError("split leakage audit failed")
+    if len(result.fractions) != 3 or any(
+        type(value) is not float or not math.isfinite(value) or value < 0.0
+        for value in result.fractions
+    ) or not math.isclose(sum(result.fractions), 1.0, rel_tol=0.0, abs_tol=1e-9):
+        raise AuthorityStateError("split fractions are invalid")
+    if any(
+        not isinstance(value, str) or not value or value != value.strip()
+        for value in result.stratify_by
+    ):
+        raise AuthorityStateError("split strata names are invalid")
+
+    classified = source
+    dataset = getattr(classified, "dataset", None)
+    if dataset is None:
+        raise AuthorityStateError("split result source dataset is unavailable")
+    expected_official = _is_authenticated_official_checker_view(classified)
+    if result.checker_view_official is not expected_official:
+        raise AuthorityStateError(
+            "split official checker claim differs from its authenticated source"
+        )
+    expected_checker_view = getattr(classified, "checker_view", None)
+    expected_dataset_version = getattr(dataset, "dataset_version", None)
+    if result.checker_view != expected_checker_view or (
+        result.dataset_version != expected_dataset_version
+    ):
+        raise AuthorityStateError("split source identity claims changed")
+    expected_hashes = getattr(dataset, "input_hashes", None)
+    if expected_hashes is None:
+        expected_hashes = {}
+    if not isinstance(expected_hashes, Mapping) or dict(result.input_hashes) != dict(
+        expected_hashes
+    ):
+        raise AuthorityStateError("split input hashes differ from its source")
+    expected_cif = getattr(dataset, "cif_files_verified", False)
+    if type(expected_cif) is not bool or result.cif_files_verified is not expected_cif:
+        raise AuthorityStateError("split CIF verification claim differs from its source")
+    try:
+        (
+            expected_parent_status,
+            expected_dataset_status,
+            expected_provisional,
+        ) = _release_receipt_state(dataset)
+    except (TypeError, ValueError) as exc:
+        raise AuthorityStateError(
+            "split source release-state contract is invalid"
+        ) from exc
+    if result.parent_input_status != expected_parent_status or (
+        result.dataset_input_status != expected_dataset_status
+    ):
+        raise AuthorityStateError("split release-status claims differ from source")
+    if result.provisional_input is not expected_provisional:
+        raise AuthorityStateError("split provisional-input claim is invalid")
+    target_receipt = getattr(dataset, "target_input_receipt", None)
+    if _jsonable(result.target_data) != _jsonable(target_receipt):
+        raise AuthorityStateError("split target receipt differs from source")
+    if target_receipt is not None:
+        # TargetMergedDataset receipt() revalidates its own factory generation.
+        receipt_method = getattr(dataset, "receipt", None)
+        if not callable(receipt_method) or _jsonable(receipt_method()) != _jsonable(
+            target_receipt
+        ):
+            raise AuthorityStateError("split target generation is unauthenticated")
+    expected_hash_closure = _implementation_hashes(
+        include_targets=target_receipt is not None,
+        target_receipt=target_receipt,
+    )
+    if dict(result.implementation_hashes) != dict(expected_hash_closure):
+        raise AuthorityStateError("split implementation hash closure is invalid")
+
+
+def _register_split_result(result: SplitResult, source: object) -> SplitResult:
+    if result._authority_factory_token is not _SPLIT_RESULT_FACTORY_TOKEN:
+        raise AuthorityStateError("cannot register a non-factory split result")
+    object.__setattr__(result, "_authority_source", source)
+    _validate_split_result_contract(result, source)
+    official = _validate_classified_generation_if_present(source)
+    source_fingerprint = None
+    if not official:
+        source_fingerprint = state_fingerprint(_split_source_payload(source))
+    fingerprint = _split_result_seal_fingerprint(result)
+    _SPLIT_RESULTS.register(
+        result,
+        fingerprint,
+        {
+            "source": source,
+            "source_official": official,
+            "source_fingerprint": source_fingerprint,
+            "identity_snapshot": _split_result_identity_snapshot(result),
+        },
+    )
+    return result
+
+
+def _require_split_result(result: SplitResult) -> None:
+    current = _SPLIT_RESULTS.entry(result)
+    if current is None:
+        raise AuthorityStateError(
+            "split result was not produced by the current ParentGroupSplitter factory"
+        )
+    expected_fingerprint, context = current
+    if not isinstance(context, Mapping):  # pragma: no cover - private invariant
+        raise AuthorityStateError("split result authority context is malformed")
+    if _split_result_identity_snapshot(result) != context.get("identity_snapshot"):
+        raise AuthorityStateError(
+            "split result changed after construction; recompute the split"
+        )
+    if _split_result_seal_fingerprint(result) != expected_fingerprint:
+        raise AuthorityStateError(
+            "split result fingerprint changed after construction; recompute the split"
+        )
+    source = context.get("source")
+    if context.get("source_official") is True:
+        if not _validate_classified_generation_if_present(source):
+            raise AuthorityStateError("official split source lost authentication")
+    else:
+        try:
+            source_fingerprint = state_fingerprint(_split_source_payload(source))
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise AuthorityStateError(
+                "generic split source changed after result construction"
+            ) from exc
+        if source_fingerprint != context.get("source_fingerprint"):
+            raise AuthorityStateError(
+                "generic split source changed after result construction"
+            )
+    _validate_split_result_contract(result, source)
+
+
 class ParentGroupSplitter:
     """Split a classified CoRE-MOF dataset while keeping parents together.
 
@@ -719,14 +1126,15 @@ class ParentGroupSplitter:
         official: bool = False,
     ):
         self.classified_dataset = classified_dataset
+        _validate_classified_generation_if_present(classified_dataset)
         self.dataset = getattr(classified_dataset, "dataset", None)
         if self.dataset is None and hasattr(classified_dataset, "metadata_rows"):
             self.dataset = classified_dataset
         if self.dataset is None:
             raise TypeError("classified_dataset must expose its source as .dataset")
+        _validate_dataset_generation_if_present(self.dataset)
         if not isinstance(parent_method, str):
             raise TypeError("parent method must be a string")
-        parent_method = parent_method.strip().lower()
         if parent_method not in SELECTABLE_PARENT_METHODS:
             raise ValueError(
                 "Unknown parent method %r; choose one of %s"
@@ -742,6 +1150,8 @@ class ParentGroupSplitter:
         leakage_guard = resolve_leakage_guard(leakage_guard, parent_method)
         if missing_parent not in ("exclude", "singleton"):
             raise ValueError("missing_parent must be 'exclude' or 'singleton'")
+        if type(official) is not bool:
+            raise TypeError("official must be a boolean")
         if official:
             raise OfficialSplitUnavailableError(
                 "No audited official split manifest is available for this release. "
@@ -753,12 +1163,30 @@ class ParentGroupSplitter:
         self.requested_leakage_guard = requested_leakage_guard
         self.leakage_guard = leakage_guard
         self.missing_parent = missing_parent
+        if isinstance(random_state, bool) or not isinstance(random_state, (int, str)):
+            raise TypeError("random_state must be a non-boolean integer or string")
+        if isinstance(random_state, str) and (
+            not random_state or random_state != random_state.strip()
+        ):
+            raise ValueError("random_state string must be exact and non-empty")
         self.random_state = str(random_state)
         if isinstance(stratify_by, str):
             self.stratify_by = (stratify_by,)
         else:
-            self.stratify_by = tuple(str(value) for value in (stratify_by or ()))
-        self.label_filter = _as_optional_tuple(labels)
+            if not isinstance(stratify_by, (list, tuple)):
+                raise TypeError(
+                    "stratify_by must be a string or iterable of strings; only "
+                    "an exact string or ordered list/tuple is accepted"
+                )
+            self.stratify_by = tuple(stratify_by)
+        if any(
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            for value in self.stratify_by
+        ):
+            raise ValueError("stratify_by values must be exact nonblank strings")
+        self.label_filter = _as_optional_tuple(labels, "labels")
         if self.label_filter is not None:
             invalid_labels = {
                 value.upper() for value in self.label_filter
@@ -767,20 +1195,17 @@ class ParentGroupSplitter:
                 raise ValueError(
                     "unknown split label(s): %s" % ", ".join(sorted(invalid_labels))
                 )
-        self.source_filter = _as_optional_tuple(sources)
-        self.variant_filter = _as_optional_tuple(variants)
-        self.metal_filter = _as_optional_tuple(metals)
-        self.structure_id_filter = _as_optional_tuple(structure_ids)
+        self.source_filter = _as_optional_tuple(sources, "sources")
+        self.variant_filter = _as_optional_tuple(variants, "variants")
+        self.metal_filter = _as_optional_tuple(metals, "metals")
+        self.structure_id_filter = _as_optional_tuple(structure_ids, "structure_ids")
         self._structure_id_filter_set = (
             set(self.structure_id_filter)
             if self.structure_id_filter is not None
             else None
         )
-        self.required_targets = _as_optional_tuple(required_targets)
+        self.required_targets = _as_optional_tuple(required_targets, "required_targets")
         if self.required_targets is not None:
-            self.required_targets = tuple(
-                value.strip() for value in self.required_targets
-            )
             if not self.required_targets or any(not value for value in self.required_targets):
                 raise ValueError("required_targets must contain non-empty target names")
             if len(set(self.required_targets)) != len(self.required_targets):
@@ -793,14 +1218,25 @@ class ParentGroupSplitter:
         self._row_by_id: Dict[str, Mapping[str, object]] = {}
         self._index_by_id: Dict[str, int] = {}
         for index, row in enumerate(self._rows):
-            structure_id = str(row.get("structure_id", "")).strip()
-            if not structure_id:
-                raise ValueError("Every metadata row must have a non-empty structure_id")
+            if not isinstance(row, Mapping):
+                raise TypeError("Every metadata row must be a mapping")
+            raw_structure_id = row.get("structure_id")
+            if (
+                not isinstance(raw_structure_id, str)
+                or not raw_structure_id
+                or raw_structure_id != raw_structure_id.strip()
+            ):
+                raise ValueError(
+                    "Every metadata row must have an exact nonblank string structure_id"
+                )
+            structure_id = raw_structure_id
             if structure_id in self._row_by_id:
                 raise ValueError("Duplicate structure_id in metadata_rows: %s" % structure_id)
             self._row_by_id[structure_id] = row
             self._index_by_id[structure_id] = index
-        attached_targets = tuple(getattr(self.dataset, "target_columns", ()) or ())
+        attached_targets = _column_name_tuple(
+            getattr(self.dataset, "target_columns", None), "target_columns"
+        )
         self._attached_targets = attached_targets
         if self.required_targets is not None:
             if not attached_targets:
@@ -820,7 +1256,16 @@ class ParentGroupSplitter:
         selected_values = getattr(classified_dataset, "structure_ids", None)
         if selected_values is None:
             selected_values = tuple(self._labels)
-        self._view_ids = tuple(str(value) for value in selected_values)
+        self._view_ids = tuple(selected_values)
+        if any(
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            for value in self._view_ids
+        ):
+            raise ValueError(
+                "classified_dataset structure IDs must be exact nonblank strings"
+            )
         if len(set(self._view_ids)) != len(self._view_ids):
             raise ValueError("classified_dataset contains duplicate structure IDs")
         self._view_index_by_id = {
@@ -854,8 +1299,12 @@ class ParentGroupSplitter:
                 "Unknown stratify_by field(s): %s"
                 % ", ".join(sorted(set(unknown_strata)))
             )
-        selection_filters = getattr(classified_dataset, "selection_filters", {}) or {}
-        self._selection_filters = self._json_safe(selection_filters)
+        selection_filters = getattr(classified_dataset, "selection_filters", None)
+        if selection_filters is None:
+            selection_filters = {}
+        elif not isinstance(selection_filters, Mapping):
+            raise TypeError("selection_filters must be a mapping when present")
+        self._selection_filters = self._selection_json_safe(selection_filters)
         target_receipt = getattr(self.dataset, "target_input_receipt", None)
         self._target_input_receipt = (
             self._json_safe(target_receipt) if target_receipt is not None else None
@@ -864,32 +1313,70 @@ class ParentGroupSplitter:
     @classmethod
     def _json_safe(cls, value):
         if isinstance(value, Mapping):
-            return {str(key): cls._json_safe(item) for key, item in value.items()}
-        if isinstance(value, (set, frozenset)):
-            return [cls._json_safe(item) for item in sorted(value, key=lambda item: str(item))]
+            result = {}
+            for key, item in value.items():
+                if not isinstance(key, str) or not key or key != key.strip():
+                    raise TypeError("receipt mapping keys must be exact nonblank strings")
+                result[key] = cls._json_safe(item)
+            return result
         if isinstance(value, (list, tuple)):
             return [cls._json_safe(item) for item in value]
-        if value is None or isinstance(value, (str, int, float, bool)):
+        if value is None or type(value) in (str, int, bool):
             return value
-        return str(value)
+        if type(value) is float and math.isfinite(value):
+            return value
+        raise TypeError("receipt values must be finite JSON data without coercion")
+
+    @classmethod
+    def _selection_json_safe(cls, value):
+        """Copy selection provenance without coercing keys or unknown values."""
+
+        if isinstance(value, Mapping):
+            result = {}
+            for key, item in value.items():
+                if not isinstance(key, str) or not key or key != key.strip():
+                    raise TypeError(
+                        "selection_filters keys must be exact nonblank strings"
+                    )
+                result[key] = cls._selection_json_safe(item)
+            return result
+        if isinstance(value, (list, tuple)):
+            return [cls._selection_json_safe(item) for item in value]
+        if value is None or isinstance(value, (str, int, bool)):
+            return value
+        if isinstance(value, float) and math.isfinite(value):
+            return value
+        raise TypeError("selection_filters must contain only finite JSON values")
 
     def _coerce_labels(self, labels) -> Dict[str, str]:
         if isinstance(labels, Mapping):
             result = {}
             for structure_id, value in labels.items():
+                if (
+                    not isinstance(structure_id, str)
+                    or not structure_id
+                    or structure_id != structure_id.strip()
+                ):
+                    raise ValueError(
+                        "classification label keys must be exact nonblank structure IDs"
+                    )
                 if isinstance(value, Mapping) and "label" in value:
                     value = value["label"]
                 elif hasattr(value, "label"):
                     value = value.label
                 if value is not None:
-                    canonical = str(value).upper()
+                    if not isinstance(value, str):
+                        raise ValueError(
+                            "classification labels must be strings or null"
+                        )
+                    canonical = value.upper()
                     if canonical not in LABELS:
                         raise ValueError(
                             "unknown classification label for {}: {!r}".format(
                                 structure_id, value
                             )
                         )
-                    result[str(structure_id)] = canonical
+                    result[structure_id] = canonical
             return result
         values = tuple(labels)
         if len(values) != len(self._rows):
@@ -898,18 +1385,28 @@ class ParentGroupSplitter:
         for row, label in zip(self._rows, values):
             if label is None:
                 continue
-            canonical = str(label).upper()
+            if not isinstance(label, str):
+                raise ValueError("classification labels must be strings or null")
+            canonical = label.upper()
             if canonical not in LABELS:
                 raise ValueError(
                     "unknown classification label for {}: {!r}".format(
                         row["structure_id"], label
                     )
                 )
-            result[str(row["structure_id"])] = canonical
+            result[row["structure_id"]] = canonical
         return result
 
     @staticmethod
     def _validate_fractions(fractions: Sequence[float]) -> Tuple[float, float, float]:
+        if not isinstance(fractions, (list, tuple)):
+            raise TypeError("fractions must be an ordered list/tuple of numeric values")
+        if any(isinstance(value, bool) for value in fractions):
+            raise ValueError("fractions must be numeric values, not booleans")
+        if any(not isinstance(value, (Real, Decimal)) for value in fractions):
+            raise TypeError(
+                "fractions must contain finite non-boolean numeric values"
+            )
         values = tuple(float(value) for value in fractions)
         if len(values) != 3:
             raise ValueError("fractions must contain train, validation, and test values")
@@ -990,43 +1487,77 @@ class ParentGroupSplitter:
         }
 
         dataset_version = getattr(self.dataset, "dataset_version", None)
-        checker_view = getattr(self.classified_dataset, "checker_view", None)
-        checker_view_official = bool(
-            getattr(
-                self.classified_dataset,
-                "checker_view_official",
-                checker_view in CHECKER_PRESETS,
+        if dataset_version is not None and (
+            not isinstance(dataset_version, str)
+            or not dataset_version
+            or dataset_version != dataset_version.strip()
+        ):
+            raise TypeError(
+                "dataset_version must be an exact nonblank string or None"
             )
+        checker_view = getattr(self.classified_dataset, "checker_view", None)
+        if checker_view is not None and (
+            not isinstance(checker_view, str)
+            or not checker_view
+            or checker_view != checker_view.strip()
+        ):
+            raise TypeError("checker_view must be an exact nonblank string or None")
+        marker = object()
+        checker_view_official_value = getattr(
+            self.classified_dataset, "checker_view_official", marker
         )
-        input_hashes = getattr(self.dataset, "input_hashes", {}) or {}
-        cif_files_verified = bool(
-            getattr(self.dataset, "cif_files_verified", False)
-        )
-        parent_methods = getattr(self.dataset, "parent_group_methods", {}) or {}
-        if isinstance(parent_methods, Mapping):
-            parent_input_status_value = parent_methods.get("release_status")
+        if checker_view_official_value is marker:
+            checker_view_official = False
+        elif type(checker_view_official_value) is not bool:
+            raise TypeError("checker_view_official must be a boolean when present")
         else:
-            parent_input_status_value = None
-        parent_input_status = (
-            str(parent_input_status_value)
-            if parent_input_status_value is not None
-            else None
-        )
-        dataset_info = getattr(self.dataset, "dataset_info", {}) or {}
-        if isinstance(dataset_info, Mapping):
-            dataset_input_status_value = dataset_info.get("release_status")
+            checker_view_official = checker_view_official_value
+        if checker_view_official and checker_view not in CHECKER_PRESETS:
+            raise ValueError(
+                "checker_view_official=True requires a canonical official "
+                "checker preset"
+            )
+        if checker_view_official and not _is_authenticated_official_checker_view(
+            self.classified_dataset
+        ):
+            raise ValueError(
+                "checker_view_official=True requires an internally authenticated "
+                "recomputed release view"
+            )
+
+        input_hashes_value = getattr(self.dataset, "input_hashes", None)
+        if input_hashes_value is None:
+            input_hashes = {}
+        elif not isinstance(input_hashes_value, Mapping):
+            raise TypeError("input_hashes must be a mapping when present")
         else:
-            dataset_input_status_value = None
-        dataset_input_status = (
-            str(dataset_input_status_value)
-            if dataset_input_status_value is not None
-            else None
-        )
-        # Publication state is deliberately closed.  A label such as
-        # FINAL_CANDIDATE or NOT_FINAL must never be guessed to mean final.
-        provisional_input = not (
-            parent_input_status == "FINAL" and dataset_input_status == "FINAL"
-        )
+            input_hashes = input_hashes_value
+        if any(
+            not isinstance(key, str)
+            or not key
+            or key != key.strip()
+            or not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            for key, value in input_hashes.items()
+        ):
+            raise TypeError(
+                "input_hashes keys and values must be exact nonblank strings"
+            )
+
+        cif_verified_value = getattr(self.dataset, "cif_files_verified", marker)
+        if cif_verified_value is marker:
+            cif_files_verified = False
+        elif type(cif_verified_value) is not bool:
+            raise TypeError("cif_files_verified must be a boolean when present")
+        else:
+            cif_files_verified = cif_verified_value
+
+        (
+            parent_input_status,
+            dataset_input_status,
+            provisional_input,
+        ) = _release_receipt_state(self.dataset)
         filters = {
             "preselection": {
                 "active": self._preselected_ids != set(self._row_by_id),
@@ -1068,7 +1599,7 @@ class ParentGroupSplitter:
                 "filter_precedes_assignment": True,
                 "leakage_blocks_use_full_release_universe": True,
             }
-        return SplitResult(
+        result = SplitResult(
             train_ids=ids_by_split["train"],
             validation_ids=ids_by_split["validation"],
             test_ids=ids_by_split["test"],
@@ -1111,8 +1642,8 @@ class ParentGroupSplitter:
             leakage_groups=block_by_id,
             index_by_id=dict(self._index_by_id),
             view_index_by_id=dict(self._view_index_by_id),
-            dataset_version=str(dataset_version) if dataset_version is not None else None,
-            checker_view=str(checker_view) if checker_view is not None else None,
+            dataset_version=dataset_version,
+            checker_view=checker_view,
             checker_view_official=checker_view_official,
             parent_method=self.parent_method,
             requested_leakage_guard=self.requested_leakage_guard,
@@ -1122,7 +1653,7 @@ class ParentGroupSplitter:
             random_state=self.random_state,
             stratify_by=self.stratify_by,
             filters=filters,
-            input_hashes={str(key): str(value) for key, value in input_hashes.items()},
+            input_hashes=dict(input_hashes),
             implementation_package_version=__version__,
             implementation_split_api_version=SPLIT_API_VERSION,
             implementation_hashes=dict(
@@ -1137,7 +1668,9 @@ class ParentGroupSplitter:
             provisional_input=provisional_input,
             target_data=self._target_input_receipt,
             official_split=False,
+            _authority_factory_token=_SPLIT_RESULT_FACTORY_TOKEN,
         )
+        return _register_split_result(result, self.classified_dataset)
 
     def _filter_reason(self, structure_id: str) -> Optional[str]:
         row = self._row_by_id[structure_id]
@@ -1159,11 +1692,17 @@ class ParentGroupSplitter:
                 return "LABEL_FILTER"
         if self.source_filter is not None:
             allowed = {value.upper() for value in self.source_filter}
-            if str(row.get("source_database", "")).upper() not in allowed:
+            source = row.get("source_database", "")
+            if not isinstance(source, str) or source != source.strip():
+                raise TypeError("source_database must be an exact string")
+            if source.upper() not in allowed:
                 return "SOURCE_FILTER"
         if self.variant_filter is not None:
             allowed = {value.upper() for value in self.variant_filter}
-            if str(row.get("structure_variant", "")).upper() not in allowed:
+            variant = row.get("structure_variant", "")
+            if not isinstance(variant, str) or variant != variant.strip():
+                raise TypeError("structure_variant must be an exact string")
+            if variant.upper() not in allowed:
                 return "VARIANT_FILTER"
         if self.metal_filter is not None:
             requested = {value.casefold() for value in self.metal_filter}
@@ -1192,13 +1731,23 @@ class ParentGroupSplitter:
         if value is None:
             return set()
         if isinstance(value, str):
-            values = re.split(r"[,;|\s]+", value.strip("[](){} "))
+            if value != value.strip():
+                raise TypeError("metal_elements must be an exact string")
+            values = tuple(item for item in re.split(r"[,;|\s]+", value) if item)
+        elif isinstance(value, (list, tuple)):
+            values = tuple(value)
+            if any(
+                not isinstance(item, str)
+                or not item
+                or item != item.strip()
+                for item in values
+            ):
+                raise TypeError(
+                    "metal_elements sequences must contain exact nonblank strings"
+                )
         else:
-            try:
-                values = list(value)  # type: ignore[arg-type]
-            except TypeError:
-                values = [value]
-        return {str(item).strip("'\" ").casefold() for item in values if str(item).strip()}
+            raise TypeError("metal_elements must be a string or string sequence")
+        return {item.casefold() for item in values}
 
     def _stratum(self, structure_id: str) -> Tuple[str, ...]:
         row = self._row_by_id[structure_id]
@@ -1208,9 +1757,14 @@ class ParentGroupSplitter:
                 value = self._labels.get(structure_id)
             else:
                 value = row.get(key)
-            if isinstance(value, (dict, list, tuple, set)):
-                value = json.dumps(value, sort_keys=True, separators=(",", ":"), default=str)
-            values.append("<MISSING>" if value is None or value == "" else str(value))
+            if value is None or value == "":
+                values.append("<MISSING>")
+            elif not isinstance(value, str) or value != value.strip():
+                raise TypeError(
+                    "stratification values must be exact strings or missing"
+                )
+            else:
+                values.append(value)
         return tuple(values)
 
     def _assign_blocks(
@@ -1355,7 +1909,12 @@ def split_release(
     project-defined parent and leakage semantics recorded in the receipt.
     """
 
-    if splitter_options.get("official"):
+    if type(verify_cif_files) is not bool:
+        raise TypeError("verify_cif_files must be a boolean")
+    requested_official = splitter_options.get("official", False)
+    if type(requested_official) is not bool:
+        raise TypeError("official must be a boolean")
+    if requested_official:
         raise OfficialSplitUnavailableError(
             "No audited official split manifest is available for this release. "
             "Generate an exploratory split with official=False; do not label it "
@@ -1363,13 +1922,19 @@ def split_release(
         )
 
     if hasattr(release_root, "label_by_id"):
-        if verify_cif_files and not getattr(
-            getattr(release_root, "dataset", None), "cif_files_verified", False
-        ):
-            raise ValueError(
-                "verify_cif_files=True requires a release path or a dataset "
-                "previously loaded with verify_cif_files=True"
+        if verify_cif_files:
+            verified = getattr(
+                getattr(release_root, "dataset", None),
+                "cif_files_verified",
+                False,
             )
+            if type(verified) is not bool:
+                raise TypeError("cif_files_verified must be a boolean when present")
+            if not verified:
+                raise ValueError(
+                    "verify_cif_files=True requires a release path or a dataset "
+                    "previously loaded with verify_cif_files=True"
+                )
         if checkers is not None:
             requested_view, _, _ = resolve_checker_view(checkers)
             existing_view = getattr(release_root, "checker_view", None)
@@ -1378,7 +1943,15 @@ def split_release(
                     "an explicitly requested checker view cannot be verified on "
                     "this preclassified dataset"
                 )
-            if str(existing_view) != requested_view:
+            if (
+                not isinstance(existing_view, str)
+                or not existing_view
+                or existing_view != existing_view.strip()
+            ):
+                raise TypeError(
+                    "preclassified checker_view must be an exact nonblank string"
+                )
+            if existing_view != requested_view:
                 raise ValueError(
                     "preclassified dataset uses {!r}, but checkers={!r} requests {!r}".format(
                         existing_view, checkers, requested_view
@@ -1386,10 +1959,14 @@ def split_release(
                 )
         classified_dataset = release_root
     elif hasattr(release_root, "classify") and hasattr(release_root, "metadata_rows"):
-        if verify_cif_files and not getattr(release_root, "cif_files_verified", False):
-            raise ValueError(
-                "the supplied dataset was not loaded with verify_cif_files=True"
-            )
+        if verify_cif_files:
+            verified = getattr(release_root, "cif_files_verified", False)
+            if type(verified) is not bool:
+                raise TypeError("cif_files_verified must be a boolean when present")
+            if not verified:
+                raise ValueError(
+                    "the supplied dataset was not loaded with verify_cif_files=True"
+                )
         classified_dataset = release_root.classify(
             "5checker" if checkers is None else checkers
         )
