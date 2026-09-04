@@ -36,6 +36,20 @@ standard-library-only; ``[full]`` preserves the dependencies installed by
 default in 0.3. Existing environments normally retain already installed
 packages, but new scientific-workflow environments should request ``[full]``.
 
+The target-independent ``representative`` diversity profile used by
+``data_split()`` and ``benchmark-cr-ncr`` has a narrower reproducibility extra:
+
+.. code-block:: bash
+
+   python -m pip install ".[benchmark]"
+
+This installs exactly NumPy 1.26.4, scikit-learn 1.5.0, SciPy 1.13.1,
+joblib 1.5.3, and threadpoolctl 3.6.0. The profile uses
+complete scientific vectors without imputation, median/interquartile-range
+scaling, at most 32 RAC5 principal components, and deterministic
+MiniBatchKMeans strata. Missing dependencies or version drift raise an error;
+the package never silently switches to a different numerical backend.
+
 For repository development or exact environment reproduction:
 
 .. code-block:: bash

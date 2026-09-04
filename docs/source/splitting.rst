@@ -704,6 +704,182 @@ Implementation versions and source hashes are frozen when the result is
 constructed, so a later code edit cannot silently change the receipt for an
 existing in-memory split.
 
+Target-independent diversity and paired CR/NCR benchmarks
+----------------------------------------------------------
+
+The APIs below are additive; the historical ``split()``,
+``train_valid_test_split()``, ``SplitResult``, and ``coremof split`` behavior
+and receipt schema are unchanged.
+
+``main_union_plus_criteria`` is the project-defined effective-block policy.
+Before every label, source, variant, metal, ID, or target filter, it starts
+from ``main_union``--the complete-release connected components over exact full
+CIF SHA-256, database-namespaced source siblings, and available
+release-authorized exact RAC5, MOFid-v2, and MOFid-v1 groups--adds
+co-membership edges for every ordered selected explanatory criterion, and
+takes connected-component closure again. Missing criterion evidence is a
+per-structure singleton and adds no shared edge. One **effective leakage
+block** is indivisible across partitions; it is a guard, not identity or
+common-parent proof.
+
+.. code-block:: python
+
+   from CoREMOF import available_group_criteria
+
+   print(available_group_criteria(classified.dataset))
+   split = classified.data_split(
+       group_criteria=("RT", "source_id"),
+       train=0.8,
+       val=0.1,
+       test=0.1,
+       leakage_guard="main_union_plus_criteria",
+       diversity="representative",
+       random_state=42,
+   )
+
+At their first use here, ``RT`` is exact equality of all 264 finite depth-5
+RAC5 binary64 values plus a complete current-success CrystalNets fingerprint;
+that fingerprint includes network dimension; interpenetrated-subnet,
+catenation, and subnet counts; top-level single-node/all-node nets and
+agreement; and every complete SingleNodes and AllNodes subnet's status,
+dimension, topology key, topology name, topological genome, and agreement.
+Incomplete input adds no match. ``M2T`` is exact equality of the complete
+canonical release-authorized MOFid-v2 string plus that fingerprint. Canonical
+MOFid text converts a non-null value to text, collapses Unicode-whitespace runs
+to one ASCII space, trims, rejects empty/declared whole-field placeholders,
+applies Unicode NFKC, then case-folds; it changes no CIF, coordinate, atom,
+occupancy, bond, chemistry, topology, or unit cell. Its eligible statuses are
+``SUCCESS``, ``SUCCESS_TOPOLOGY_UNKNOWN``, ``SUCCESS_TOPOLOGY_ERROR``, and
+``SUCCESS_TOPOLOGY_TIMEOUT``; every other status or incomplete input adds no
+match. M2T remains provisional with provisional MOFid and must be rebuilt when
+authorized MOFid-v2 values change. ``SM`` is the convenience connected
+component over authoritative direct symmetric matches from the pinned strict
+pymatgen protocol: forward and reverse ``fit(..., symmetric=True)`` must both
+pass under Python 3.9, pymatgen 2024.2.8, NumPy 1.26.4, ElementComparator,
+``ltol=stol=0.001``, ``angle_tol=0.01``, ``primitive_cell=True``,
+``scale=False``, ``attempt_supercell=True``, ``allow_subset=False``,
+``supercell_size=num_sites``, and no ignored species. Its direct CifParser uses
+site/coordinate tolerances 0.0001, expands declared symmetry, merges sites
+within tolerance, rounds coordinates near one third/two thirds, checks
+occupancy, sorts the periodic Structure, preserves disorder, and performs no
+manual repair, occupancy selection, atom deletion, or chemistry edit. Direct
+edges are authoritative, components are not all-pair duplicate claims, and
+parser/timeout/OOM/matcher/asymmetric/execution failures are ``NOT_AVAILABLE``
+rather than unmatched. RT, M2T, and SM are
+reference-only and enter neither ``priority_main`` nor the pre-existing
+``main_union`` by themselves.
+
+``representative`` is the versioned target-free diversity profile. It uses a
+complete 264-value finite RAC5 vector first, otherwise the complete selected
+Zeo++ vector of 13 intensive N2/He fields plus N2 channel and bonded-framework
+dimensions, otherwise an explicit no-numeric tier. Each numeric tier uses
+median/interquartile-range scaling; a zero-IQR field remains with unit scale,
+so median-centered deviations are retained rather than forced to zero, and no
+scientific feature is imputed. RAC5 is reduced to at most 32 principal
+components. Sorted IDs enter deterministic MiniBatchKMeans with profile seed
+2602 and ``k=min(n,256,max(16,ceil(sqrt(n))))``. These clusters balance
+distributions only and cannot divide an effective block. Source, variant,
+current topology category, and availability tier are balanced alongside them.
+Install the pinned backend with ``pip install "CoREMOF-tools[benchmark]"``
+(NumPy 1.26.4, scikit-learn 1.5.0, SciPy 1.13.1, joblib 1.5.3, and
+threadpoolctl 3.6.0); absence/version drift raises ``BenchmarkDependencyError``
+instead of silently falling back. Numerical libraries run with a one-thread
+limit and their non-path runtime identity is receipted; cross-architecture bit
+identity is not guaranteed.
+
+For the paired benchmark, strict five-checker CR means all five named checker
+results are available and PASS; strict five-checker NCR means all five are
+available and FAIL. ``NOT_AVAILABLE`` is a non-vote and never becomes NCR.
+``full_cr`` fixes cohort size after the declared cohort-eligibility policy.
+The raw complete-release CR/NCR counts remain in the audit as C_raw and M_raw;
+with eligible counts C and M and requested NCR-pool fraction q, each cohort uses
+``round_half_up(q*M)`` NCR and ``C-round_half_up(q*M)`` CR structures; q=1
+therefore uses every NCR row rather than creating a necessarily 100%-NCR
+composition. ``fixed_pure_cr`` reserves one common approximately requested-
+size test from whole effective blocks whose complete-release members are all
+strict CR. The test is identical across ratios/seeds and has zero block overlap
+with train or validation.
+
+The v26.0.2 raw strict pools cross blocks that also contain another checker
+label, so the default fails closed rather than selecting a partial block. The
+audited sensitivity ladder must explicitly use
+``cohort_eligibility="complete_release_label_pure_effective_blocks"``. This
+policy retains only complete-release effective blocks whose members all have
+one strict label; it is an explicit exclusion sensitivity, not relabeling.
+
+.. code-block:: python
+
+   cohorts = classified.build_cr_ncr_cohorts(
+       ncr_pool_fractions=(0.0, 0.2, 0.4, 0.6, 0.8, 1.0),
+       seeds=(42, 43, 44, 45, 46),
+       total_size="full_cr",
+       train=0.8,
+       val=0.1,
+       test=0.1,
+       group_criteria="priority_main",
+       cohort_eligibility="complete_release_label_pure_effective_blocks",
+       diversity="representative",
+       test_policy="fixed_pure_cr",
+   )
+   suite = cohorts.data_split(include_full_cr_diagnostic=True)
+   suite.write("benchmark_outputs")
+
+Within one seed, increasing q adds an NCR priority prefix and removes a CR
+suffix; persistent structures retain their partition. Deviations forced by
+whole blocks are reported. ``full_cr_diagnostic`` is a supplementary view over
+the complete raw strict-CR pool, including rows excluded by the label-pure
+sensitivity policy, and reports
+exact-ID/same-block overlap with training; it is not the independent paper
+test. Construction reports exact counts and fails closed when ``M>C`` or
+``M>C-test_count``. The checksum-bound published v26.0.2 integration has raw
+counts C_raw=6,294 and M_raw=2,299. With ``priority_main`` and the explicit
+label-pure policy, 1,601 CR and 572 NCR rows are excluded with non-label-pure
+blocks, leaving eligible C=4,693 and M=1,727. Thus q=1 uses 1,727 NCR plus
+2,966 CR rows. Every real run recomputes and records raw, excluded, and
+eligible counts. The separate staged checker overlay has C=9,143 and M=9,769
+and is an explicitly non-default infeasible diagnostic, not the published
+benchmark authority. The writer also emits a companion four-label accounting
+manifest for AMBIGUOUS and UNCHECKED rows. Every new output remains exploratory
+with ``official_split=false``.
+
+Targets attach only after assignment. ``keep`` is a left join preserving every
+selected ID and null; ``error`` requires all declared targets; ``drop`` creates
+only a filtered derived view without refill, rebalance, or resplit. The
+existing typed CSV/JSON/JSONL, exact-ID/explicit-alias, units, conditions, and
+conflict rules are reused. Attachment receipts reference the frozen assignment
+digest and retain its ``official_split`` state; target hashes never enter or
+change the original split receipt. For
+``drop``, the receipt retains pre-drop missingness and separately reports
+derived coverage and dropped IDs by run and partition. A premerged table or
+persisted manifest must match the exact release version, structure universe,
+and base input hashes; equal IDs alone do not establish that binding.
+
+.. code-block:: python
+
+   attached = split.attach_targets(target_sources, missing="keep")
+   attached_suite = suite.attach_targets(target_sources, missing="keep")
+
+The persisted CLI form verifies both files before attachment::
+
+   coremof attach-targets /path/to/coremof_v26.0.2 \
+     --manifest model_split.csv --receipt model_split.json \
+     --config targets.json --output-directory attached_targets
+
+Without ``--receipt``, the command looks for ``model_split.json`` beside
+``model_split.csv``.
+
+The target-free benchmark CLI requires the same explicit sensitivity policy::
+
+   coremof benchmark-cr-ncr /secure/path/to/coremof_v26.0.2 \
+     --group-criteria priority_main \
+     --cohort-eligibility complete_release_label_pure_effective_blocks \
+     --output-directory benchmark_outputs
+
+The thin CLI commands are ``coremof benchmark-cr-ncr`` and
+``coremof attach-targets``; use ``--help`` for the same self-contained method
+definitions and output options. A compact transfer checklist is available in
+the repository's ``ML_BENCHMARK_HANDOFF.md``.
+
 Reproducibility and balance
 ---------------------------
 
@@ -761,3 +937,13 @@ The ability to select CSD or SI rows does not grant redistribution rights.
 COD is the clearly open source, but the API applies no source filter when
 ``sources=None``. CSD structure files remain licence-gated, and SI assets
 require an asset-level rights check before redistribution.
+
+This handoff adds no restricted data to GitHub. The historical repository
+already contains legacy SI archives and is not a sanitized data-free clone.
+Do not add release tables, CIF archives, checker findings,
+structure-resolved targets, or generated assignment manifests; those require an
+approved manual or institutional transfer after recipient rights are
+confirmed; do not place them in Git, Git LFS, or an unapproved public-cloud
+service. Verify the supplied SHA-256 ledgers after transfer. Outputs retain
+``official_split=false`` and remain restricted until their row-level
+redistribution rights are reviewed.

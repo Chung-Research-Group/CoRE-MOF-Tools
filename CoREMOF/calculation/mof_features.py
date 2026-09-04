@@ -1,13 +1,15 @@
 """Analysis topology, open metal sites, revised autocorrelation and so on.
 """
 
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pymatgen.io.ase import AseAtomsAdaptor
-from ase.io import read
-from pymatgen.core.structure import Structure
-
+import math
+import numbers
 import os
 import tempfile
+
+from ase.io import read
+from pymatgen.core.structure import Structure
+from pymatgen.io.ase import AseAtomsAdaptor
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
 
 def SpaceGroup(structure):
@@ -217,13 +219,46 @@ def get_oms_folder(input_folder, n_batch = 1):
     return oms_result
 
 
-def RACs(structure):
+def _rac_family_names(prefix, properties, maximum_depth, suffix="-all"):
+    return [
+        f"{prefix}-{property_name}-{current_depth}{suffix}"
+        for property_name in properties
+        for current_depth in range(maximum_depth + 1)
+    ]
+
+
+def _rac_names_by_group(maximum_depth):
+    common_properties = ("I", "S", "T", "Z", "chi")
+    linker_properties = ("I", "S", "T", "Z", "alpha", "chi")
+    return {
+        "Metal": (
+            _rac_family_names("D_mc", common_properties, maximum_depth)
+            + _rac_family_names("f", common_properties, maximum_depth)
+            + _rac_family_names("mc", common_properties, maximum_depth)
+        ),
+        "Linker": (
+            _rac_family_names("D_lc", linker_properties, maximum_depth)
+            + _rac_family_names("lc", linker_properties, maximum_depth)
+            + _rac_family_names(
+                "f-lig", common_properties, maximum_depth, suffix=""
+            )
+        ),
+        "Function-group": (
+            _rac_family_names("D_func", linker_properties, maximum_depth)
+            + _rac_family_names("func", linker_properties, maximum_depth)
+        ),
+    }
+
+
+def RACs(structure, depth=3):
 
     """Revised Autocorrelation features (https://github.com/hjkgrp/molSimplify).
 
     Args:
-        input_folder (str): path to your folder.
-        n_batch (int): number of batches.
+        structure (str or path-like): path to one CIF.
+        depth (int): maximum autocorrelation depth. The historical public
+            default is 3. Setting this to 5 changes the descriptor depth but
+            does not by itself reproduce the sealed CoRE-MOF v26 RAC5 method.
        
     Returns:
         Dictionary:
@@ -232,30 +267,12 @@ def RACs(structure):
             -   function group by ["Function-group"]
     """
 
-    metal_fnames = ['D_mc-I-0-all', 'D_mc-I-1-all', 'D_mc-I-2-all', 'D_mc-I-3-all', 'D_mc-S-0-all', 'D_mc-S-1-all', 'D_mc-S-2-all',
-    'D_mc-S-3-all', 'D_mc-T-0-all', 'D_mc-T-1-all', 'D_mc-T-2-all', 'D_mc-T-3-all', 'D_mc-Z-0-all', 'D_mc-Z-1-all', 'D_mc-Z-2-all',
-    'D_mc-Z-3-all', 'D_mc-chi-0-all', 'D_mc-chi-1-all', 'D_mc-chi-2-all', 'D_mc-chi-3-all', 'f-I-0-all', 'f-I-1-all', 'f-I-2-all',
-    'f-I-3-all', 'f-S-0-all', 'f-S-1-all', 'f-S-2-all', 'f-S-3-all', 'f-T-0-all', 'f-T-1-all', 'f-T-2-all', 'f-T-3-all', 'f-Z-0-all',
-    'f-Z-1-all', 'f-Z-2-all', 'f-Z-3-all', 'f-chi-0-all', 'f-chi-1-all', 'f-chi-2-all', 'f-chi-3-all', 'mc-I-0-all', 'mc-I-1-all',
-    'mc-I-2-all', 'mc-I-3-all', 'mc-S-0-all', 'mc-S-1-all', 'mc-S-2-all', 'mc-S-3-all', 'mc-T-0-all', 'mc-T-1-all', 'mc-T-2-all',
-    'mc-T-3-all', 'mc-Z-0-all', 'mc-Z-1-all', 'mc-Z-2-all', 'mc-Z-3-all', 'mc-chi-0-all', 'mc-chi-1-all', 'mc-chi-2-all', 'mc-chi-3-all']
-
-    linker_fnames = ['D_lc-I-0-all', 'D_lc-I-1-all', 'D_lc-I-2-all', 'D_lc-I-3-all', 'D_lc-S-0-all', 'D_lc-S-1-all', 'D_lc-S-2-all',
-    'D_lc-S-3-all', 'D_lc-T-0-all', 'D_lc-T-1-all', 'D_lc-T-2-all', 'D_lc-T-3-all', 'D_lc-Z-0-all', 'D_lc-Z-1-all', 'D_lc-Z-2-all',
-    'D_lc-Z-3-all', 'D_lc-alpha-0-all', 'D_lc-alpha-1-all', 'D_lc-alpha-2-all', 'D_lc-alpha-3-all', 'D_lc-chi-0-all', 'D_lc-chi-1-all',
-    'D_lc-chi-2-all', 'D_lc-chi-3-all', 'lc-I-0-all', 'lc-I-1-all', 'lc-I-2-all', 'lc-I-3-all', 'lc-S-0-all', 'lc-S-1-all', 'lc-S-2-all',
-    'lc-S-3-all', 'lc-T-0-all', 'lc-T-1-all', 'lc-T-2-all', 'lc-T-3-all', 'lc-Z-0-all', 'lc-Z-1-all', 'lc-Z-2-all', 'lc-Z-3-all',
-    'lc-alpha-0-all', 'lc-alpha-1-all', 'lc-alpha-2-all', 'lc-alpha-3-all', 'lc-chi-0-all', 'lc-chi-1-all', 'lc-chi-2-all', 'lc-chi-3-all',
-    'f-lig-I-0', 'f-lig-I-1', 'f-lig-I-2', 'f-lig-I-3', 'f-lig-S-0', 'f-lig-S-1', 'f-lig-S-2', 'f-lig-S-3', 'f-lig-T-0', 'f-lig-T-1',
-    'f-lig-T-2', 'f-lig-T-3', 'f-lig-Z-0', 'f-lig-Z-1', 'f-lig-Z-2', 'f-lig-Z-3', 'f-lig-chi-0', 'f-lig-chi-1', 'f-lig-chi-2', 'f-lig-chi-3']
-
-    fg_fnames = ['D_func-I-0-all', 'D_func-I-1-all', 'D_func-I-2-all', 'D_func-I-3-all', 'D_func-S-0-all', 'D_func-S-1-all',
-    'D_func-S-2-all', 'D_func-S-3-all', 'D_func-T-0-all', 'D_func-T-1-all', 'D_func-T-2-all', 'D_func-T-3-all', 'D_func-Z-0-all',
-    'D_func-Z-1-all', 'D_func-Z-2-all', 'D_func-Z-3-all', 'D_func-alpha-0-all', 'D_func-alpha-1-all', 'D_func-alpha-2-all',
-    'D_func-alpha-3-all', 'D_func-chi-0-all', 'D_func-chi-1-all', 'D_func-chi-2-all', 'D_func-chi-3-all', 'func-I-0-all',
-    'func-I-1-all', 'func-I-2-all', 'func-I-3-all', 'func-S-0-all', 'func-S-1-all', 'func-S-2-all', 'func-S-3-all', 'func-T-0-all',
-    'func-T-1-all', 'func-T-2-all', 'func-T-3-all', 'func-Z-0-all', 'func-Z-1-all', 'func-Z-2-all', 'func-Z-3-all', 'func-alpha-0-all',
-    'func-alpha-1-all', 'func-alpha-2-all', 'func-alpha-3-all', 'func-chi-0-all', 'func-chi-1-all', 'func-chi-2-all', 'func-chi-3-all']
+    if isinstance(depth, bool) or not isinstance(depth, numbers.Integral):
+        raise TypeError("depth must be a non-bool integer")
+    if depth < 0:
+        raise ValueError("depth must be greater than or equal to zero")
+    depth = int(depth)
+    expected_names = _rac_names_by_group(depth)
 
     result_rac = {}
     result_rac["Metal"] = {}
@@ -274,19 +291,37 @@ def RACs(structure):
     with tempfile.TemporaryDirectory(prefix="coremof_rac_") as workdir:
         full_names, full_descriptors = get_MOF_descriptors(
             structure,
-            3,
+            depth,
             path=workdir,
             xyzpath=os.path.join(workdir, f"{name}.xyz"),
             max_num_atoms=6000,
         )
                                                         
-    descriptor_data = dict(zip(full_names, full_descriptors))
+    names = list(full_names)
+    descriptors = list(full_descriptors)
+    if len(names) != len(descriptors):
+        raise ValueError("molSimplify returned different RAC name/value counts")
+    if len(names) != len(set(names)):
+        raise ValueError("molSimplify returned duplicate RAC names")
+    descriptor_data = dict(zip(names, descriptors))
 
-    for metal in metal_fnames:
-        result_rac["Metal"][metal] =  round(float(descriptor_data[metal]), 4)
-    for linker in linker_fnames:
-        result_rac["Linker"][linker] =  round(float(descriptor_data[linker]), 4)
-    for fg in fg_fnames:
-        result_rac["Function-group"][fg] =  round(float(descriptor_data[fg]), 4)
+    for group, group_names in expected_names.items():
+        for descriptor_name in group_names:
+            if descriptor_name not in descriptor_data:
+                raise ValueError(
+                    "molSimplify RAC output is missing expected descriptor "
+                    f"{descriptor_name!r} at depth {depth}"
+                )
+            try:
+                value = float(descriptor_data[descriptor_name])
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"molSimplify RAC descriptor {descriptor_name!r} is not numeric"
+                ) from exc
+            if not math.isfinite(value):
+                raise ValueError(
+                    f"molSimplify RAC descriptor {descriptor_name!r} is not finite"
+                )
+            result_rac[group][descriptor_name] = round(value, 4)
 
     return result_rac

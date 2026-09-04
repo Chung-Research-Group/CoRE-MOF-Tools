@@ -1,0 +1,4 @@
+interface:
+  display_name: "CoRE-MOF ML Benchmark Handoff"
+  short_description: "Run the audited v26.0.2 CR/NCR benchmark"
+  default_prompt: "Use $coremof-release-curation to verify the restricted handoff, freeze target-blind CR/NCR assignments, and attach current targets afterward."

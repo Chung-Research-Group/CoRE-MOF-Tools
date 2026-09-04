@@ -2247,7 +2247,6 @@ print(result.receipt()["assignment_sha256"],
         for parent_status, dataset_status in (
             ("FINAL_CANDIDATE", "FINAL"),
             ("FINAL", "FINAL"),
-            ("PROVISIONAL_LATEST_AUDITED_SNAPSHOT", "PROVISIONAL_LATEST_AUDITED_SNAPSHOT"),
         ):
             with self.subTest(
                 parent_status=parent_status,
@@ -2265,6 +2264,17 @@ print(result.receipt()["assignment_sha256"],
                     ParentGroupSplitter(
                         classified, parent_method="none"
                     ).train_valid_test_split()
+
+        classified.dataset.parent_group_methods = {
+            "release_status": "PROVISIONAL_LATEST_AUDITED_SNAPSHOT"
+        }
+        classified.dataset.dataset_info = {
+            "release_status": "PROVISIONAL_LATEST_AUDITED_SNAPSHOT"
+        }
+        staged = ParentGroupSplitter(
+            classified, parent_method="none"
+        ).train_valid_test_split()
+        self.assertTrue(staged.provisional_input)
 
 
 if __name__ == "__main__":

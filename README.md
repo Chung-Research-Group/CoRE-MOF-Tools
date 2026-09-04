@@ -46,6 +46,34 @@ Version 0.4 changes the installation contract: bare installation is the
 lightweight dataset/splitting API, while `[full]` preserves the dependency set
 previously installed by default.
 
+The target-independent `representative` diversity profile uses complete finite
+264-value depth-5 revised autocorrelation (RAC5) descriptors first, otherwise
+the declared complete Zeo++ pore vector, otherwise an explicit no-numeric tier;
+it never imputes or reads targets. The paired strict five-checker benchmark uses
+computation-ready (CR) only when all five checker results are available and
+PASS, and non-computation-ready (NCR) only when all five are available and FAIL.
+These workflows require their exact numerical environment:
+
+```bash
+python -m pip install ".[benchmark]"  # exact five-package numerical stack
+```
+
+This pins NumPy 1.26.4, scikit-learn 1.5.0, SciPy 1.13.1, joblib 1.5.3,
+and threadpoolctl 3.6.0. Missing dependencies or version drift fail explicitly.
+Numerical libraries are limited to one thread during diversity construction
+and their non-path runtime identity is recorded. Cross-architecture bit
+identity is not promised. The historical
+`train_valid_test_split()` API remains standard-library-only and unchanged.
+
+For an exact copy-and-run v26.0.2 workflow on a separate GPU machine, see the
+[ML benchmark handoff guide](ML_BENCHMARK_HANDOFF.md). The audited published
+five-checker view contains 6,294 raw strict-CR and 2,299 raw strict-NCR rows.
+Whole complete-release leakage blocks leave 4,693 CR and 1,727 NCR rows in the
+label-pure sensitivity cohort, which must be requested explicitly with
+`cohort_eligibility="complete_release_label_pure_effective_blocks"`. Every
+result remains exploratory with `official_split=false`, and targets are joined
+only after the assignment is frozen.
+
 To reproduce the repository environment, use:
 
 ```bash
@@ -342,6 +370,45 @@ print(surface_area["ASA"])
 
 Zeo++ calls use unique temporary files and are safe for paths containing spaces and for concurrent workflows. Set `COREMOF_NETWORK_EXECUTABLE` if the executable is not named `network`.
 
+### Resolve either one CIF or a directory
+
+Use the shared resolver when a workflow should accept either one CIF file or a
+directory. A directory scan is non-recursive and returns its direct regular
+CIF children in deterministic lexical filename order. The return type is
+always a tuple, so downstream code does not need separate file and directory
+branches:
+
+```python
+from CoREMOF import resolve_cif_inputs
+
+for cif_path in resolve_cif_inputs("one_file.cif"):  # also accepts a directory
+    print(cif_path)
+```
+
+Missing paths, unsupported files, empty directories, and CIF symlinks or
+special files raise an error before scientific software is called. The same is
+true when two basenames become equal after Unicode NFKC normalization followed
+by case folding; that comparison only detects ambiguous output identifiers and
+does not alter a path or CIF byte. Existing low-level scientific functions keep
+their historical input and return types; the resolver is the common front end
+for new batch wrappers.
+
+### Calculate RAC descriptors at a chosen depth
+
+```python
+from CoREMOF.calculation.mof_features import RACs
+
+historical_public_racs = RACs("my_mof.cif")          # depth=3, 176 values
+chosen_depth_racs = RACs("my_mof.cif", depth=5)     # 264 values
+```
+
+`depth` must be a non-Boolean integer greater than or equal to zero. Output
+keeps the historical `Metal`, `Linker`, and `Function-group` order and rounds
+values to four decimal places. Therefore `depth=5` selects a 264-value public
+calculation but is not the sealed CoRE-MOF v26 release RAC5 method, which also
+requires the pinned molSimplify 1.7.3 environment and unrounded validated
+values.
+
 ### Precheck and standardize a CIF
 
 ```python
@@ -368,6 +435,7 @@ stability_result = stability("my_mof.cif")
 
 | Task | Module | Main entry point |
 |---|---|---|
+| Single-CIF/directory input resolution | `CoREMOF.inputs` | `resolve_cif_inputs()`, `collect_cifs()` |
 | Database lookup | `CoREMOF.structure` | `information()` |
 | SI/CSD structure download | `CoREMOF.structure` | `download_from_SI`, `download_from_CSD()` |
 | Zeo++ geometry | `CoREMOF.calculation.Zeopp` | `PoreDiameter()`, `SurfaceArea()`, `PoreVolume()` |

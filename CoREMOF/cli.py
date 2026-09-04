@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+from importlib import metadata as importlib_metadata
 from importlib.util import find_spec
 import json
 from pathlib import Path
@@ -48,6 +50,15 @@ FEATURES = {
     "MOFid": {
         "modules": ["ase", "pymatgen", "networkx", "selfies", "openbabel"],
     },
+    "Representative benchmark": {
+        "versions": {
+            "numpy": "1.26.4",
+            "scikit-learn": "1.5.0",
+            "scipy": "1.13.1",
+            "joblib": "1.5.3",
+            "threadpoolctl": "3.6.0",
+        },
+    },
 }
 
 
@@ -81,6 +92,16 @@ def doctor() -> int:
             for relative_path in requirements.get("paths", [])
             if not (package_root / relative_path).exists()
         )
+        for distribution, expected in requirements.get("versions", {}).items():
+            try:
+                found = importlib_metadata.version(distribution)
+            except importlib_metadata.PackageNotFoundError:
+                missing.append("{}=={} (not installed)".format(distribution, expected))
+            else:
+                if found != expected:
+                    missing.append(
+                        "{}=={} (found {})".format(distribution, expected, found)
+                    )
         if missing:
             print(f"[MISSING] {feature}: {', '.join(missing)}")
         else:
@@ -212,12 +233,148 @@ def merge_target_data(args) -> int:
     return 0
 
 
+def benchmark_cr_ncr(args) -> int:
+    """Build and transactionally write the paired exploratory benchmark."""
+
+    from CoREMOF.benchmarks import (
+        BenchmarkError,
+        build_cr_ncr_benchmark,
+    )
+    from CoREMOF.dataset import CoREMOFDataset, ReleaseValidationError
+
+    try:
+        dataset = CoREMOFDataset.from_release(
+            args.release, verify_cif_files=args.verify_cifs
+        )
+        classified = dataset.classify("5checker")
+        suite = build_cr_ncr_benchmark(
+            classified,
+            ncr_pool_fractions=tuple(args.ncr_pool_fractions),
+            seeds=tuple(args.seeds),
+            total_size="full_cr",
+            train=args.fractions[0],
+            val=args.fractions[1],
+            test=args.fractions[2],
+            group_criteria=tuple(args.group_criteria),
+            cohort_eligibility=args.cohort_eligibility,
+            diversity=args.diversity,
+            test_policy="fixed_pure_cr",
+            include_full_cr_diagnostic=not args.no_full_cr_diagnostic,
+        )
+        output_root = suite.write(
+            args.output_directory,
+            stem=args.stem,
+            overwrite=args.overwrite,
+        )
+    except (
+        BenchmarkError,
+        FileExistsError,
+        FileNotFoundError,
+        OSError,
+        ReleaseValidationError,
+        TypeError,
+        ValueError,
+    ) as error:
+        print("coremof benchmark-cr-ncr: error: {}".format(error), file=sys.stderr)
+        return 2
+    print(
+        json.dumps(
+            {
+                "output_root": str(output_root),
+                "dataset_version": suite.dataset_version,
+                "checker_view": suite.checker_view,
+                "run_count": len(suite.runs),
+                "fixed_test_count": len(suite.fixed_test_ids),
+                "group_criteria": list(suite.group_criteria),
+                "diversity_index_sha256": suite.diversity_index_hash,
+                "suite_assignment_sha256": suite.assignment_digest,
+                "official_split": suite.official_split,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+def attach_target_data(args) -> int:
+    """Attach configured targets to one persisted assignment manifest."""
+
+    from CoREMOF.attachments import (
+        TargetAttachmentError,
+        attach_targets,
+        frozen_assignment_manifest,
+    )
+    from CoREMOF.dataset import CoREMOFDataset, ReleaseValidationError
+    from CoREMOF.targets import TargetDataError
+
+    try:
+        with args.manifest.open("r", encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle)
+            fields = tuple(reader.fieldnames or ())
+            if "structure_id" not in fields:
+                raise TargetAttachmentError(
+                    "assignment manifest has no structure_id column"
+                )
+            rows = list(reader)
+        receipt_path = args.receipt or args.manifest.with_suffix(".json")
+        with receipt_path.open("r", encoding="utf-8") as handle:
+            assignment_receipt = json.load(handle)
+        frozen_assignment = frozen_assignment_manifest(rows, assignment_receipt)
+        dataset = CoREMOFDataset.from_release(
+            args.release, verify_cif_files=args.verify_cifs
+        )
+        attached = attach_targets(
+            frozen_assignment,
+            args.config,
+            dataset=dataset,
+            missing=args.missing,
+            verify_cif_files=args.verify_cifs,
+        )
+        csv_path, provenance_path, receipt_path = attached.write(
+            args.output_directory,
+            stem=args.stem,
+            overwrite=args.overwrite,
+        )
+    except (
+        FileExistsError,
+        FileNotFoundError,
+        OSError,
+        ReleaseValidationError,
+        TargetAttachmentError,
+        TargetDataError,
+        TypeError,
+        ValueError,
+    ) as error:
+        print("coremof attach-targets: error: {}".format(error), file=sys.stderr)
+        return 2
+    print(
+        json.dumps(
+            {
+                "attached_csv": str(csv_path),
+                "provenance_jsonl": str(provenance_path),
+                "receipt_json": str(receipt_path),
+                "missing_policy": attached.missing_policy,
+                "selected_structure_count": len(attached.structure_ids),
+                "dropped_structure_count": len(attached.dropped_ids),
+                "target_columns": list(attached.target_columns),
+                "original_assignment_sha256": attached.original_assignment_digest,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="coremof",
         description="CoRE MOF database and analysis utilities",
     )
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
     subparsers.add_parser("doctor", help="check optional dependencies by feature")
 
@@ -236,9 +393,7 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="JSON file declaring target sources, units, conditions, and aliases",
     )
-    target_parser.add_argument(
-        "--output-directory", type=Path, required=True
-    )
+    target_parser.add_argument("--output-directory", type=Path, required=True)
     target_parser.add_argument("--stem", default="coremof_targets")
     target_parser.add_argument("--overwrite", action="store_true")
     target_parser.add_argument(
@@ -246,6 +401,163 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="hash every CIF before joining targets",
     )
+
+    attach_parser = subparsers.add_parser(
+        "attach-targets",
+        help="attach typed targets after a frozen split without resplitting",
+        description=(
+            "Verify the assignment CSV against its paired receipt digest and exact "
+            "release version/universe/input-hash binding, then attach targets after "
+            "selection by an exact current public structure ID "
+            "or a hash-bound alias declared in the target config. keep performs a "
+            "left join and retains nulls; error requires every target; drop creates "
+            "only a filtered derived view and never refills, rebalances, or resplits."
+        ),
+    )
+    attach_parser.add_argument(
+        "release", type=Path, help="extracted CoRE-MOF release root"
+    )
+    attach_parser.add_argument(
+        "--manifest",
+        type=Path,
+        required=True,
+        help="assignment CSV with structure_id and partition (or split) columns",
+    )
+    attach_parser.add_argument(
+        "--receipt",
+        type=Path,
+        help=(
+            "paired assignment receipt JSON used to verify the frozen digest "
+            "(default: MANIFEST with a .json suffix)"
+        ),
+    )
+    attach_parser.add_argument(
+        "--config",
+        type=Path,
+        required=True,
+        help="JSON target config using the same typed units/conditions/alias contract as merge-targets",
+    )
+    attach_parser.add_argument(
+        "--missing",
+        choices=("keep", "error", "drop"),
+        default="keep",
+        help="null-target policy defined above (default: keep)",
+    )
+    attach_parser.add_argument("--output-directory", type=Path, required=True)
+    attach_parser.add_argument("--stem", default="coremof_attached_targets")
+    attach_parser.add_argument("--overwrite", action="store_true")
+    attach_parser.add_argument("--verify-cifs", action="store_true")
+
+    benchmark_parser = subparsers.add_parser(
+        "benchmark-cr-ncr",
+        help="build paired fixed-size strict five-checker CR/NCR cohorts",
+        description=(
+            "Build exploratory target-independent strict five-checker cohorts. Strict "
+            "CR has five available PASS votes; strict NCR has five available FAIL "
+            "votes, while NOT_AVAILABLE is a non-vote. After the declared cohort-"
+            "eligibility policy, full_cr fixes total size to the eligible CR count C: "
+            "at NCR-pool fraction q, round-half-up(q*M) of the eligible NCR pool M "
+            "replaces the same number of eligible CR rows, so q=1 uses every eligible "
+            "NCR row rather than making a 100%-NCR composition. Raw strict-pool and "
+            "policy-excluded counts are reported separately. "
+            "fixed_pure_cr reserves one common approximately requested-size test from "
+            "complete-release effective leakage blocks containing only CR. An effective "
+            "block is the connected-component closure of main_union plus every ordered "
+            "selected criterion before filtering. main_union is a leakage guard, not a "
+            "parent, not an explanatory relation, and not identity proof; it transitively combines "
+            "full CIF SHA-256, database-namespaced source siblings, release-authorized "
+            "RAC5 groups, MOFid-v2 groups, and MOFid-v1 groups over the complete release; "
+            "it is a partition guard, not identity or parent proof, and missing criterion "
+            "evidence is a per-structure singleton. "
+            "representative diversity uses no target: complete 264-value finite RAC5, "
+            "otherwise 13 intensive N2/He Zeo++ fields plus channel/framework dimensions, "
+            "otherwise an explicit no-numeric tier; it uses median/IQR scaling without "
+            "imputation, at most 32 RAC5 principal components, and deterministic "
+            "MiniBatchKMeans from the pinned benchmark extra."
+        ),
+    )
+    benchmark_parser.add_argument(
+        "release", type=Path, help="finalized extracted release root"
+    )
+    benchmark_parser.add_argument(
+        "--ncr-pool-fractions",
+        nargs="+",
+        type=float,
+        default=(0.0, 0.2, 0.4, 0.6, 0.8, 1.0),
+    )
+    benchmark_parser.add_argument(
+        "--seeds", nargs="+", type=int, default=(42, 43, 44, 45, 46)
+    )
+    benchmark_parser.add_argument(
+        "--group-criteria",
+        nargs="+",
+        default=("priority_main",),
+        help=(
+            "ordered canonical criteria or their documented short aliases. priority_main is the "
+            "full-release conflict-aware RAC5 then MOFid-v2 then MOFid-v1 explanatory "
+            "hierarchy: a lower group touching zero stronger components creates one, "
+            "one attaches unresolved members, and two or more records "
+            "PARENT_METHOD_CONFLICT without merging them; missing rows are singletons. "
+            "It excludes Zeo++, CrystalNets, source ID/name, CIF hash, provisional "
+            "identity unions, and StructureMatcher. RT is exact complete 264-value "
+            "finite RAC5 plus a complete current-success CrystalNets fingerprint: "
+            "network dimension; interpenetrated-subnet, catenation, and subnet counts; "
+            "top-level single/all-node nets and agreement; and every SingleNodes and "
+            "AllNodes subnet status, dimension, topology key/name, topological genome, "
+            "and agreement. M2T is exact complete release-authorized MOFid-v2 plus that "
+            "fingerprint. In order, its text conversion collapses Unicode whitespace to "
+            "ASCII spaces, trims, rejects empty/whole-field placeholders, applies NFKC, "
+            "then case-folds; it changes no structure. Eligible statuses are SUCCESS, "
+            "SUCCESS_TOPOLOGY_UNKNOWN, SUCCESS_TOPOLOGY_ERROR, and "
+            "SUCCESS_TOPOLOGY_TIMEOUT; every other status, including other execution "
+            "or NOT_AVAILABLE states, adds no edge. M2T remains provisional with "
+            "provisional MOFid. SM is the strict StructureMatcher convenience component "
+            "of authoritative direct pairs whose "
+            "forward/reverse fit(..., symmetric=True) pass under Python 3.9, pymatgen "
+            "2024.2.8, NumPy 1.26.4, ElementComparator, ltol=stol=0.001, "
+            "angle_tol=0.01, primitive_cell=true, scale=false, attempt_supercell=true, "
+            "allow_subset=false, supercell_size=num_sites, and no ignored species. Its "
+            "direct CifParser uses site/coordinate tolerances 0.0001, declared-symmetry "
+            "expansion, within-tolerance merging, one-third/two-thirds rounding, "
+            "occupancy checks, sorted periodic Structures, native disorder, and no "
+            "manual repair/deletion/chemistry edit. Direct edges are authoritative; "
+            "parser, timeout, OOM, matcher, asymmetric, or execution failures are "
+            "NOT_AVAILABLE, not unmatched. Incomplete evidence adds no match; RT, M2T, "
+            "and SM enter neither priority_main nor main_union."
+        ),
+    )
+    benchmark_parser.add_argument(
+        "--diversity", choices=("representative", "none"), default="representative"
+    )
+    benchmark_parser.add_argument(
+        "--cohort-eligibility",
+        choices=("complete_release_label_pure_effective_blocks",),
+        default=None,
+        help=(
+            "explicit sensitivity policy required when any strict CR or NCR row "
+            "shares a complete-release effective leakage block with another label; "
+            "it excludes that entire block before applying the exact ladder formula"
+        ),
+    )
+    benchmark_parser.add_argument(
+        "--fractions",
+        nargs=3,
+        type=float,
+        metavar=("TRAIN", "VALIDATION", "TEST"),
+        default=(0.8, 0.1, 0.1),
+    )
+    benchmark_parser.add_argument(
+        "--no-full-cr-diagnostic",
+        action="store_true",
+        help=(
+            "omit the supplementary full-CR prediction view, which otherwise reports "
+            "exact-ID and same-effective-block training overlap and is not the independent test"
+        ),
+    )
+    benchmark_parser.add_argument("--output-directory", type=Path, required=True)
+    benchmark_parser.add_argument("--stem", default="coremof_cr_ncr_benchmark")
+    benchmark_parser.add_argument("--overwrite", action="store_true")
+    benchmark_parser.add_argument("--verify-cifs", action="store_true")
 
     split_parser = subparsers.add_parser(
         "split",
@@ -465,4 +777,8 @@ def main(argv=None) -> int:
         return split_release(args)
     if args.command == "merge-targets":
         return merge_target_data(args)
+    if args.command == "benchmark-cr-ncr":
+        return benchmark_cr_ncr(args)
+    if args.command == "attach-targets":
+        return attach_target_data(args)
     return 2

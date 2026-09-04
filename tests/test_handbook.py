@@ -31,10 +31,14 @@ class HandbookTests(unittest.TestCase):
         paths = (
             ROOT / "CoREMOF" / "parents.py",
             ROOT / "CoREMOF" / "splitters.py",
+            ROOT / "CoREMOF" / "benchmarks.py",
+            ROOT / "CoREMOF" / "attachments.py",
             ROOT / "CoREMOF" / "cli.py",
             ROOT / "README.md",
             HANDBOOK,
+            ROOT / "ML_BENCHMARK_HANDOFF.md",
             ROOT / "docs" / "source" / "splitting.rst",
+            ROOT / "docs" / "source" / "installation.rst",
             ROOT / "examples" / "README.md",
             ROOT / "examples" / "screen_candidates.py",
             ROOT / "examples" / "CoREMOF_dataset_splitting_quickstart.ipynb",
@@ -67,7 +71,7 @@ class HandbookTests(unittest.TestCase):
         configuration = (ROOT / "docs" / "source" / "conf.py").read_text(
             encoding="utf-8"
         )
-        self.assertIn("'furo'", setup_text)
+        self.assertRegex(setup_text, r'''["']furo["']''')
         self.assertNotIn("pydata-sphinx-theme", setup_text)
         self.assertIn("furo==", requirements)
         self.assertIn('html_theme = "furo"', configuration)
@@ -76,13 +80,24 @@ class HandbookTests(unittest.TestCase):
     def test_distributable_artifacts_exclude_supporting_information_archives(self):
         setup_text = (ROOT / "setup.py").read_text(encoding="utf-8")
         manifest_text = (ROOT / "MANIFEST.in").read_text(encoding="utf-8")
-        self.assertNotIn("'data/SI/*.zip',", setup_text)
-        self.assertIn(
-            "exclude_package_data={'CoREMOF': ['data/SI/*.zip']}", setup_text
+        self.assertNotRegex(
+            setup_text,
+            r'''["']data/SI/\*\.zip["']\s*,''',
+        )
+        self.assertRegex(
+            setup_text,
+            r'''exclude_package_data\s*=\s*\{\s*["']CoREMOF["']\s*:\s*'''
+            r'''\[\s*["']data/SI/\*\.zip["']\s*\]\s*\}''',
         )
         self.assertEqual(
-            manifest_text.strip(), "exclude CoREMOF/data/SI/*.zip"
+            manifest_text.splitlines(),
+            [
+                "exclude CoREMOF/data/SI/*.zip",
+                "include ML_BENCHMARK_HANDOFF.md",
+            ],
         )
+        self.assertIn("source_package.parents", setup_text)
+        self.assertIn("refusing to clean a build path", setup_text)
 
     def test_public_python_container_contract_is_documented(self):
         handbook = HANDBOOK.read_text(encoding="utf-8")

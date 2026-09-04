@@ -9,6 +9,10 @@ from pathlib import Path
 import unittest
 
 from CoREMOF.dataset import CoREMOFDataset
+from CoREMOF.benchmarks import (
+    LABEL_PURE_BLOCK_ELIGIBILITY,
+    build_cr_ncr_cohorts,
+)
 
 
 V2601 = os.environ.get("COREMOF_V2601_RELEASE")
@@ -65,6 +69,34 @@ class ReleaseIntegrationTests(unittest.TestCase):
             self.assertEqual(observed, declared["label_{}".format(view)])
             del classified
             gc.collect()
+
+    def test_v2602_published_strict_and_label_pure_block_pools(self):
+        superset = CoREMOFDataset.from_release(Path(V2602))
+        classified = superset.classify(checkers="5checker")
+        counts = dict(classified.label_counts())
+        self.assertEqual(counts["CR"], 6294)
+        self.assertEqual(counts["NCR"], 2299)
+        self.assertEqual(counts["AMBIGUOUS"], 7367)
+        self.assertEqual(counts["UNCHECKED"], 26614)
+        cohorts = build_cr_ncr_cohorts(
+            classified,
+            cohort_eligibility=LABEL_PURE_BLOCK_ELIGIBILITY,
+            diversity="none",
+        )
+        self.assertEqual(cohorts.raw_pool_counts, {"CR": 6294, "NCR": 2299})
+        self.assertEqual(cohorts.pool_counts, {"CR": 4693, "NCR": 1727})
+        self.assertTrue(
+            cohorts.receipt()["all_zero_partially_selected_effective_blocks"]
+        )
+        full = [
+            cohort
+            for cohort in cohorts.cohorts
+            if cohort.requested_ncr_pool_fraction == "1.0"
+        ]
+        self.assertTrue(full)
+        self.assertTrue(
+            all(set(cohort.ncr_ids) == set(cohorts.full_ncr_ids) for cohort in full)
+        )
 
     def test_open_scope_priority_split_is_complete_deterministic_and_leakage_free(self):
         superset = CoREMOFDataset.from_release(Path(V2602))

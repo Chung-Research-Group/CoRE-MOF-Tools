@@ -1,1 +1,2 @@
 exclude CoREMOF/data/SI/*.zip
+include ML_BENCHMARK_HANDOFF.md

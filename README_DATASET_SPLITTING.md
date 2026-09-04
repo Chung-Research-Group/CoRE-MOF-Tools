@@ -43,10 +43,11 @@ reproducibility receipt.
 15. [Command-line usage](#15-command-line-usage)
 16. [Common workflows](#16-common-workflows)
 17. [Reproducibility and scientific interpretation](#17-reproducibility-and-scientific-interpretation)
-18. [Licensing and redistribution](#18-licensing-and-redistribution)
-19. [Troubleshooting](#19-troubleshooting)
-20. [Current validation status and limitations](#20-current-validation-status-and-limitations)
-21. [Developer checks](#21-developer-checks)
+18. [Target-independent diversity splits and the CR/NCR benchmark](#18-target-independent-diversity-splits-and-the-crncr-benchmark)
+19. [Licensing and redistribution](#19-licensing-and-redistribution)
+20. [Troubleshooting](#20-troubleshooting)
+21. [Current validation status and limitations](#21-current-validation-status-and-limitations)
+22. [Developer checks](#22-developer-checks)
 
 ## 1. What the package does
 
@@ -1774,7 +1775,271 @@ Publish the assignment CSV and JSON receipt with the model when licensing
 allows. Do not invent a citation for an unpublished local snapshot; cite the
 official release record supplied by the data distributor.
 
-## 18. Licensing and redistribution
+## 18. Target-independent diversity splits and the CR/NCR benchmark
+
+The APIs in this section are additive. The historical `split()`,
+`train_valid_test_split()`, `SplitResult`, `coremof split` defaults, and their
+receipt schema are unchanged.
+
+### 18.1 Effective leakage blocks and ordered criteria
+
+`main_union_plus_criteria` is the project-defined leakage policy used by
+`data_split()`. Over the complete release, before label/source/variant/metal/ID
+or target filtering, it starts from `main_union`: the connected components of
+the graph whose direct edges come from exact full CIF SHA-256,
+database-namespaced source siblings, and available release-authorized exact
+RAC5, MOFid-v2, or MOFid-v1 groups. It then adds co-membership edges from every
+ordered selected explanatory criterion and takes connected-component closure
+again. Missing criterion evidence is `SINGLETON:<structure_id>` and adds no
+shared edge. One resulting **effective leakage block** is indivisible across
+train, validation, and test. It is a partition guard, not proof of structural
+identity or common parentage.
+
+```python
+from CoREMOF import available_group_criteria
+
+available = available_group_criteria(classified.dataset)
+split = classified.data_split(
+    group_criteria=("RT", "source_id"),
+    train=0.8,
+    val=0.1,
+    test=0.1,
+    leakage_guard="main_union_plus_criteria",
+    diversity="representative",
+    random_state=42,
+)
+```
+
+`group_criteria` accepts one exact string or an ordered list/tuple. Receipts
+always use canonical names. At their first use here, the short aliases mean:
+
+- `RT` becomes `rac5_crystalnets`: exact equality of all 264 available finite
+  depth-5 RAC5 binary64 values plus the complete current-success CrystalNets
+  fingerprint. Missing, nonfinite, partial, timed-out, failed, or otherwise
+  incomplete input adds no match. This is reference-only and enters neither
+  `priority_main` nor the pre-existing `main_union` by itself.
+- `M2T` becomes `mofid_v2_crystalnets`: exact equality of the complete
+  canonical release-authorized MOFid-v2 string plus that same CrystalNets
+  fingerprint. Canonical MOFid text converts a non-null value to text,
+  collapses Unicode-whitespace runs to one ASCII space, trims, rejects an empty
+  or declared whole-field placeholder, applies Unicode NFKC, then case-folds;
+  it does not change a CIF, coordinates, atoms, occupancy, bonding, chemistry,
+  topology, or unit cell. Eligible statuses are `SUCCESS`,
+  `SUCCESS_TOPOLOGY_UNKNOWN`, `SUCCESS_TOPOLOGY_ERROR`, and
+  `SUCCESS_TOPOLOGY_TIMEOUT`; every other status or incomplete input adds no
+  match. M2T is reference-only, remains provisional with provisional MOFid
+  input, must be rebuilt if authorized MOFid-v2 values change, and enters
+  neither `priority_main` nor `main_union` by itself.
+- `SM` becomes `structure_matcher_strict`: a convenience connected-component
+  view over authoritative direct symmetric matches from the pinned strict
+  pymatgen protocol. Direct edges, not transitive components, are
+  authoritative; parser, timeout, OOM, matcher, asymmetric, and execution
+  failures are `NOT_AVAILABLE` rather than unmatched. A component is not an
+  all-pairs duplicate claim. SM is reference-only and enters neither
+  `priority_main` nor `main_union` by itself.
+
+`available_group_criteria(dataset)` reports each canonical criterion, its
+aliases, required release evidence, full method definition, current release
+availability, and the singleton behavior for a row lacking evidence.
+
+### 18.2 Representative target-free diversity
+
+`representative` is the versioned target-free diversity profile. It never
+reads a target column and follows this precedence for every release structure:
+
+1. use all 264 RAC5 descriptors only when every value is finite and the vector
+   is complete;
+2. otherwise use the complete selected Zeo++ vector: density, three pore
+   diameters, four intensive surface-area fields, four intensive volume fields,
+   helium void fraction, N2 channel dimension, and bonded-framework periodic
+   dimension; or
+3. retain the structure in an explicit `no_numeric` tier.
+
+Each numeric tier is scaled by its median and interquartile range. A
+zero-interquartile-range field is retained with unit scale, so its centered
+deviations are retained rather than forced to zero; no scientific value is
+imputed. RAC5 is reduced to at most 32
+principal components. Sorted structure IDs then enter deterministic
+MiniBatchKMeans with profile seed 2602 and
+`k=min(n,256,max(16,ceil(sqrt(n))))`. Cluster labels are distribution-balancing
+strata, never structural-identity evidence or leakage edges. Assignment also
+balances source database, public structure variant, current topology category,
+and feature-availability tier, but no stratum can divide an effective leakage
+block.
+
+The numerical implementation is intentionally not a silent fallback. Install
+the exact optional environment:
+
+```bash
+pip install "CoREMOF-tools[benchmark]"  # exact pinned numerical stack
+```
+
+The stack is NumPy 1.26.4, scikit-learn 1.5.0, SciPy 1.13.1, joblib 1.5.3,
+and threadpoolctl 3.6.0. If any dependency is absent or has another version,
+`representative` raises `BenchmarkDependencyError`. Numerical libraries are
+limited to one thread and their non-path runtime identity is receipted;
+cross-architecture bit identity is not guaranteed. `diversity="none"` is an
+explicit control, not an automatic substitute.
+
+### 18.3 Fixed-size paired CR/NCR ladder
+
+For this benchmark, **strict five-checker CR** means MOFClassifier, original
+MOFChecker, Chen–Manz, MOSAEC, and SETC-GAT are all available and PASS.
+**Strict five-checker NCR** means the same five results are all available and
+FAIL. An execution error, timeout, unsupported input, or other
+`NOT_AVAILABLE` result is a non-vote and makes the view UNCHECKED; it never
+becomes FAIL or NCR.
+
+`full_cr` is the fixed-size cohort rule after applying the declared cohort
+eligibility policy. Let `C_raw` and `M_raw` be the complete-release strict-CR
+and strict-NCR counts retained for accounting, `C` and `M` the corresponding
+eligible whole-block pools, and `q` one requested fraction of the eligible NCR
+pool. Every cohort has exactly `C` structures:
+
+```text
+selected_NCR(q) = round_half_up(q * M)
+selected_CR(q)  = C - selected_NCR(q)
+actual_NCR_ratio = selected_NCR(q) / C
+```
+
+Thus `q=1` uses every NCR structure; it does not mean the composition is 100%
+NCR. `fixed_pure_cr` is the test policy: it reserves one common approximately
+requested-size test from whole effective leakage blocks whose complete-release
+members are all strict CR. The exact same test IDs appear at every ratio and
+seed and have zero effective-block overlap with train or validation.
+Validation follows the mixed cohort composition. Within a seed, increasing
+`q` adds a prefix of one diversity-balanced NCR order and removes a suffix of
+one CR order; any structure present at two levels retains its partition.
+Indivisible blocks can move train/validation counts away from their requested
+integers, and every deviation is reported.
+
+The published v26.0.2 raw pools do not satisfy the whole-block requirement:
+some strict rows share an effective leakage block with AMBIGUOUS, UNCHECKED, or
+the opposite strict label. The default therefore fails closed. The audited
+sensitivity ladder must explicitly set
+`cohort_eligibility="complete_release_label_pure_effective_blocks"`, which
+keeps only effective blocks whose complete-release members all have one strict
+label. This is an explicit exclusion policy, not a relabeling or an implicit
+default.
+
+```python
+cohorts = classified.build_cr_ncr_cohorts(
+    ncr_pool_fractions=(0.0, 0.2, 0.4, 0.6, 0.8, 1.0),
+    seeds=(42, 43, 44, 45, 46),
+    total_size="full_cr",
+    train=0.8,
+    val=0.1,
+    test=0.1,
+    group_criteria="priority_main",
+    cohort_eligibility="complete_release_label_pure_effective_blocks",
+    diversity="representative",
+    test_policy="fixed_pure_cr",
+)
+
+# Membership is inspectable before partition assignment.
+suite = cohorts.data_split(include_full_cr_diagnostic=True)
+
+# Equivalent convenience call.
+suite = classified.build_cr_ncr_benchmark(
+    ncr_pool_fractions=(0.0, 0.2, 0.4, 0.6, 0.8, 1.0),
+    seeds=(42, 43, 44, 45, 46),
+    total_size="full_cr",
+    train=0.8,
+    val=0.1,
+    test=0.1,
+    group_criteria="priority_main",
+    cohort_eligibility="complete_release_label_pure_effective_blocks",
+    diversity="representative",
+    test_policy="fixed_pure_cr",
+    include_full_cr_diagnostic=True,
+)
+suite.write("benchmark_outputs")
+```
+
+`full_cr_diagnostic` is the supplementary prediction view over the complete
+raw strict-CR pool, including rows excluded by the label-pure sensitivity
+policy. Each run reports
+exact-ID and same-effective-block overlap with training. Because this view
+deliberately includes seen structures, it is not the independent paper
+benchmark; the common `fixed_pure_cr` test is.
+
+Construction fails closed with exact counts and the maximum feasible NCR-pool
+fraction if `M>C` or, after reserving the test, `M>C-test_count`. It never caps,
+duplicates, or silently resizes a cohort. The checksum-bound published v26.0.2
+integration has raw counts `C_raw=6,294` and `M_raw=2,299`. With
+`group_criteria="priority_main"` and the explicit
+`complete_release_label_pure_effective_blocks` policy, 1,601 CR and 572 NCR
+rows are excluded with non-label-pure blocks, leaving eligible `C=4,693` and
+`M=1,727`. Consequently `q=1` uses 1,727 NCR plus 2,966 CR rows. Every real
+run recomputes and records raw, excluded, and eligible counts. The separate
+staged checker overlay has 9,143 CR and 9,769 NCR structures and remains an
+explicitly non-default, infeasible diagnostic input rather than authority for
+the published benchmark.
+
+The suite writer publishes one transactional directory containing a suite
+index, complete membership manifest, a companion four-label accounting manifest
+that retains AMBIGUOUS and UNCHECKED structures, fixed-test manifest, optional
+full-CR diagnostic manifest, one CSV per run, JSON receipt, and `SHA256SUMS`.
+Every new receipt records `official_split=false`; no audited official assignment
+manifest currently exists.
+
+### 18.4 Attach targets after assignments freeze
+
+Deferred target attachment reuses `TargetSource`, `AliasRegistry`, typed
+CSV/JSON/JSONL parsing, exact current-ID or explicit alias matching, units,
+conditions, and conflict checks:
+
+```python
+attached = split.attach_targets(target_sources, missing="keep")
+attached_suite = suite.attach_targets(target_sources, missing="keep")
+
+from CoREMOF import attach_targets
+attached_ids = attach_targets(
+    ["ASR-COD-2026-0001", "FSR-COD-2026-0002"],
+    target_sources,
+    dataset=classified.dataset,
+    missing="keep",
+)
+```
+
+`keep` is the default left join: every selected ID and partition remains, with
+native null for an unavailable target. `error` requires every declared target
+for every selected ID. `drop` creates only a derived filtered view; it never
+refills cohort membership, rebalances, or resplits. Target receipts reference
+the original frozen assignment digest, retain its `official_split` state, and
+report pre-drop missingness plus
+derived coverage and dropped IDs by run and partition. Target hashes never
+enter or change the original split receipt. Premerged targets and persisted
+manifests must match the exact release version, structure universe, and base
+release input hashes; matching IDs alone are insufficient.
+Rows for other current release IDs are allowed in a full target table and are
+simply not selected by a narrower attached view.
+
+The thin command-line forms are:
+
+```bash
+coremof benchmark-cr-ncr /path/to/coremof_v26.0.2 \
+  --group-criteria priority_main \
+  --cohort-eligibility complete_release_label_pure_effective_blocks \
+  --output-directory benchmark_outputs
+
+coremof attach-targets /path/to/coremof_v26.0.2 \
+  --manifest model_split.csv \
+  --receipt model_split.json \
+  --config targets.json \
+  --missing keep \
+  --output-directory attached_targets
+```
+
+If `--receipt` is omitted, the command uses the manifest path with a `.json`
+suffix. It verifies the assignment digest and release binding before reading or
+attaching target values.
+
+## 19. Licensing and redistribution
+
+For the compact source/data separation and copy-and-run command sequence used
+on another machine, see [the GPU benchmark handoff
+guide](ML_BENCHMARK_HANDOFF.md).
 
 Loading and splitting existing release tables do not require a CCDC licence.
 The package does not invoke CSD software, MOSAEC, SETC-GAT, Zeo++, molSimplify,
@@ -1799,7 +2064,15 @@ release structure, including excluded CSD rows. Review the output before
 redistribution; source filtering is a modelling selection, not a licence
 sanitizer.
 
-## 19. Troubleshooting
+This handoff adds no restricted data to GitHub. The historical repository
+already contains legacy SI archives and is not a sanitized data-free clone.
+Do not add release tables, CIF archives, checker findings, structure-resolved
+target data, or generated assignment manifests; those must travel
+through an approved manual or institutional transfer channel after recipient
+rights are confirmed; do not place them in Git, Git LFS, or an unapproved
+public-cloud service. Verify the supplied SHA-256 ledger after transfer.
+
+## 20. Troubleshooting
 
 | Problem | Likely cause | Action |
 |---|---|---|
@@ -1816,6 +2089,7 @@ sanitizer.
 | Output already exists | Safe overwrite protection | Prefer a new immutable stem/directory; overwrite is single-writer and same-stem concurrent writers require an external lock |
 | Empty partition warning | Too few indivisible blocks for the requested nonzero partition | Use more data or set the fraction to zero deliberately |
 | Requested ratios not reached | Large parent/leakage groups | Inspect `achieved_fractions` and `max_block_size`; do not split the group manually |
+| Raw strict CR/NCR pools cross mixed-label blocks | `cohort_eligibility` was omitted | Explicitly request `complete_release_label_pure_effective_blocks` and report the raw, excluded, and eligible counts |
 | `official=True` fails | No audited official assignment manifest exists | Generate an exploratory split and retain `official_split=false` |
 | Preclassified checker conflict | Explicit `checkers` differs from the existing view | Omit `checkers` or pass the matching view |
 | High memory use on full release | Complete metadata, conflict, and leakage ledgers are retained | Run one full split at a time and release unused objects between sensitivity runs |
@@ -1838,7 +2112,7 @@ except (FileNotFoundError, ReleaseValidationError) as error:
     print("Cannot use this release:", error)
 ```
 
-## 20. Current validation status and limitations
+## 21. Current validation status and limitations
 
 The package and this handbook are validated at release-candidate freeze with
 the full focused package/notebook/target/screen/parent suite under both normal
@@ -1865,7 +2139,9 @@ The validation also includes:
   optional-only hierarchy membership, parent-table and ledger hashes,
   receipt counts, public completeness policy, and relaxed-output exclusion.
 
-For the local v26.0.2 provisional audited snapshot captured on 2026-08-03, a
+The following 2026-08-03 numbers are superseded historical validation evidence,
+not the terminal staged counts used by section 18. For that earlier local
+v26.0.2 provisional audited snapshot, a
 five-checker COD+SI CR/NCR run has 5,902 eligible structures and produced
 4,722/590/590 train/validation/test rows with zero crossed leakage blocks.
 These counts are dated validation evidence, not permanent API constants.
@@ -1909,7 +2185,7 @@ open gates. Remaining authorization or publication gates are:
   wheel and source archive exclude those archives while that clearance is not
   established; the internal checkout remains unchanged.
 
-## 21. Developer checks
+## 22. Developer checks
 
 From the source checkout:
 
@@ -1918,6 +2194,9 @@ cd /path/to/CoRE-MOF-Tools
 
 # Lightweight focused suite.
 python -m unittest \
+  tests.test_benchmarks \
+  tests.test_inputs \
+  tests.test_racs \
   tests.test_handbook \
   tests.test_notebook \
   tests.test_dataset_labels \
@@ -1928,6 +2207,9 @@ python -m unittest \
 
 # Prove the new API does not depend on site-packages.
 python -S -m unittest \
+  tests.test_benchmarks \
+  tests.test_inputs \
+  tests.test_racs \
   tests.test_handbook \
   tests.test_notebook \
   tests.test_dataset_labels \
@@ -1935,6 +2217,11 @@ python -S -m unittest \
   tests.test_targets \
   tests.test_cli \
   tests.test_screen_candidates_example
+
+# Exercise the numerical diversity backend in its exact pinned environment.
+python -m pip install -e ".[benchmark]"
+python -m unittest \
+  tests.test_benchmarks.RepresentativeDiversityTests
 ```
 
 Run opt-in real-release tests by supplying both roots:
@@ -1965,4 +2252,4 @@ The loader does not download releases. External users should obtain an
 authorized CoRE-MOF archive from the project/data distributor, preserve its
 published checksum, extract it, and pass the extracted directory containing
 `dataset_info.json`. CSD-containing material remains subject to the licence
-rules in [Licensing and redistribution](#18-licensing-and-redistribution).
+rules in [Licensing and redistribution](#19-licensing-and-redistribution).
