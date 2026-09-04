@@ -1,6 +1,6 @@
 ---
 name: coremof-release-curation
-description: Run and audit the transferred CoRE-MOF v26.0.2 strict CR/NCR ML benchmark on a separate GPU machine. Use for verifying the restricted benchmark handoff, building target-independent whole-block assignments, attaching the current incomplete adsorption target snapshot after assignment freeze, or reporting benchmark provenance and coverage from a CoRE-MOF-Tools clone.
+description: Run and audit the transferred CoRE-MOF v26.0.2 strict CR/NCR ML benchmark on a separate GPU machine. Use for verifying the restricted benchmark handoff, building target-independent whole-block assignments, constructing or attaching the combined as-of-cutoff adsorption targets after assignment freeze, or reporting benchmark provenance and coverage from a CoRE-MOF-Tools clone.
 ---
 
 # CoRE-MOF v26.0.2 ML benchmark handoff
@@ -84,11 +84,29 @@ including policy-excluded rows; it is not the independent paper test.
 ## Attach targets only after freeze
 
 Verify the benchmark `SHA256SUMS`, suite receipt, release binding, and frozen
-assignment digest before opening the target table. Use the target config from
-the restricted snapshot with `missing="keep"` unless the analysis contract
-explicitly requires another policy. `keep` preserves every assigned ID and a
-native null for unavailable targets. `drop` makes only a derived filtered
-view; it must not refill, rebalance, or resplit.
+assignment digest before opening the target table. Prefer the independently
+audited combined as-of-cutoff snapshot, not the completion-only current-results
+view. Build it with `examples/build_combined_target_dataset.py`, require exact
+release/source hashes and expected counts, rebuild independently, and audit it
+with `examples/audit_combined_target_dataset.py --comparison-dataset` before
+promotion. Read `COMBINED_TARGET_DATASET.md` for the current count and null
+contract.
+
+At cutoff `2026-09-04T05:43:23Z`, the combined exact-ID left join spans all
+42,574 published structures and has 28,979 finite CH4, 28,974 finite H2, and
+28,944 finite raw CO2/N2 Widom-ratio labels. The earlier 2,335 / 3,744 / 14,167
+counts are new current-finished evidence only, not total target availability.
+`HISTORICAL_SCIENTIFIC_NULL` means the frozen source status is `EXISTING` with
+`explicit_null=true` and a nonempty diagnostic; it remains eligible but
+unavailable/native-null and cannot be filled because only `MISSING` keys accept
+current results. The current combined snapshot has one historical Widom
+`ZERO_DENOMINATOR`, so the finite count is one below the raw-existing-plus-new
+arithmetic.
+
+Use the target config from the restricted snapshot with `missing="keep"` unless
+the analysis contract explicitly requires another policy. `keep` preserves
+every assigned ID and a native null for unavailable targets. `drop` makes only
+a derived filtered view; it must not refill, rebalance, or resplit.
 
 The CLI attaches one `runs/<run_key>.csv` at a time using the suite
 `receipt.json`; `membership_manifest.csv` repeats IDs across runs and is not

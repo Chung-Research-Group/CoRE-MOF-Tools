@@ -1,0 +1,43 @@
+{
+  "audit_status": "PASS_INDEPENDENT_COMBINED_CURRENT_AVAILABLE_TARGET_DATASET",
+  "campaign_complete": false,
+  "data_cutoff_utc": "2026-09-04T05:43:23Z",
+  "deterministic_rebuild_byte_identical": true,
+  "endpoint": {
+    "ch4_loading_298K_65bar_mol_kg_framework": {
+      "eligible_structures": 32988,
+      "finite_unique_structures": 28979,
+      "full_release_coverage_fraction": 0.680673650584864
+    },
+    "co2_n2_widom_rosenbluth_weight_ratio_298K_1bar": {
+      "eligible_structures": 32988,
+      "finite_unique_structures": 28944,
+      "full_release_coverage_fraction": 0.6798515525907831,
+      "historical_scientific_nulls": 1
+    },
+    "h2_loading_77K_100bar_mol_kg_framework": {
+      "eligible_structures": 32988,
+      "finite_unique_structures": 28974,
+      "full_release_coverage_fraction": 0.680556208014281
+    }
+  },
+  "excluded_structures": 9586,
+  "finite_endpoint_assignments": 86897,
+  "official_split": false,
+  "pairwise_finite_intersections": {
+    "ch4_and_h2": 28972,
+    "ch4_and_widom": 28942,
+    "h2_and_widom": 28937
+  },
+  "publication_authorized": false,
+  "release_structure_count": 42574,
+  "schema_version": "coremof-public-safe-combined-target-coverage/1.0",
+  "snapshot_id": "v2602_combined_available_targets_20260904_v3",
+  "structure_resolved_artifact_in_git": false,
+  "structures_with_all_three_finite_targets": 28937,
+  "structures_with_any_finite_target": 28983,
+  "structures_with_no_finite_target": 13591,
+  "terminology": {
+    "HISTORICAL_SCIENTIFIC_NULL": "A frozen source record exists with explicit_null=true and a nonempty diagnostic; the eligible endpoint remains unavailable and native-null and cannot be filled by a current result because only source keys marked MISSING may be filled."
+  }
+}

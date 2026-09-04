@@ -142,6 +142,24 @@ cohort construction, diversity balancing, or partition assignment. First
 verify the frozen suite receipt and assignment digest; then attach the
 checksum-bound target table:
 
+For the validated cutoff `2026-09-04T05:43:23Z`, use the combined target
+snapshot built by `examples/build_combined_target_dataset.py` and independently
+checked by `examples/audit_combined_target_dataset.py`. The earlier
+current-finished handoff counts (2,335 CH4, 3,744 H2, and 14,167 Widom) describe
+only newly completed calculation evidence; they are not total available target
+coverage. The fill-only union with accepted historical values contains 28,979,
+28,974, and 28,944 finite unique IDs, respectively, across the 42,574-ID
+published release. See `COMBINED_TARGET_DATASET.md` and the public-safe aggregate
+JSON for the complete count contract.
+
+`HISTORICAL_SCIENTIFIC_NULL` means a frozen source record is `EXISTING` with
+`explicit_null=true` and a nonempty diagnostic. It stays eligible but
+unavailable and native-null, and it cannot be filled because only source keys
+marked `MISSING` accept current results. The current snapshot contains one such
+historical Widom row with diagnostic `ZERO_DENOMINATOR`, which is why finite
+Widom coverage is 28,944 rather than the raw `EXISTING` count plus new-success
+count.
+
 ```bash
 coremof attach-targets /secure/path/to/coremof_v26.0.2 \
   --manifest /secure/coremof-ml-work/benchmark_outputs/coremof_cr_ncr_benchmark/runs/seed42_q0p0.csv \

@@ -2,7 +2,7 @@
 
 Run `coremof doctor` before using an example. The notebooks are grouped by the external requirements they need.
 
-The dataset tools have two standard-library-only entry points:
+The dataset tools include four standard-library-only entry points:
 
 - [`CoREMOF_dataset_splitting_quickstart.ipynb`](CoREMOF_dataset_splitting_quickstart.ipynb)
   is the interactive target/feature merge, CR/NCR classification, and
@@ -11,6 +11,18 @@ The dataset tools have two standard-library-only entry points:
   command-line high-throughput screen. It applies eligibility filters before
   ranking, excludes null, non-numeric, and non-finite ranking values, and
   writes a ranked CSV plus a hash-bound JSON receipt.
+- [`build_combined_target_dataset.py`](build_combined_target_dataset.py)
+  creates the immutable, fill-only v26.0.2 target attachment snapshot from
+  frozen historical evidence plus independently audited current results. It
+  retains every published ID and native null, requires exact endpoint and
+  release contracts, and supports explicit source-hash and count gates.
+- [`audit_combined_target_dataset.py`](audit_combined_target_dataset.py)
+  independently recomputes the combined assignments, coverage, target
+  configuration, receipts, and checksums. Its optional `--comparison-dataset`
+  gate requires two builds to be byte-identical.
+
+The validated as-of-cutoff aggregate counts and restricted-data boundary are
+documented in [`COMBINED_TARGET_DATASET.md`](../COMBINED_TARGET_DATASET.md).
 
 Ranking is precision-safe: integer inputs remain exact integers, and numeric
 text is compared as an exact decimal rather than being converted through a
