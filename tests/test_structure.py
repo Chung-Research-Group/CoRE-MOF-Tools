@@ -1,9 +1,28 @@
 import unittest
+from unittest.mock import patch
 
 from CoREMOF.structure import information, read_aif
 
 
 class StructureDataTests(unittest.TestCase):
+    def setUp(self):
+        # Exercise the legacy lookup and AIF parser without distributing or
+        # downloading a real structure-resolved database in code-only CI.
+        self.fixture = {
+            "ASR": {"2020[Cu][sql]2[ASR]1": {"GEMC": (
+                "data_synthetic_test\n_units_loading 'Molecules/Supercell'\n"
+                "loop_\n_adsorp_pressure\n_adsorp_amount\n1 0\n2 3\n"
+            )}},
+            "FSR": {}, "Ion": {}, "unit": {"fixture": "synthetic"},
+        }
+        data = patch("CoREMOF.structure._load_json_data", return_value=self.fixture)
+        network = patch("CoREMOF.structure.requests.get",
+                        side_effect=AssertionError("Unit tests must not download data"))
+        data.start()
+        network.start()
+        self.addCleanup(data.stop)
+        self.addCleanup(network.stop)
+
     def test_known_database_record_can_be_loaded(self):
         record = information("CR-ASR", "2020[Cu][sql]2[ASR]1")
         self.assertIsInstance(record, dict)

@@ -1,0 +1,131 @@
+{
+  "schema_version": "coremof-manuscript-verification/1.0",
+  "scope": "documentation_and_workflow_smoke_tests",
+  "software_version": "0.4.0.dev0",
+  "source_baseline_commit": "fad92f7cc8991325aff780da4dbeb6d3b0d537f6",
+  "source_branch": "agent/dataset-splitting-api",
+  "inspection_date_local": "2026-09-07",
+  "timezone": "Asia/Seoul",
+  "status": "PASS_SCOPED_DOCUMENTATION_VERIFICATION",
+  "source_worktree_clean_before_documentation": true,
+  "scientific_campaign_complete_claimed": false,
+  "official_split": false,
+  "new_structure_resolved_data_included": false,
+  "runtime": {
+    "python": "3.11.7",
+    "execution": "One serialized bounded compute allocation at a time; node-local intermediates",
+    "existing_environments_modified": false,
+    "numpy": "1.26.4",
+    "scikit-learn": "1.5.0",
+    "scipy": "1.13.1",
+    "joblib": "1.5.3",
+    "threadpoolctl": "3.6.0",
+    "sphinx": "8.2.3",
+    "furo": "2025.12.19",
+    "cairosvg": "2.8.2"
+  },
+  "tests": [
+    {
+      "name": "focused_standard_library_suite",
+      "mode": "python -B -S",
+      "run": 290,
+      "passed": 286,
+      "skipped": 4,
+      "failures": 0,
+      "errors": 0,
+      "skip_scope": "Representative numerical tests require the optional pinned backend"
+    },
+    {
+      "name": "focused_pinned_environment_suite",
+      "mode": "normal Python with the exact benchmark backend",
+      "run": 290,
+      "passed": 289,
+      "skipped": 1,
+      "failures": 0,
+      "errors": 0,
+      "skip_scope": "Missing-backend test is inapplicable when the exact backend is installed"
+    },
+    {
+      "name": "manuscript_workflow_recipes",
+      "run": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "modes": ["normal Python", "python -S"],
+      "scope": "Synthetic 16 checker views, general split, 30 paired runs, frozen target attachment, CLI parsing, link/count and figure checks; diversity=none explicitly"
+    },
+    {
+      "name": "sphinx_html",
+      "command": "python -m sphinx -E -W --keep-going -b html docs/source OUTPUT",
+      "exit_code": 0,
+      "warnings": 0,
+      "scope": "Complete documentation tree, including the manuscript download landing page"
+    },
+    {
+      "name": "first_use_terminology",
+      "source_surfaces": 10,
+      "source_and_rendered_surfaces": 11,
+      "contracts": 15,
+      "exit_code": 0,
+      "modes": ["normal Python", "python -S"]
+    },
+    {
+      "name": "ruff_undefined_name_checks",
+      "command": "ruff check tests/test_manuscript_workflows.py --select F",
+      "exit_code": 0
+    },
+    {"name": "git_diff_whitespace_check", "exit_code": 0},
+    {
+      "name": "workflow_render_review",
+      "formats": ["SVG", "PDF", "PNG"],
+      "png_pixels": [2208, 1360],
+      "png_dpi_render_setting": 320,
+      "size_inches": [6.9, 4.25],
+      "minimum_visible_font_points_at_stated_size": 10.08,
+      "png_visually_inspected": true,
+      "status": "PASS"
+    }
+  ],
+  "focused_test_files": [
+    "test_inputs.py",
+    "test_dataset_labels.py",
+    "test_parents_splitters.py",
+    "test_targets.py",
+    "test_benchmarks.py",
+    "test_cli.py",
+    "test_handbook.py",
+    "test_notebook.py",
+    "test_screen_candidates_example.py",
+    "test_combined_target_dataset_examples.py",
+    "test_manuscript_workflows.py"
+  ],
+  "published_metadata_count_only": {
+    "recomputed_date_local": "2026-09-07",
+    "dataset_version": "v26.0.2",
+    "unique_structure_ids": 42574,
+    "duplicate_ids": 0,
+    "checker_view": "5checker",
+    "labels": {"CR": 6294, "NCR": 2299, "AMBIGUOUS": 7367, "UNCHECKED": 26614},
+    "full_cif_adapter_or_cohort_audit": false
+  },
+  "source_sha256": {
+    "CoREMOF/__init__.py": "92d4e3a41068cd6f552c887546beadddb8d3bd78bf35b0e145d733c560d92b17",
+    "setup.py": "7988868d4c86ce0ce63c8e549e44612b92f47cd4fc36b3e4c0959d86a46d4e81",
+    "CoREMOF/benchmarks.py": "e233bebd587ae904554765392b2721d850cd5efc66b751801b3d5ba2a3987ea3",
+    "CoREMOF/attachments.py": "3516812e9b043f5fa1f33b187e74d8e1bf328bcf25ec1965b14368b9b53282f2"
+  },
+  "target_aggregate_source": {
+    "path": "V2602_COMBINED_TARGET_COVERAGE_20260904.json",
+    "sha256": "f25b6e21cb7f5764297d7583dba2d66f1bd766ce73602522cc9abe6587112df4",
+    "data_cutoff_utc": "2026-09-04T05:43:23Z",
+    "scope": "Public-safe aggregate only; not restricted structure-resolved rows or their checksum bindings"
+  },
+  "not_rerun": [
+    "Full-release CIF/adapter and whole-cohort integration; only published metadata counts were recomputed",
+    "Private combined-target snapshot reconstruction and row-level audit",
+    "Optional chemistry executables, model weights, and remote downloads",
+    "MatDeepLearn and PMTransformer preprocessing or training",
+    "Wheel build and installation for this documentation-only change",
+    "Stable package publication or Git push"
+  ]
+}

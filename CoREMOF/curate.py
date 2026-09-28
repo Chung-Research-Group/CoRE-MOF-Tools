@@ -4,11 +4,13 @@
 import collections
 import csv
 import functools
-import glob
 import itertools
 import json
+import math
 import os
 import re
+import shutil
+import tempfile
 import warnings
 from ase.io import read, write
 
@@ -23,23 +25,12 @@ from ase.neighborlist import NeighborList
 from scipy.sparse.csgraph import connected_components
 from pymatgen.core import Structure
 from pymatgen.io.ase import AseAtomsAdaptor
-try:
-    from mofchecker import MOFChecker
-except ImportError:
-    MOFChecker = None
-from CoREMOF.utils.atoms_definitions import ATR, Coef_A, Coef_C #, BO_list, metals4check
 
 from gemmi import cif as CIF
 try:
     from PACMANCharge import pmcharge
 except ImportError:
     pmcharge = None
-
-try:
-    from MOFClassifier import CLscore
-except ImportError:
-    CLscore = None
-
 
 def ensure_data(structure):
     """Precheck your CIF.
@@ -198,7 +189,11 @@ class clean():
     
     Args:
         structure (str): path to your CIF.
-        initial_skin (float): skin distance is added to the sum of vdW radii of two atoms.
+        initial_skin (float): ASE skin in angstrom, added to each atom's
+            covalent radius. The total pair margin is twice this value.
+            The legacy default of 0.25 therefore gives a 0.50 angstrom
+            pair margin. Recorded release-curation methods have separate
+            settings and do not change this default.
         output_folder (str): the path to save processed CIF.
         saveto (bool or str): the name of csv file with clean result.
 
@@ -553,160 +548,136 @@ class clean():
         except Exception as e:
             print(f"{input_file} Fail: {e}")
 
-class mof_check():
+class mof_check:
+    """Retired checker execution. Use the release's precomputed results."""
 
-    """Not Computation-Ready (NCR) MOFs classification.
+    def __init__(self, *args, **kwargs):
+        from ._checker_execution import results_only
+        results_only("Chen-Manz and MOFChecker")
 
-    Args:
-        structure (str): path to your CIF.
-        output_folder (str): the path to save checking result.
+    def check(self, *args, **kwargs):
+        from ._checker_execution import results_only
+        return results_only("Chen-Manz and MOFChecker")
 
-    Returns:
-        Dictionary:
-            -   result of NCR classification.
+    def Chen_Manz(self, *args, **kwargs):
+        from ._checker_execution import results_only
+        return results_only("Chen-Manz")
+
+    def mof_checker(self, *args, **kwargs):
+        from ._checker_execution import results_only
+        return results_only("MOFChecker")
+
+
+
+
+def _validated_pacman_charges(source_path, charged_path, atoms):
+    """Require complete charges on unchanged, ordered, fully occupied CIF sites.
+
+    This deliberately rejects symmetry expansion, disorder and reordered rows;
+    it does not guess a bijection between a CIF atom loop and ASE atoms.
     """
-    
-    def __init__(self, structure, output_folder="result_curation"):
-        self.output = output_folder + os.sep
-        self.structure = structure
-        os.makedirs(self.output, exist_ok=True)
-        self.check()
+    source = CIF.read_file(os.fspath(source_path)).sole_block()
+    charged = CIF.read_file(os.fspath(charged_path)).sole_block()
+    atom_count = len(atoms)
+    atom_tags = {
+        "_atom_site_label", "_atom_site_type_symbol", "_atom_site_fract_x",
+        "_atom_site_fract_y", "_atom_site_fract_z",
+    }
+    for block, anchor, required in (
+        (source, "_atom_site_label", atom_tags),
+        (charged, "_atom_site_charge", atom_tags | {"_atom_site_charge"}),
+    ):
+        loop = block.find_loop(anchor).get_loop()
+        if loop is None or not required.issubset({tag.lower() for tag in loop.tags}):
+            raise ValueError("PACMAN charges and atom identities must share one atom-site loop")
 
-    def check(self):
-
-        """run checking.
-        """
-        
-        result_check = {}
-
-        chen_manz_result = self.Chen_Manz(self.structure)
-        mof_checker_result = self.mof_checker(self.structure)
-
-        result_check["Chen_Manz"] = chen_manz_result
-        result_check["mofchecker"] = mof_checker_result
-
-        with open(self.output + os.path.basename(self.structure).replace(".cif","") + "_Chen_Manz_mofchecker.json", "w") as f:
-            json.dump(result_check,f,indent=2)
-
-    def Chen_Manz(self, structure):
-
-        """checking MOF by Chen and Manz method: RSC Adv., 2019,9, 36492-36507. https://doi.org/10.1039/C9RA07327B.
-        """
-
-        try:
-            
-            has_problem =[]
-
-            atoms = read(structure)
-            sym = atoms.get_chemical_symbols()
-            
-            for a in range(len(atoms)):
-                H_connected = []
-                nl = []
-                for b in range(len(atoms)):
-                    if a == b:
-                        continue
-                    d = atoms.get_distance(a, b, mic = True)
-                    if sym[a] == 'H':
-                        if d <= (0.3 + ATR[sym[a]] + ATR[sym[b]]):
-                            H_connected.append(b)
-                    if d < 0.5*(ATR[sym[a]] + ATR[sym[b]]):
-                        has_problem.append("overlapping")
-                    if d <= (ATR[sym[a]] + ATR[sym[b]]):
-                        nl.append(b)
-                if sym[a] == 'C':
-                    bonded_ele = [sym[e] for e in nl if sym[e] not in Coef_A]
-                    if len(bonded_ele) != 0:
-                        pass
-                    else:
-                        BO = []
-                        for bidx in range(len(nl)):
-                            b = nl[bidx]
-                            d = atoms.get_distance(a, b, mic = True)
-                            BO_ab = 10**(Coef_A[sym[b]]*d + Coef_C[sym[b]])
-                            if sym[b] == 'H':
-                                if BO_ab > 1.25:
-                                    BO_ab = 1.25
-                            BO.append(BO_ab)
-                        sum_BO = sum(BO)
-                        if sum_BO < 3.3:
-                            has_problem.append("under_carbon")
-                        elif sum_BO >= 5.5:
-                            has_problem.append("over_carbon")
-                if len(nl) == 0:
-                    has_problem.append("isolated")
-
-            if len(has_problem) > 0:
-                return list(set(has_problem))
-            else:
-                return ["good"]
-        except Exception as exc:
-            warnings.warn(
-                f"Chen–Manz validation failed for {structure}: {exc}",
-                RuntimeWarning,
-                stacklevel=2,
+    def column(block, tag):
+        values = list(block.find_loop(tag))
+        if len(values) != atom_count or not values:
+            raise ValueError(
+                f"PACMAN atom mapping requires {atom_count} values for {tag}"
             )
-            return ["unknown"]
-        
+        return values
 
-    def mof_checker(self, structure):
-        
-        """checking MOF by mofchecker 2.0: https://github.com/Au-4/mofchecker_2.0. Ref: https://doi.org/10.1039/D5DD00109A
-        """
+    def numbers(values, label):
+        parsed = [float(CIF.as_number(value)) for value in values]
+        if not all(math.isfinite(value) for value in parsed):
+            raise ValueError(f"PACMAN {label} contains missing or non-finite values")
+        return parsed
 
-        if MOFChecker is None:
-            raise ImportError(
-                "MOFChecker is required for this check. Install it with "
-                "'pip install git+https://github.com/Au-4/mofchecker_2.0.git@main'."
-            )
-        try:
-            checker = MOFChecker.from_cif(structure)
-            check_result = checker.get_mof_descriptors()
+    charges = numbers(column(charged, "_atom_site_charge"), "charge vector")
+    labels = column(source, "_atom_site_label")
+    if len(set(labels)) != atom_count or labels != column(charged, "_atom_site_label"):
+        raise ValueError("PACMAN atom labels are duplicated or reordered")
+    symbols = column(source, "_atom_site_type_symbol")
+    if symbols != column(charged, "_atom_site_type_symbol"):
+        raise ValueError("PACMAN changed atom types or their order")
+    if symbols != atoms.get_chemical_symbols():
+        raise ValueError("CIF atom rows do not match the ordered ASE atoms")
 
-            has_problem = []
-            problem_keys_true = [
-                                    "has_atomic_overlaps", "has_overcoordinated_c", "has_overcoordinated_n",
-                                    "has_overcoordinated_h", "has_suspicious_terminal_oxo",
-                                    "has_undercoordinated_c", "has_undercoordinated_n",
-                                    # "has_undercoordinated_rare_earth", "has_undercoordinated_alkali_alkaline",
-                                    # "has_geometrically_exposed_metal", 
-                                    "has_lone_molecule", "has_high_charges"
-                                ]
-            problem_keys_false = ["has_metal",
-                                "has_carbon",
-                                "is_porous",
-                                #  "has_hydrogen"
-                                ]
+    coordinates = []
+    for axis in "xyz":
+        tag = "_atom_site_fract_" + axis
+        original = numbers(column(source, tag), tag)
+        if original != numbers(column(charged, tag), tag):
+            raise ValueError("PACMAN changed fractional coordinates or atom order")
+        coordinates.append(original)
+    # Only numerical roundoff in ASE's Cartesian/fractional conversion is
+    # tolerated here. Source/derived CIF coordinates above must be equal.
+    parsed_coordinates = list(atoms.get_scaled_positions(wrap=False))
+    if len(parsed_coordinates) != atom_count or any(len(row) != 3 for row in parsed_coordinates):
+        raise ValueError("ASE did not return one coordinate triplet per atom")
+    if any(
+        not math.isclose(original, float(parsed), rel_tol=0, abs_tol=1e-12)
+        for original_row, parsed_row in zip(zip(*coordinates), parsed_coordinates)
+        for original, parsed in zip(original_row, parsed_row)
+    ):
+        raise ValueError("CIF atom rows require an unsupported ASE atom mapping")
 
-            for key in problem_keys_true:
-                if check_result.get(key, False):
-                    has_problem.append(key)
-
-            for key in problem_keys_false:
-                if not check_result.get(key, True):
-                    has_problem.append(key)
-
-            if len(has_problem) > 0:
-                return list(set(has_problem))
-            else:
-                return ["good"]
-        except Exception as exc:
-            warnings.warn(
-                f"MOFChecker validation failed for {structure}: {exc}",
-                RuntimeWarning,
-                stacklevel=2,
-            )
-            return ["unknown"]
-
+    for block in (source, charged):
+        occupancy = list(block.find_loop("_atom_site_occupancy"))
+        if occupancy and (
+            len(occupancy) != atom_count
+            or any(value != 1.0 for value in numbers(occupancy, "occupancies"))
+        ):
+            raise ValueError("PACMAN curation requires complete unit occupancies")
+    for tag in (
+        "_cell_length_a", "_cell_length_b", "_cell_length_c",
+        "_cell_angle_alpha", "_cell_angle_beta", "_cell_angle_gamma",
+    ):
+        if numbers([source.find_value(tag)], tag) != numbers([charged.find_value(tag)], tag):
+            raise ValueError("PACMAN changed the unit cell")
+    for tags in (
+        ("_space_group_symop_operation_xyz", "_symmetry_equiv_pos_as_xyz"),
+        ("_space_group_name_H-M_alt", "_symmetry_space_group_name_H-M"),
+        ("_space_group_IT_number", "_symmetry_Int_Tables_number"),
+    ):
+        def symmetry_values(block):
+            for tag in tags:
+                values = tuple(block.find_values(tag))
+                if values:
+                    return values
+            return ()
+        if symmetry_values(source) != symmetry_values(charged):
+            raise ValueError("PACMAN changed the declared symmetry")
+    return charges
 
 
 class clean_pacman():
 
-    """Removing free solvent and coordinated solvent but keep ions based on PACMAN-charge.         
+    """Remove free solvent while retaining PACMAN-predicted charged components.
+
+    Only FSR is implemented. Coordinated-solvent removal (ASR) is unavailable;
+    no ASR-labelled CIF is produced. This generic heuristic is not the sealed
+    CoRE-MOF release curation method.
     
     Args:
         structure (str): path to your CIF.
-        initial_skin (float): skin distance is added to the sum of vdW radii of two atoms.
+        initial_skin (float): ASE skin in angstrom, added to each atom's
+            covalent radius. The total pair margin is twice this value.
+            The legacy default of 0.25 therefore gives a 0.50 angstrom
+            pair margin. Recorded release-curation methods have separate
+            settings and do not change this default.
         output_folder (str): the path to save processed CIF.
         saveto (bool or str): the name of csv file with clean result.
 
@@ -736,37 +707,43 @@ class clean_pacman():
                 "PACMAN-charge is required for clean_pacman. "
                 "Install it with 'pip install PACMAN-charge'."
             )
-        pmcharge.predict(
-            cif_file=self.structure,
-            charge_type="DDEC6",
-            digits=10,
-            atom_type=True,
-            neutral=False,
-            keep_connect=False
-        )
-        src = self.structure.replace(".cif", "_pacman.cif")
-        dst = os.path.join(self.output, os.path.basename(src))
-        if os.path.exists(src):
-            os.rename(src, dst)
+        source = os.path.abspath(os.fspath(self.structure))
+        with tempfile.TemporaryDirectory(prefix="coremof_pacman_curation_") as workdir:
+            isolated = os.path.join(workdir, "input.cif")
+            shutil.copy2(source, isolated)
+            pmcharge.predict(
+                cif_file=isolated,
+                charge_type="DDEC6",
+                digits=10,
+                atom_type=True,
+                neutral=False,
+                keep_connect=False,
+            )
+            predicted = os.path.join(workdir, "input_pacman.cif")
+            if not os.path.isfile(predicted):
+                raise RuntimeError("PACMAN did not create the expected charged CIF")
+            _validated_pacman_charges(source, predicted, read(source))
+            destination = os.path.join(
+                self.output, os.path.splitext(os.path.basename(source))[0] + "_pacman.cif"
+            )
+            shutil.copy2(predicted, destination)
 
     def process(self):
-        try:
-            fsr_skin, fsr_solvent, fsr_ion, fsr_ion_charge = self.run_fsr()
-            asr_skin, asr_solvent, asr_ion, asr_ion_charge = self.run_asr()
-
-            if self.saveto:
-                mode = 'a' if os.path.exists(self.csv_path) else 'w'
-                with open(self.csv_path, mode=mode, newline='') as f:
-                    writer = csv.writer(f)
-                    if mode == 'w':
-                        writer.writerow(["Name", "Skin_FSR", "Skin_ASR", "FSR_Solvent", "ASR_Solvent", "FSR_Ion", "ASR_Ion", "FSR_Ion_Charge", "ASR_Ion_Charge"])
-                    writer.writerow([
-                        os.path.basename(self.structure), str(fsr_skin), str(asr_skin),
-                        fsr_solvent, asr_solvent, fsr_ion, asr_ion, fsr_ion_charge, asr_ion_charge
-                    ])
-            os.remove(os.path.join(self.output, os.path.basename(self.structure.replace(".cif","")) + "_pacman.cif"))
-        except Exception as e:
-            print("[clean_pacman.process] Error:", e)
+        fsr_skin, fsr_solvent, fsr_ion, fsr_ion_charge = self.run_fsr()
+        self.asr_status = "NOT_AVAILABLE"
+        self.asr_diagnostic = "ASR_UNSUPPORTED: coordinated-solvent removal is not implemented"
+        warnings.warn(self.asr_diagnostic, RuntimeWarning, stacklevel=2)
+        if self.saveto:
+            mode = 'a' if os.path.exists(self.csv_path) else 'w'
+            with open(self.csv_path, mode=mode, newline='') as f:
+                writer = csv.writer(f)
+                if mode == 'w':
+                    writer.writerow(["Name", "Skin_FSR", "Skin_ASR", "FSR_Solvent", "ASR_Solvent", "FSR_Ion", "ASR_Ion", "FSR_Ion_Charge", "ASR_Ion_Charge"])
+                writer.writerow([
+                    os.path.basename(self.structure), str(fsr_skin), "ASR_UNSUPPORTED",
+                    fsr_solvent, "ASR_UNSUPPORTED", fsr_ion, "ASR_UNSUPPORTED",
+                    fsr_ion_charge, "ASR_UNSUPPORTED",
+                ])
 
     def run_fsr(self):
         return self.run_clean(mode="FSR")
@@ -775,14 +752,18 @@ class clean_pacman():
         return self.run_clean(mode="ASR")
 
     def run_clean(self, mode="FSR"):
-        file_prefix = self.structure.replace(".cif", "")
+        if mode == "ASR":
+            raise NotImplementedError("PACMAN coordinated-solvent removal (ASR) is not implemented")
+        if mode != "FSR":
+            raise ValueError("mode must be FSR or ASR")
+        file_prefix = os.path.splitext(os.fspath(self.structure))[0]
         skin = self.initial_skin
         clean_func = self.free_clean if mode == "FSR" else self.all_clean
 
         while True:
             result = clean_func(file_prefix, self.output, skin)
             if result is None:
-                break
+                raise RuntimeError("PACMAN FSR curation did not produce a result")
             cleaned_skin, solvents, ions, ion_charges = result
             has_metals = any(
                 any(e in self.metal_list for e in re.findall(r'([A-Z][a-z]?)\d*', formula))
@@ -818,10 +799,14 @@ class clean_pacman():
         return ''.join([el + (str(count[el]) if count[el] > 1 else '') for el in sorted(count)])
 
     def free_clean(self, input_file, save_folder, skin):
-        try:
-            cif = read(input_file + ".cif")
-            charges = list(CIF.read_file(os.path.join(save_folder, os.path.basename(input_file) + "_pacman.cif")).sole_block().find_loop('_atom_site_charge'))
+        cif = read(input_file + ".cif")
+        charges = _validated_pacman_charges(
+            input_file + ".cif",
+            os.path.join(save_folder, os.path.basename(input_file) + "_pacman.cif"),
+            cif,
+        )
 
+        try:
             neighborlist = self.build_ASE_neighborlist(cif, skin)
             matrix = self.CustomMatrix(neighborlist, len(cif))
             clusters = sorted(self.find_clusters(matrix, len(cif)), key=lambda x: len(x), reverse=True)
@@ -831,7 +816,9 @@ class clean_pacman():
 
             for cl in clusters:
                 formula = self.cluster_to_formula(cl, cif)
-                cluster_charge = sum([float(charges[i]) for i in cl if i < len(charges)])
+                cluster_charge = math.fsum(charges[i] for i in cl)
+                if not math.isfinite(cluster_charge):
+                    raise ValueError("PACMAN component charge is not finite")
 
                 if not main_clusters:
                     main_clusters.append(cl)
@@ -849,72 +836,19 @@ class clean_pacman():
             write(os.path.join(save_folder, os.path.basename(input_file) + suffix), cif[final_atoms])
             return skin, solvents, ion_formulas, ion_charges
         except Exception as e:
-            print("[free_clean]", input_file, "failed:", e)
+            raise RuntimeError(f"PACMAN FSR curation failed for {input_file}: {e}") from e
 
     def all_clean(self, input_file, save_folder, skin):
-        try:
-            cif = read(input_file + ".cif")
-            charges = list(CIF.read_file(os.path.join(save_folder, os.path.basename(input_file) + "_pacman.cif")).sole_block().find_loop('_atom_site_charge'))
+        raise NotImplementedError("PACMAN coordinated-solvent removal (ASR) is not implemented")
 
-            neighborlist = self.build_ASE_neighborlist(cif, skin)
-            matrix = self.CustomMatrix(neighborlist, len(cif))
-            clusters = sorted(self.find_clusters(matrix, len(cif)), key=lambda x: len(x), reverse=True)
-
-            main_clusters, ions, solvents = [], [], []
-            ion_formulas, ion_charges = [], []
-
-            for cl in clusters:
-                formula = self.cluster_to_formula(cl, cif)
-                cluster_charge = sum([float(charges[i]) for i in cl if i < len(charges)])
-
-                if not main_clusters:
-                    main_clusters.append(cl)
-                elif len(cl) > 0.5 * len(main_clusters[0]):
-                    main_clusters.append(cl)
-                elif abs(cluster_charge) > 0.1:
-                    ions.append(cl)
-                    ion_formulas.append(formula)
-                    ion_charges.append(cluster_charge)
-                else:
-                    solvents.append(formula)
-
-            final_atoms = list(itertools.chain.from_iterable(main_clusters + ions))
-            suffix = "_ASR_ION.cif" if ions else "_ASR.cif"
-            write(os.path.join(save_folder, os.path.basename(input_file) + suffix), cif[final_atoms])
-            return skin, solvents, ion_formulas, ion_charges
-        except Exception as e:
-            print("[all_clean]", input_file, "failed:", e)
-
-try:
-    from CoREMOF.mosaec import run
-except ImportError:
-    run = None
+def run_MOSAEC(*args, **kwargs):
+    """Retired execution interface, retained only for a clear migration error."""
+    from ._checker_execution import results_only
+    return results_only("MOSAEC")
 
 
-def run_MOSAEC(cif_folder, save_path="./", max_workers=64):
-    """Check MOF by Metal Oxidation State Automated Error Checker: https://github.com/uowoolab/MOSAEC. Ref: https://doi.org/10.1021/jacs.5c04914        
-    
-    Args:
-        cif_folder (str): path to the folder including all CIFs.
-        save_path (str): path to save the results.
-        max_workers (int): number of parallel processes.
 
-    Returns:
-        dict:
-            -   results of MOSAEC.
-    """
-
-    if run is None:
-        raise ImportError(
-            "MOSAEC requires the licensed CSD Python API. Install and configure "
-            "the CSD API before calling run_MOSAEC."
-        )
-    results = run(cif_folder, max_workers=max_workers, save_path=save_path)
-
-    return results
-
-
-def run_mofclassifier(cif_folder, save_path="./mofclassifier_results.json", model="core", batch_size=64):
+def run_mofclassifier(cif_folder, save_path="./mofclassifier_results.json", model="core", batch_size=64, *, overwrite=False):
     """Check MOF by MOFClassifier: https://github.com/Chung-Research-Group/MOFClassifier. Ref: https://doi.org/10.1021/jacs.5c10126        
     
     Args:
@@ -922,23 +856,16 @@ def run_mofclassifier(cif_folder, save_path="./mofclassifier_results.json", mode
         save_path (str): path to save the predictions.
         model (str): the name of model used for predictions.
         batch_size (int): batch size for predicting.
+        overwrite (bool): explicitly replace an existing result file.
+
+    Source CIFs are never given to the upstream mutable parser. Models must
+    already be installed; importing this module does not download them.
+    The upstream batch mean is retained. To reproduce the recorded release's
+    exact 100-bag CPU mean, use ``release_mofclassifier`` instead.
 
     Returns:
         dict:
             -   results of MOFClassifier.
     """
-    if CLscore is None:
-        raise ImportError(
-            "MOFClassifier is required for run_mofclassifier. "
-            "Install it with 'pip install MOFClassifier==0.1.1'."
-        )
-    all_structures = [stuc for stuc in glob.glob(cif_folder+"/*cif")[:]]
-    if not all_structures:
-        raise FileNotFoundError(f"No CIF files were found in {cif_folder}")
-    results = CLscore.predict_batch(root_cifs=all_structures, model=model, batch_size=batch_size)
-    out = {}
-    for rid, s1, s2 in results:
-        out[rid] = [s1, s2]
-    with open(save_path, "w", encoding="utf-8") as f:
-        json.dump(out, f, indent=2, ensure_ascii=False)
-    return out
+    from ._mofclassifier import predict_directory
+    return predict_directory(cif_folder, save_path, model, batch_size, overwrite=overwrite)

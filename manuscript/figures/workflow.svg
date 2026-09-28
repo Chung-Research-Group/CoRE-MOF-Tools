@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="6.9in" height="4.25in" viewBox="0 0 690 425" role="img" aria-labelledby="title description">
+  <title id="title">Frozen assignments and deferred targets</title>
+  <desc id="description">Structural evidence defines complete-release leakage blocks before filtering. Checker views and target-free diversity produce frozen cohorts and partitions. A separate historical-plus-current target lane joins only after assignment. Model preprocessing and evaluation remain downstream work. Missing values never match and targets do not affect selection.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L8 4 L0 8 Z" fill="#506476"/></marker>
+  </defs>
+  <rect width="690" height="425" fill="#ffffff"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#203343">
+    <text x="20" y="30" font-size="19" font-weight="700">Freeze the experiment. Attach targets later.</text>
+    <g fill="none" stroke="#506476" stroke-width="1.7" marker-end="url(#arrow)">
+      <path d="M177 118 V142"/><path d="M177 201 V225"/><path d="M177 284 V308"/>
+      <path d="M520 136 V225"/><path d="M520 284 V308"/>
+      <path d="M335 338 H351 V254 H369"/>
+    </g>
+    <g stroke="#aac6d6" stroke-width="1.2" fill="#edf5fa">
+      <rect x="20" y="60" width="315" height="58" rx="7"/>
+      <rect x="20" y="143" width="315" height="58" rx="7"/>
+      <rect x="20" y="226" width="315" height="58" rx="7"/>
+      <rect x="20" y="309" width="315" height="58" rx="7"/>
+    </g>
+    <g stroke="#b7ccba" stroke-width="1.2" fill="#f0f6ef">
+      <rect x="370" y="60" width="300" height="76" rx="7"/>
+      <rect x="370" y="226" width="300" height="58" rx="7"/>
+    </g>
+    <rect x="370" y="309" width="300" height="58" rx="7" fill="#fff8eb" stroke="#c69b52" stroke-width="1.2" stroke-dasharray="5 3"/>
+    <g font-size="16" font-weight="700">
+      <text x="35" y="83">1  Frozen release</text>
+      <text x="35" y="166">2  Checks + structural features</text>
+      <text x="35" y="249">3  Complete-release relation closure</text>
+      <text x="35" y="332">4  Frozen cohorts + partitions</text>
+      <text x="385" y="83">Separate target snapshot</text>
+      <text x="385" y="249">5  Exact-ID target attachment</text>
+      <text x="385" y="332">6  Model evaluation — pending</text>
+    </g>
+    <g font-size="14">
+      <text x="35" y="105">Exact IDs, evidence contracts, input hashes</text>
+      <text x="35" y="188">Unavailable checker ≠ scientific FAIL</text>
+      <text x="35" y="271">Indivisible blocks; diversity cannot cut them</text>
+      <text x="35" y="354">Common clean test + assignment digest</text>
+      <text x="385" y="105">Accepted historical + validated new results</text>
+      <text x="385" y="124">Explicit cutoff; unavailable targets stay null</text>
+      <text x="536" y="181">No input to</text>
+      <text x="536" y="199">cohort selection</text>
+      <text x="385" y="271">Preserve original IDs, partitions, and digest</text>
+      <text x="385" y="354">Train-only fitting; report graph/grid failures</text>
+      <text x="20" y="398">Schematic only · exploratory assignments · no claim of chemical identity or model accuracy</text>
+    </g>
+  </g>
+</svg>

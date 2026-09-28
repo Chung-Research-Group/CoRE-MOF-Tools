@@ -1,0 +1,46 @@
+{
+  "contract_id": "coremof-zeopp-open-metal-sites-0.4.7-v1",
+  "schema_version": "1.0",
+  "calculation": {
+    "command": [
+      "network",
+      "-oms",
+      "INPUT.cif"
+    ],
+    "detector": "Zeo++ open-metal-site detector",
+    "probe_dependent": false,
+    "requires_ccdc_licence": false,
+    "zeopp_package": "zeopp-lsmo=0.4.7=h27087fc_0"
+  },
+  "metadata_namespace": "open_metal_site_props",
+  "fields": {
+    "has_open_metal_sites": {
+      "definition": "true when Zeo++ -oms reports open_metal_site_count greater than zero",
+      "type": "boolean"
+    },
+    "open_metal_site_count": {
+      "definition": "number reported by Zeo++ in the #OMS output field for the supplied canonical CIF",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "surface_definition_A": {
+      "definition": "surface-definition distance printed by this Zeo++ build during OMS detection",
+      "nullable": true,
+      "type": "number"
+    }
+  },
+  "interpretation": {
+    "automatic_cr_ncr_exclusion_authorized": false,
+    "candidate_metadata": true,
+    "caution": "This is a Zeo++ geometry/connectivity heuristic on the supplied structure, not experimental proof of an accessible or catalytically active open metal site.",
+    "curation_role": "DIAGNOSTIC_ONLY",
+    "input_expectation": "The documented use case is a desolvated MOF framework. Coordinated guests, disorder, missing atoms, bonding interpretation, and structure preparation can change the count."
+  },
+  "provenance_requirements": [
+    "canonical CIF path, byte size, and SHA-256",
+    "manifest path, row index, and SHA-256",
+    "runner and Zeo++ binary SHA-256",
+    "exact argv, return code, elapsed time, and output SHA-256",
+    "raw OMS output line and Zeo++ stdout/stderr tails"
+  ]
+}

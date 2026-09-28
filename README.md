@@ -2,6 +2,10 @@
 
 # CoRE MOF Tools
 
+This 28 September 2026 repository preparation contains the current results-only
+checker distribution. Start with [UPLOAD_GUIDE.md](UPLOAD_GUIDE.md) for the local
+asset exclusions and verification commands. No remote or public release is created.
+
 [![Documentation](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs)](https://core-mof-tools.readthedocs.io/)
 [![PyPI](https://img.shields.io/pypi/v/CoREMOF-tools?logo=pypi)](https://pypi.org/project/CoREMOF-tools/)
 [![Python](https://img.shields.io/badge/Python-3.9--3.11-blue.svg?logo=python)](https://python.org/downloads/)
@@ -9,6 +13,81 @@
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15055758.svg)](https://doi.org/10.5281/zenodo.15055758)
 
 CoRE MOF Tools is the Python interface accompanying the CoRE MOF database. It provides database lookup and structure download, CIF curation and validation, geometric and chemical descriptors, and pretrained property models.
+
+## Checker results and distribution policy
+
+The database provides the **precomputed results** of MOFClassifier, MOFChecker,
+Chen–Manz, MOSAEC and SETC-GAT. CoRE-MOF-Tools reads those results and lets users
+choose which checkers define their CR/NCR dataset. Loading results and combining
+checker votes do not run a checker or require a CCDC installation.
+
+This distribution does **not** include the third-party checker engines,
+MOSAEC reference tables, or the external-checker calculation/replay workers.
+The former `curate.mof_check`, `curate.run_MOSAEC`, `mosaec.run` and
+`release_checkers`/`release_mosaec`/`release_setc` calculation entry points now
+raise an explanatory error without launching a process or writing results.
+For new checker calculations, obtain the original software separately and
+follow its authors' instructions and applicable terms. The optional integration
+with our separately installed MOFClassifier remains available, but does not
+run automatically when reading or classifying release results.
+
+```python
+from CoREMOF.dataset import CoREMOFDataset
+
+dataset = CoREMOFDataset.from_release("path/to/coremof_release")
+five_checker_view = dataset.classify("5checker")
+custom_view = dataset.classify(checkers=("MOFChecker", "MOSAEC"))
+print(dict(five_checker_view.label_counts()))
+```
+
+`metadata/checker_findings.csv` and `.jsonl` retain the reported findings and
+raw scores. A completed PASS/FAIL is different from `NOT_AVAILABLE`. With a
+selected set of checkers, all PASS gives CR, all FAIL gives NCR, mixed completed
+votes give AMBIGUOUS, and any missing result gives UNCHECKED. No missing result
+is converted to a scientific failure, and no existing checker result is
+recalculated by this API. See `examples/read_checker_results.py` for a read-only
+example. Cite the original checker methods when using their results.
+
+### Missing MOFid results
+
+The release policy adopted on 26 September 2026 retains structures whose
+MOFid calculations cannot be reconciled reliably. Their MOFid values remain
+missing, with an explicit reason, instead of selecting an inconsistent result
+or requiring a successful identifier for every structure.
+
+In the recorded 453-case reconciliation, 24 replacements passed deterministic
+checks and 429 cases remained unresolved. The latter have null MOFid-v1 and
+MOFid-v2 values and status `NOT_AVAILABLE_UNRESOLVED_RECONCILIATION`. The
+separate ambiguous-node rule for MOFid-v2 is retained. Missing MOFid does not
+mean that a structure is not a MOF, failed a checker, or is NCR.
+
+Missing identifiers never match each other and add no MOFid grouping edge.
+Other available grouping evidence remains usable. Original calculation records
+are preserved, and the frozen benchmark groups and train/validation/test
+assignments are not revised by this policy decision.
+
+This is an approved **scientific handling policy**, not a claim that a public
+release has been published. Existing candidates still carry their recorded
+`STAGE_ONLY` status. A separately versioned public release must validate the
+missing-value handling, grouping and complete release before changing that
+status. No controller check is disabled by editing this README.
+
+### Code and data permissions are separate
+
+Removing checker implementations does not itself establish redistribution
+permission for all structural data, derived outputs or unrelated model assets.
+Distribute only the materials covered by their applicable permissions. Keep
+restricted source-resolved files out of public repositories. The package's
+licence does not replace third-party terms. Remaining non-checker components
+are described in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). These
+distribution decisions belong in the repository documentation, not in the
+manuscript's scientific discussion.
+
+For the current software manuscript, reproducible workflow recipes, evidence
+map, individual figure plan, and editable workflow diagram, start with the
+[manuscript and workflow workspace](manuscript/README.md). It distinguishes
+implemented capabilities and dated data snapshots from pending model results
+and publication decisions.
 
 The package combines pure-Python functions with optional external software. Run the installation check before starting:
 
@@ -19,14 +98,66 @@ coremof doctor
 
 ## Installation
 
-Python 3.9–3.11 is supported. A clean conda environment is recommended because several scientific dependencies contain compiled extensions.
+Python 3.9–3.11 is supported. The release-loading, classification, and
+dataset-splitting API uses only the Python standard library. Version
+`0.4.0.dev0` is not yet the stable PyPI release; install this checkout to use
+the new API:
 
 ```bash
 conda create -n coremof python=3.11
 conda activate coremof
-pip install CoREMOF-tools
+git clone https://github.com/Chung-Research-Group/CoRE-MOF-Tools.git
+cd CoRE-MOF-Tools
+python -m pip install .
 coremof doctor
 ```
+
+Install the historical scientific feature set with the `full` extra. A clean
+conda environment is recommended because several of these dependencies contain
+compiled extensions:
+
+```bash
+python -m pip install ".[full]"
+coremof doctor
+```
+
+Version 0.4 changes the installation contract: bare installation is the
+lightweight dataset/splitting API, while `[full]` preserves the dependency set
+previously installed by default.
+
+The target-independent `representative` diversity profile uses complete finite
+264-value depth-5 revised autocorrelation (RAC5) descriptors first, otherwise
+the declared complete Zeo++ pore vector, otherwise an explicit no-numeric tier;
+it never imputes or reads targets. The paired strict five-checker benchmark uses
+computation-ready (CR) only when all five checker results are available and
+PASS, and non-computation-ready (NCR) only when all five are available and FAIL.
+These workflows require their exact numerical environment:
+
+```bash
+python -m pip install ".[benchmark]"  # exact five-package numerical stack
+```
+
+This pins NumPy 1.26.4, scikit-learn 1.5.0, SciPy 1.13.1, joblib 1.5.3,
+and threadpoolctl 3.6.0. Missing dependencies or version drift fail explicitly.
+Numerical libraries are limited to one thread during diversity construction
+and their non-path runtime identity is recorded. Cross-architecture bit
+identity is not promised. The historical
+`train_valid_test_split()` API remains standard-library-only and unchanged.
+
+For the **older target-independent experiment**, see the
+[ML benchmark handoff guide](ML_BENCHMARK_HANDOFF.md). The audited published
+five-checker view contains 6,294 raw strict-CR and 2,299 raw strict-NCR rows.
+Whole complete-release leakage blocks leave 4,693 CR and 1,727 NCR rows in the
+label-pure sensitivity cohort, which must be requested explicitly with
+`cohort_eligibility="complete_release_label_pure_effective_blocks"`. Every
+result remains exploratory with `official_split=false`, and targets are joined
+only after the assignment is frozen. These are dated experiment counts, not
+the latest descriptive metadata view. For new target-complete cohorts use
+[`examples/build_target_first_benchmark.py`](examples/build_target_first_benchmark.py).
+To reproduce the paper's current 3,737/466/468 train/val/test assignments, use
+[`examples/replay_common_input_benchmark.py`](examples/replay_common_input_benchmark.py)
+with its archived input contract. New metadata must not replace the frozen
+experiment's checker evidence, input certification or assignments.
 
 To reproduce the repository environment, use:
 
@@ -40,13 +171,259 @@ Some features require additional software:
 | Feature | Additional requirement |
 |---|---|
 | Zeo++ pore geometry | `conda install -c conda-forge zeopp-lsmo` |
-| CSD structure download and MOSAEC | Licensed CSD software and CSD Python API |
-| MOFChecker | `pip install git+https://github.com/Au-4/mofchecker_2.0.git@main` |
+| CSD structure download | Licensed CSD software and CSD Python API |
+| Reading checker results and selecting CR/NCR | No external checker software required |
 | MOFid v1/v2 | [MOFid installation](https://snurr-group.github.io/mofid/compiling/#installation) and Open Babel |
 | Crystal topology | Julia/CrystalNets through `juliacall`; the first call may install Julia packages |
 | Heat-capacity prediction | Full repository checkout containing the ~1.3 GB ensemble model directory |
 
 ## Quick start
+
+For a complete practical guide to release loading, CR/NCR definitions,
+parent-group choices, leakage guards, Python/CLI examples, output schemas,
+licensing, and troubleshooting, see
+[the dataset-splitting handbook](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/blob/main/README_DATASET_SPLITTING.md).
+For a complete executable walkthrough, open
+[the companion notebook](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/blob/main/examples/CoREMOF_dataset_splitting_quickstart.ipynb).
+
+Current v26 candidate files remain non-published and retain their explicit `STAGE_ONLY` status.
+The missing-MOFid handling policy above is approved, but public-release
+validation and publication remain separate steps. Splits remain exploratory
+rather than official benchmark assignments.
+
+### Build CR/NCR train/validation/test splits
+
+Four project-defined API identifiers are used below; none is a standard
+crystallographic term. A **release-authorized parent triad** means one
+``status/group/size`` triple declared by
+`parent_groups/parent_group_methods.json`, stored in
+`parent_groups/parent_groups.csv`, and validated by the loader. `MATCHED`
+means the criterion is available and the observed group has at least two
+members; `UNMATCHED` means it is available and has one member;
+`NOT_AVAILABLE` means it supplies no scientific edge and its size-one group is
+only a table-shape placeholder. Two unavailable rows never match.
+
+Here **exact RAC5** means equality of all 264 ordered finite depth-5 values
+after binary64 parsing, conversion of `-0.0` to `+0.0`, and `float.hex()`
+serialization (`rtol=atol=0`), with no scaling, deletion, imputation, or
+rounding. **Exact MOFid** means equality of the complete release-authorized
+current string after converting it to text, collapsing each Unicode-whitespace
+run to one ASCII space, trimming, rejecting an empty or declared whole-field
+missing/execution placeholder, applying Unicode NFKC, and then case-folding;
+it is never prefix, substring, or fuzzy matching and never edits a CIF or its
+chemistry. Placeholder comparison is case-insensitive and rejects `-`, `nan`,
+`none`, `null`, `n/a`, `na`, `unknown`, `missing`, `timeout`, `timed out`,
+`error`, `failed`, `fail`, `fail process`, `failed process`, and
+`process failed`.
+
+- `priority_main` is the explanatory parent hierarchy. Across the complete
+  release it reads `rac_status/rac_group/rac_size`,
+  `mofid2_status/mofid2_group/mofid2_size`, and
+  `mofid1_status/mofid1_group/mofid1_size` from
+  `parent_groups/parent_groups.csv`. It
+  creates exact RAC5 anchor components, then uses exact MOFid-v2 groups and
+  finally exact MOFid-v1 groups. At each lower step, a group touching
+  no stronger component creates a component; one touching exactly one stronger
+  component attaches only its unresolved rows; one touching two or more never
+  merges those stronger components, records `PARENT_METHOD_CONFLICT`, and
+  leaves lower-only rows unresolved. Missing evidence becomes one unique
+  singleton per structure unless exclusion is explicitly requested. This is
+  not a row-wise first-nonmissing fallback. Here priority means parent-evidence
+  precedence, not a queue: it does not rank, schedule, or recalculate failed
+  scientific features. Zeo++, topology, source IDs, CIF
+  hashes, common names, provisional source-ID/MOFid transitive groups, and
+  StructureMatcher do not enter this hierarchy.
+- `main_union` is the separate conservative leakage guard, not a parent claim.
+  It reads the full CIF SHA-256 values from the `sha256` column in
+  `manifests/cif_manifest.csv` and the database-namespaced
+  source-sibling/RAC5/MOFid group/status/size columns in `parent_groups.csv`.
+  It forms transitive
+  connected components over the full unfiltered release from those five exact
+  relations. The release source group is exact equality of the ordered
+  `(source_database, source_id)` pair after applying the text procedure above
+  to each field separately, so IDs never match across databases. A missing CIF SHA-256 fails closed; a missing optional relation
+  adds no edge, and nulls never match. There is no evidence precedence or
+  conflict resolution: every available listed edge is unioned.
+- `leakage_guard="auto"` is only a selector: it chooses `main_union` for
+  `priority_main` and `parent_only` for an explicitly chosen direct/reference
+  method. `parent_only` uses only that selected explanatory grouping as split
+  blocks; it adds none of `main_union`'s cross-method edges. With
+  `priority_main`, an unresolved lower-method conflict is excluded under
+  `parent_only` but can remain safely assigned and diagnosed under
+  `main_union`.
+
+Load an extracted release, recompute a checker view, and keep related
+structures in the same partition:
+
+```python
+from CoREMOF.dataset import CoREMOFDataset
+
+dataset = CoREMOFDataset.from_release("/path/to/coremof_v26.0.2")
+classified = dataset.classify(checkers="5checker")
+print(len(classified.cr_ids), len(classified.ncr_ids))
+split = classified.train_valid_test_split(
+    parent_method="priority_main",  # RAC5, then MOFid v2, then MOFid v1
+    leakage_guard="auto",
+    labels=("CR", "NCR"),
+    sources=("COD", "SI"),
+    fractions=(0.8, 0.1, 0.1),
+    random_state=42,
+)
+
+print(split.train_ids[:3])
+split.write("my_split")
+```
+
+The default `priority_main` policy is not a row-by-row first-nonmissing
+fallback, and its explanatory groups are distinct from the `main_union`
+partition blocks. Both are computed before applying experiment filters.
+Direct methods such as `rac5`, `mofid_v2`, and
+`mofid_v1` are separately selectable for sensitivity studies. Missing parent
+evidence becomes a unique singleton and never causes missing rows to match.
+Releases may also expose three optional non-decisive reference criteria.
+`rac5_crystalnets` (`RT-`) reads the public
+`rac_crystalnets_status/group/size` triad and means exact equality of all 264
+finite RAC5 values plus a complete
+successful **current CrystalNets fingerprint**, where current means the
+topology evidence authorized by the loaded release rather than a runtime
+search for newer output. The fingerprint requires `SUCCESS`,
+`topology_available=true`, `error=null`, nonempty complete SingleNodes and
+AllNodes subnets, and count/catenation values equal to the subnet count. It
+contains network/count/net/agreement fields and every subnet node's status,
+dimension, key, name, and genome in sorted-key JSON; subnet projections are
+sorted, duplicate subnets are retained, and SHA-256 is applied. Null top-level
+dimension/net/agreement summaries are retained for heterogeneous subnets, and
+node topology name/genome may be null; runtime, paths, hashes, diagnostics,
+software text, and original subnet order are excluded.
+`mofid_v2_crystalnets` (`M2T-`) reads the public
+`mofid2_crystalnets_status/group/size` triad and replaces RAC5 with exact
+complete canonicalized MOFid-v2 text: convert to text, collapse each
+Unicode-whitespace run to one
+ASCII space, trim, reject empty/whole-field missing or execution placeholders,
+apply Unicode NFKC, and then case-fold. This text processing does not modify a
+CIF, atoms, bonds, occupancies, coordinates, chemistry, or unit cell and is
+not fuzzy matching. The eligible MOFid-v2 statuses are exactly `SUCCESS`,
+`SUCCESS_TOPOLOGY_UNKNOWN`, `SUCCESS_TOPOLOGY_ERROR`, and
+`SUCCESS_TOPOLOGY_TIMEOUT`. The latter two are successful calculated
+identifiers whose embedded topology qualifier is ERROR or TIMEOUT, not MOFid
+execution failures; every other MOFid-v2 status and every incomplete
+CrystalNets input adds no edge. This reference method remains provisional
+whenever the loaded release's MOFid-v2 input is provisional. If the
+release-authorized MOFid-v2 values change, rebuild the M2T groups before use.
+`structure_matcher_strict` (`SM-`) is a convenience connected component of
+exhaustive composition-compatible pairs whose symmetric forward and reverse
+pymatgen 2024.2.8
+`ElementComparator` fits both pass with `ltol=stol=0.001`,
+`angle_tol=0.01`, `primitive_cell/attempt_supercell=true`,
+`scale/allow_subset=false`, `supercell_size=num_sites`, and no ignored species;
+direct edges are authoritative; the component is not proof that every pair in
+it directly matches or that its members are duplicates. Parser failures,
+timeouts, and execution errors are `NOT_AVAILABLE` rather than unmatched and
+add no optional edge. Missing or failed input adds no optional edge. The digest after each prefix is only a
+group label, not a topology, MOFid, RMSD, or score. These methods do not change
+`priority_main` or `main_union`: the recommended explanatory hierarchy remains
+exact RAC5, then complete MOFid v2, then complete MOFid v1. The loader accepts `sm_*`
+columns only with the exact optional-reference method declaration and its
+hash-verified release-adapter receipt; incomplete components must project to
+unique `NOT_AVAILABLE` singletons, and relaxed evidence cannot be executed or exposed.
+The strict parser expands declared symmetry, merges generated sites at
+`site_tolerance=1e-4`, rounds fractions near 1/3 or 2/3 at
+`frac_tolerance=1e-4`, checks occupancy, sorts the periodic structure, and
+preserves disorder; parser, timeout, OOM, matcher, or directional-disagreement
+cases are unavailable rather than nonmatches. Its directional normalized RMS
+and maximum displacements divide periodic site displacement by
+`(V/Nsites)^(1/3)` for that direction, so they are dimensionless and are not
+angstrom RMSD or output from the separate `charnley/rmsd` package.
+The COD/SI filter still constructs its leakage blocks over the complete
+COD+CSD+SI release. A future standalone open-data bundle must therefore ship
+an audited full-universe block projection before it can reproduce
+CSD-mediated bridges without exposing CSD rows.
+
+The same workflow is available from the command line:
+
+```bash
+coremof split /path/to/coremof_v26.0.2 \
+  --checkers 5checker \
+  --sources COD SI \
+  --output-directory my_split
+```
+
+Every output includes explicit exclusions, release-input hashes, the selected
+parent method, the requested and resolved leakage guard, machine-readable
+definitions of both project-defined policies, a structured
+lower-versus-stronger parent conflict ledger, and a zero-cross-partition
+leakage audit.
+`provisional_input` is derived from a package-authenticated closed release
+contract, never from caller-supplied status strings. The current authenticated
+RT/M2T reference contract is staged, non-decisive, and explicitly not
+publication-authorized, so current outputs remain provisional; an arbitrary
+`FINAL` token is rejected and cannot clear that flag. A user-generated split
+is never labelled as an official CoRE-MOF split, and `official=True` currently
+fails closed because no audited official assignment manifest exists.
+
+### Join target results before splitting
+
+Combine one or more uptake, selectivity, or other endpoint files with current
+release metadata and selected feature tables before assigning partitions:
+
+```python
+from CoREMOF.targets import TargetSource
+
+targets = dataset.merge_targets(
+    (
+        TargetSource(
+            "uptake.csv",
+            id_column="structure_name",
+            target_columns=("uptake",),
+            target_names={"uptake": "xe_uptake"},
+            value_types={"xe_uptake": "float"},
+            units={"xe_uptake": "mol/kg"},
+            conditions={"xe_uptake": {"temperature_K": 298, "pressure_bar": 1}},
+        ),
+    ),
+    feature_tables=("rac5", "zeo"),
+)
+split = targets.classify("5checker").train_valid_test_split(
+    required_targets=("xe_uptake",),
+    parent_method="priority_main",
+)
+```
+
+Matching uses exact current IDs. Earlier IDs require an explicit audited alias
+registry; fuzzy matching, unit inference, target imputation, and silent
+conflict resolution are never performed. See the handbook for multi-file,
+alias-registry, provenance, configuration-file, and CLI examples.
+
+### Screen candidates automatically
+
+[`examples/screen_candidates.py`](examples/screen_candidates.py) turns the
+same validated release or target configuration into a deterministic ranked
+CSV and hash-bound receipt:
+
+```bash
+python examples/screen_candidates.py /path/to/coremof_v26.0.2 \
+  --target-config targets.json \
+  --rank-by xe_uptake \
+  --require-target xe_uptake \
+  --checkers 5checker \
+  --label CR \
+  --source COD \
+  --order descending \
+  --limit 1000 \
+  --split \
+  --parent-method priority_main \
+  --leakage-guard auto \
+  --output-directory screening/xe_uptake
+```
+
+Eligibility and required-target filters run before ranking. Null,
+non-numeric, and non-finite values are excluded without imputation; ties use
+ascending `structure_id`. Integers and decimal text are ranked without
+binary64 rounding, while native floats retain their IEEE-754 values. The
+optional split still builds leakage components from the full release and is
+exploratory, not an official CoRE-MOF split.
+See the [executable notebook](examples/CoREMOF_dataset_splitting_quickstart.ipynb)
+for portable and guarded real-target examples.
 
 ### Query a CoRE MOF record
 
@@ -78,6 +455,45 @@ print(surface_area["ASA"])
 
 Zeo++ calls use unique temporary files and are safe for paths containing spaces and for concurrent workflows. Set `COREMOF_NETWORK_EXECUTABLE` if the executable is not named `network`.
 
+### Resolve either one CIF or a directory
+
+Use the shared resolver when a workflow should accept either one CIF file or a
+directory. A directory scan is non-recursive and returns its direct regular
+CIF children in deterministic lexical filename order. The return type is
+always a tuple, so downstream code does not need separate file and directory
+branches:
+
+```python
+from CoREMOF import resolve_cif_inputs
+
+for cif_path in resolve_cif_inputs("one_file.cif"):  # also accepts a directory
+    print(cif_path)
+```
+
+Missing paths, unsupported files, empty directories, and CIF symlinks or
+special files raise an error before scientific software is called. The same is
+true when two basenames become equal after Unicode NFKC normalization followed
+by case folding; that comparison only detects ambiguous output identifiers and
+does not alter a path or CIF byte. Existing low-level scientific functions keep
+their historical input and return types; the resolver is the common front end
+for new batch wrappers.
+
+### Calculate RAC descriptors at a chosen depth
+
+```python
+from CoREMOF.calculation.mof_features import RACs
+
+historical_public_racs = RACs("my_mof.cif")          # depth=3, 176 values
+chosen_depth_racs = RACs("my_mof.cif", depth=5)     # 264 values
+```
+
+`depth` must be a non-Boolean integer greater than or equal to zero. Output
+keeps the historical `Metal`, `Linker`, and `Function-group` order and rounds
+values to four decimal places. Therefore `depth=5` selects a 264-value public
+calculation but is not the sealed CoRE-MOF v26 release RAC5 method, which also
+requires the pinned molSimplify 1.7.3 environment and unrounded validated
+values.
+
 ### Precheck and standardize a CIF
 
 ```python
@@ -104,15 +520,18 @@ stability_result = stability("my_mof.cif")
 
 | Task | Module | Main entry point |
 |---|---|---|
+| Single-CIF/directory input resolution | `CoREMOF.inputs` | `resolve_cif_inputs()`, `collect_cifs()` |
 | Database lookup | `CoREMOF.structure` | `information()` |
 | SI/CSD structure download | `CoREMOF.structure` | `download_from_SI`, `download_from_CSD()` |
 | Zeo++ geometry | `CoREMOF.calculation.Zeopp` | `PoreDiameter()`, `SurfaceArea()`, `PoreVolume()` |
 | Basic descriptors | `CoREMOF.calculation.mof_features` | `SpaceGroup()`, `Mass()`, `Volume()`, `n_atom()` |
 | Topology, OMS, RACs | `CoREMOF.calculation.mof_features` | `topology()`, `get_oms_file()`, `RACs()` |
 | CIF curation | `CoREMOF.curate` | `preprocess`, `clean`, `clean_pacman` |
-| Structural validation | `CoREMOF.curate` | `mof_check`, `run_MOSAEC()`, `run_mofclassifier()` |
+| Checker results and CR/NCR selection | `CoREMOF.dataset` | `from_release()`, `classify()` |
 | Property models | `CoREMOF.prediction` | `pacman()`, `cp()`, `stability()` |
 | MOF identifiers | `CoREMOF.get_mofid` | `run_v1()`, `run_v2()` |
+| Dataset classification and splitting | `CoREMOF.dataset`, `CoREMOF.splitters` | `CoREMOFDataset`, `split_release()` |
+| Feature/target joining | `CoREMOF.targets` | `TargetSource`, `AliasRegistry`, `merge_targets()` |
 
 Full guides and API documentation are available on [Read the Docs](https://core-mof-tools.readthedocs.io/). Executable notebooks and CIF examples are in [`examples/`](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/tree/main/examples).
 
