@@ -1,0 +1,34 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+build/
+dist/
+docs/build/
+.ipynb_checkpoints/
+coremof_notebook_outputs/
+
+# CoREMOF prediction routines create these working files by default.
+features.csv
+cp.csv
+tmp_*/
+tmp_*.txt
+
+# Local authorized assets are not cleared for Git distribution.
+/local/
+/CoREMOF/data/CR.json
+/CoREMOF/data/NCR.json
+/CoREMOF/data/SI/
+/CoREMOF/data/mofid/nodes.zip
+/CoREMOF/models/stability/
+/CoREMOF/models/cp_app/models/
+*.whl
+*.tar.gz
+*.log
+/.ruff_cache/
+/.tox/
+/.venv/
+/venv/
+# Additional historical heat-capacity layouts use extensionless model files.
+/CoREMOF/models/cp_app/ensemble_models_*/

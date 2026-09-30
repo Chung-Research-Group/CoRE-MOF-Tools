@@ -84,6 +84,7 @@ class DistributionTests(unittest.TestCase):
             "manuscript/figures/workflow.svg",
             "manuscript/figures/workflow.pdf",
             "manuscript/figures/workflow.png",
+            "verify_upload.py",
         )
         for relative in required:
             with self.subTest(file=relative):

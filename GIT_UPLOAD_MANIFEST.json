@@ -23,8 +23,8 @@
     },
     {
       "path": ".gitignore",
-      "bytes": 504,
-      "sha256": "8a22a5db206d4ea6f9e63284f33ba282f05d59e299fb899c6dea910d29ea1396"
+      "bytes": 638,
+      "sha256": "f4a077be3d57b48809f0503b8d7750644540b9b0366031b2b67364f08a4a65ba"
     },
     {
       "path": "COMBINED_TARGET_DATASET.md",
@@ -428,8 +428,8 @@
     },
     {
       "path": "MANIFEST.in",
-      "bytes": 1601,
-      "sha256": "33eb83d40f90a523e56e1557659d8fc902afd5588d24f5bb496a3f0f6260daf1"
+      "bytes": 1626,
+      "sha256": "22b994381179b80e0da014f7bc3ed6ecbf3ccd37e642980edd78430666ab4607"
     },
     {
       "path": "ML_BENCHMARK_HANDOFF.md",
@@ -438,8 +438,8 @@
     },
     {
       "path": "README.md",
-      "bytes": 27921,
-      "sha256": "acc07d145c9c7ee04a2aaeb85ac9c49978c88c5f2f9d4c3136107fbff798d9de"
+      "bytes": 28054,
+      "sha256": "3c4503a665c892d5cb3d106016dd2634ad8c96dccd6b192fe296c3c58caf8244"
     },
     {
       "path": "README_DATASET_SPLITTING.md",
@@ -448,13 +448,13 @@
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "bytes": 3636,
-      "sha256": "b21ad360ad88d4349e4a6c9ff1d3f21c6edb3e05c54b1a0150eafefc632e2461"
+      "bytes": 3717,
+      "sha256": "c523ca64e1562df8b569ac68da7b9313694b31511c3b5acf4cde7f1bcb414ca8"
     },
     {
       "path": "UPLOAD_GUIDE.md",
-      "bytes": 2919,
-      "sha256": "ccb7bd178f469e740c3e29164345384b2973329557106c0a8e1d8d87d63e8c21"
+      "bytes": 4346,
+      "sha256": "c6a75b0a77c7ba0919ec5c4529f11f3229d3697b4c73aac2c7da291b6350845c"
     },
     {
       "path": "V2602_COMBINED_TARGET_COVERAGE_20260904.json",
@@ -803,8 +803,8 @@
     },
     {
       "path": "manuscript/README.md",
-      "bytes": 3358,
-      "sha256": "3fe4c33e771588fb7142f306b1684f4697a46175a057f41c578ba95023eccf79"
+      "bytes": 3739,
+      "sha256": "ff5c21fac651cdb72824a277fa604f44c800cfed0ff206e26fe5ba89d48ab8c1"
     },
     {
       "path": "manuscript/evidence.md",
@@ -833,8 +833,8 @@
     },
     {
       "path": "manuscript/manuscript.md",
-      "bytes": 23371,
-      "sha256": "fe27509de7e68158abfc39575c1e5d3e4cad394e61bee12e76be3f4e173f3e5c"
+      "bytes": 23587,
+      "sha256": "5f7a60ddb198ad4f5c91e1587fb941ce6a3e3dd3aa714adaec7a9660cc0e9993"
     },
     {
       "path": "manuscript/references.bib",
@@ -918,13 +918,13 @@
     },
     {
       "path": "tests/test_distributions.py",
-      "bytes": 5657,
-      "sha256": "a471e4e97af13472bde01fe8bdac4550c8c619209377b8cfcde5a4012f374918"
+      "bytes": 5689,
+      "sha256": "d694b112ecce784d00de33e7a3c46d375089daee115c73c5b18638155df03845"
     },
     {
       "path": "tests/test_handbook.py",
-      "bytes": 15338,
-      "sha256": "6192fe54c577fd952385180b8baaeeb3a3de5cb22a61dcb28bbc0c2a31dc3b32"
+      "bytes": 15766,
+      "sha256": "50d68bd209e1380780a00e363cec8e9bb1c20d77bed8fb9e99e8dcbde8c0c4de"
     },
     {
       "path": "tests/test_heat_capacity_assets.py",
@@ -1102,18 +1102,23 @@
       "sha256": "926b31651649e536023b6b5356893a419567b585cd6b9c4e9367e288c5196bb2"
     },
     {
+      "path": "tests/test_upload_verification.py",
+      "bytes": 4613,
+      "sha256": "69773b30102bf02ab5919fdd3462dc0153208c85487914367d4a11a0d90097b3"
+    },
+    {
       "path": "tests/test_zeopp.py",
       "bytes": 9094,
       "sha256": "7ad48bc6b564995d5445ec32319fddf78db55a9b174bf4b63090dcfaf4eadd48"
     },
     {
       "path": "verify_upload.py",
-      "bytes": 4915,
-      "sha256": "b56f7279e6595f236476b5ecd8f90c86b427775a594f0816b4df25c0b045c56d"
+      "bytes": 6303,
+      "sha256": "1c23af715568f9e7c076216c085bfe006f85db18e4dfcff12a71315fd7c08836"
     }
   ],
-  "file_count": 222,
-  "bytes": 3366446,
+  "file_count": 223,
+  "bytes": 3375304,
   "errors": [],
   "publication_authorized": false,
   "scope": "Local code surface only. Not a software or data licence decision."

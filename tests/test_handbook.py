@@ -134,8 +134,16 @@ class HandbookTests(unittest.TestCase):
         self.assertTrue(HANDBOOK.is_file())
         main_readme = (ROOT / "README.md").read_text(encoding="utf-8")
         self.assertIn(
-            "https://github.com/Chung-Research-Group/CoRE-MOF-Tools/"
-            "blob/main/README_DATASET_SPLITTING.md",
+            "[the dataset-splitting handbook](README_DATASET_SPLITTING.md)",
+            main_readme,
+        )
+
+    def test_main_readme_installation_uses_the_updated_checkout(self):
+        main_readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("Run the last two commands from this updated checkout", main_readme)
+        self.assertIn("clone the fork and branch containing these changes first", main_readme)
+        self.assertNotIn(
+            "git clone https://github.com/Chung-Research-Group/CoRE-MOF-Tools.git",
             main_readme,
         )
 

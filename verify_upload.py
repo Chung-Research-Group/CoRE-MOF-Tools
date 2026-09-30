@@ -4,6 +4,7 @@ import argparse
 import ast
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -19,15 +20,22 @@ def digest(path):
 
 
 def candidate_paths(root):
-    # Ignore an existing repository index/history. Check what a fresh `git add`
-    # would see, including untracked files, against the delivered .gitignore.
+    # Check both a fresh add and the existing index: .gitignore cannot remove
+    # data or retired checker files that have already been tracked.
     with tempfile.TemporaryDirectory(prefix='coremof-upload-check-') as tmp:
         git = Path(tmp) / 'index.git'
         subprocess.run(['git', 'init', '--bare', '--quiet', str(git)], check=True)
         command = ['git', '--git-dir=' + str(git), '--work-tree=' + str(root),
                    'ls-files', '--others', '--exclude-standard', '-z']
         result = subprocess.run(command, cwd=root, check=True, stdout=subprocess.PIPE)
-    return sorted(x.decode('utf-8') for x in result.stdout.split(b'\0') if x)
+    names = {os.fsdecode(x) for x in result.stdout.split(b'\0') if x}
+    inside = subprocess.run(['git', '-C', str(root), 'rev-parse', '--is-inside-work-tree'],
+                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if inside.returncode == 0 and inside.stdout.strip() == b'true':
+        tracked = subprocess.run(['git', '-C', str(root), 'ls-files', '--cached', '-z', '--', '.'],
+                                 check=True, stdout=subprocess.PIPE)
+        names.update(os.fsdecode(x) for x in tracked.stdout.split(b'\0') if x)
+    return sorted(names)
 
 
 def inspect(root):
@@ -53,7 +61,10 @@ def inspect(root):
             errors.append(name + ': exceeds this handoff\'s conservative 20 MiB code-file limit')
             continue
         if ('local' in rel.parts or path.suffix.lower() in
-                {'.cif', '.h5', '.pkl', '.pt', '.pth', '.ckpt', '.zip', '.gz', '.whl'}):
+                {'.cif', '.h5', '.hdf5', '.pkl', '.pickle', '.pt', '.pth', '.ckpt', '.zip', '.gz', '.whl'}
+                or name in {'CoREMOF/data/CR.json', 'CoREMOF/data/NCR.json'}
+                or name.startswith(('CoREMOF/models/stability/', 'CoREMOF/models/cp_app/models/',
+                                    'CoREMOF/models/cp_app/ensemble_models_'))):
             errors.append(name + ': local data/model/archive visible to Git')
         if ('mosaec' in rel.parts and 'data' in rel.parts) or path.name in forbidden_workers:
             errors.append(name + ': removed checker implementation visible to Git')
@@ -93,6 +104,16 @@ def main():
     args = parser.parse_args()
     root = args.root.resolve()
     result = inspect(root)
+    if not args.write_manifest and (root / 'GIT_UPLOAD_MANIFEST.json').is_file():
+        try:
+            manifest = json.loads((root / 'GIT_UPLOAD_MANIFEST.json').read_text())
+            if manifest['files'] != result['files']:
+                result['errors'].append('Git-visible files differ from GIT_UPLOAD_MANIFEST.json; '
+                                        'review the changes before refreshing the manifest')
+        except (ValueError, KeyError, TypeError):
+            result['errors'].append('GIT_UPLOAD_MANIFEST.json is invalid')
+        if result['errors']:
+            result['status'] = 'FAIL'
     if args.write_manifest and not result['errors']:
         (root / 'GIT_UPLOAD_MANIFEST.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({k: v for k, v in result.items() if k != 'files'}, indent=2))

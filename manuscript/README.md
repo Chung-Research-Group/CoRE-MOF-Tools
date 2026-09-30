@@ -1,5 +1,11 @@
 # CoRE-MOF-Tools manuscript and workflow workspace
 
+**Historical software draft, September 7, 2026.** This workspace is preserved
+for its methods and executable recipes, not as the final CoREMOF-COD paper or
+the current benchmark-results record. The target-first and frozen-assignment
+guides linked from the package README describe the maintained workflows.
+External checker execution has since been removed from this distribution.
+
 This is an editable, journal-neutral software-paper draft, with methods that
 can also be reused in the main CoRE-MOF database paper. It documents the
 implemented checkout, not an announced software release or a completed model

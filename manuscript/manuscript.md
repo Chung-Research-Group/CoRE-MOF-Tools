@@ -72,11 +72,12 @@ model weights.
 | Layer | Implemented entry points | Main boundary |
 |---|---|---|
 | Database and structure access | `structure.information`, SI/CSD download helpers | Licensed and asset-specific access requirements remain explicit |
-| Curation and checks | `curate.preprocess`, `clean`, `mof_check`, batch checker wrappers | May write derived structures; not invoked by the release splitter |
+| CIF curation | `curate.preprocess`, `clean` | May write derived structures; not invoked by the release splitter |
+| Saved checker results | `CoREMOFDataset.classify`, `examples/read_checker_results.py` | Reads recorded findings and combines selected votes; external checker execution is not distributed |
 | Descriptors and identifiers | Zeo++ wrappers, `mof_features.RACs`, topology/OMS helpers, MOFid wrappers | Method-specific environments and evidence; no implied equivalence between historical and release-pinned runs |
 | Pretrained predictions | `prediction.pacman`, `stability`, `cp` | Model/backend availability and domain of applicability require separate verification |
 | Release datasets | `CoREMOFDataset.from_release`, `classify`, `filter` | Exact release membership, validated evidence contracts, explicit exclusions |
-| Partitions and cohorts | `train_valid_test_split`, `data_split`, `build_cr_ncr_cohorts`, `build_cr_ncr_benchmark` | Assignment precedes target attachment in the new benchmark workflow |
+| Partitions and cohorts | `train_valid_test_split`, `data_split`, `build_cr_ncr_cohorts`, `build_cr_ncr_benchmark` | New target-first cohorts screen target availability before selection; historical deferred-target cohorts retain their frozen assignments |
 | Targets | `merge_targets`, `attach_targets`, combined-target example builder/auditor | Exact-ID or declared-alias matching, explicit types/units/conditions |
 
 Zeo++ supplies pore-geometry analysis; revised autocorrelation descriptors

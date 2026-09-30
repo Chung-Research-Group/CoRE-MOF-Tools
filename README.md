@@ -2,9 +2,11 @@
 
 # CoRE MOF Tools
 
-This 28 September 2026 repository preparation contains the current results-only
-checker distribution. Start with [UPLOAD_GUIDE.md](UPLOAD_GUIDE.md) for the local
-asset exclusions and verification commands. No remote or public release is created.
+The development version `0.4.0.dev0` adds release loading, user-selected CR/NCR
+classification, leakage-safe splitting and target-data workflows. It reads
+precomputed checker results without bundling external checker engines.
+See [UPLOAD_GUIDE.md](UPLOAD_GUIDE.md) for code-only contribution checks and
+the assets that must remain outside Git.
 
 [![Documentation](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs)](https://core-mof-tools.readthedocs.io/)
 [![PyPI](https://img.shields.io/pypi/v/CoREMOF-tools?logo=pypi)](https://pypi.org/project/CoREMOF-tools/)
@@ -83,11 +85,10 @@ are described in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). These
 distribution decisions belong in the repository documentation, not in the
 manuscript's scientific discussion.
 
-For the current software manuscript, reproducible workflow recipes, evidence
-map, individual figure plan, and editable workflow diagram, start with the
-[manuscript and workflow workspace](manuscript/README.md). It distinguishes
-implemented capabilities and dated data snapshots from pending model results
-and publication decisions.
+The [software-draft workspace](manuscript/README.md) preserves the September 7
+draft, dated evidence map and historical workflow diagram. It is not the final
+database paper or the current benchmark specification. Use the linked API
+guides and examples for current workflows.
 
 The package combines pure-Python functions with optional external software. Run the installation check before starting:
 
@@ -106,11 +107,14 @@ the new API:
 ```bash
 conda create -n coremof python=3.11
 conda activate coremof
-git clone https://github.com/Chung-Research-Group/CoRE-MOF-Tools.git
-cd CoRE-MOF-Tools
 python -m pip install .
 coremof doctor
 ```
+
+Run the last two commands from this updated checkout. To install on another
+machine, clone the fork and branch containing these changes first. The older
+PyPI package or an upstream branch without this update does not provide the
+new API. No database release is downloaded by `pip install .`.
 
 Install the historical scientific feature set with the `full` extra. A clean
 conda environment is recommended because several of these dependencies contain
@@ -175,16 +179,16 @@ Some features require additional software:
 | Reading checker results and selecting CR/NCR | No external checker software required |
 | MOFid v1/v2 | [MOFid installation](https://snurr-group.github.io/mofid/compiling/#installation) and Open Babel |
 | Crystal topology | Julia/CrystalNets through `juliacall`; the first call may install Julia packages |
-| Heat-capacity prediction | Full repository checkout containing the ~1.3 GB ensemble model directory |
+| Heat-capacity prediction | Separately obtained, verified ensemble model assets; not included in the code-only clone |
 
 ## Quick start
 
 For a complete practical guide to release loading, CR/NCR definitions,
 parent-group choices, leakage guards, Python/CLI examples, output schemas,
 licensing, and troubleshooting, see
-[the dataset-splitting handbook](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/blob/main/README_DATASET_SPLITTING.md).
+[the dataset-splitting handbook](README_DATASET_SPLITTING.md).
 For a complete executable walkthrough, open
-[the companion notebook](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/blob/main/examples/CoREMOF_dataset_splitting_quickstart.ipynb).
+[the companion notebook](examples/CoREMOF_dataset_splitting_quickstart.ipynb).
 
 Current v26 candidate files remain non-published and retain their explicit `STAGE_ONLY` status.
 The missing-MOFid handling policy above is approved, but public-release

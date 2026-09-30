@@ -38,14 +38,14 @@ The predictor does not download missing models automatically.
 
 ## Historical stability models
 
-The bundled `final_model_T_few_epochs.h5` and
+The separately retained local assets `final_model_T_few_epochs.h5` and
 `final_model_flag_few_epochs.h5` match the corresponding
 [MOFSimplify](https://github.com/hjkgrp/MOFSimplify) files byte for byte at
 commit `5693968b3e9b9e26eab3bdb1db908ae2877d4bb7`.
 Copyright (c) 2023 Kulik Group. Retain the MIT license in
 `licenses/MOFSimplify-MIT.txt`. Method: https://doi.org/10.1021/jacs.1c07217.
 
-The bundled scalers and water model are separate historical assets. Their
+The local scalers and water model are separate historical assets. Their
 hashes are checked before use, but the exact original export records have not
 been established by the package audit. The related WS24 archive
 (https://doi.org/10.5281/zenodo.12110918) declares CC-BY-4.0. Its files do not
@@ -57,7 +57,8 @@ Do not substitute the later CoREMOF-COD benchmark models for these assets.
 
 The legacy `CoREMOF/data/CR.json` and `NCR.json` contain structure-resolved
 information and are not the current CoREMOF-COD release. The bundled
-`CoREMOF/data/mofid/nodes.zip` contains 1,182 node structures. The node archive
+`CoREMOF/data/mofid/nodes.zip` contains 1,182 node structures. These files are
+excluded from the code-only contribution. The node archive
 matches the project upstream copy, but its asset-specific source permissions
 need separate documentation. A code license is not blanket clearance for
 CSD-derived, SI-derived or other third-party structure information.

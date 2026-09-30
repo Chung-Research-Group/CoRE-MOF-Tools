@@ -40,3 +40,4 @@ include manuscript/figures/workflow.png
 recursive-include .agents/skills/coremof-release-curation *.md
 include UPLOAD_GUIDE.md
 include LOCAL_ASSETS.json
+include verify_upload.py

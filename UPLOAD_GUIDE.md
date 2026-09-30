@@ -27,11 +27,11 @@ legacy API defaults. See the matching documentation under `docs/source/`.
 
 ## Local assets versus Git
 
-The local copy includes the recorded legacy lookup tables, node archive and
-historical predictor assets needed to preserve the source snapshot. These are
-explicitly ignored by Git pending asset-level permissions. `LOCAL_ASSETS.json`
-lists them. `local/artifacts/` retains the previously tested wheel and source
-archive unchanged, for authorized local installation only.
+The original local preparation retains the legacy lookup tables, node archive
+and historical predictor assets separately for authorized local use. They are
+not included in this code-only fork. `LOCAL_ASSETS.json` records their identities,
+not a promise that the files exist in a clone. Previously built asset-bearing
+wheels and source archives also remain outside this contribution.
 
 A code-only clone supports the lightweight release-loading/classification/split
 API. Legacy table lookup and optional predictors need their separately obtained
@@ -47,8 +47,30 @@ remain unavailable, and never create a grouping match. The policy is not proof
 that a candidate release has been promoted or that all data may be redistributed.
 
 No cluster-specific agent skill, Git history, cache, credential or old checker
-recovery directory is copied into this Git surface. No remote is configured.
-Run `python3 verify_upload.py` before adding files and inspect the staged diff.
+recovery directory is copied into this Git surface. The reviewed export contains
+no Git metadata and does not configure a remote. In a fork checkout, retain the
+existing fork remote. Run `python3 verify_upload.py` before adding files and
+inspect the staged diff. The check includes both new Git-visible files and
+already tracked files, even if `.gitignore` now excludes them. It also compares
+the current code surface with `GIT_UPLOAD_MANIFEST.json`.
+
+When updating a fork, copy the contents of this folder into the fork checkout,
+not a nested `02_CoRE-MOF-Tools/` directory. Preserve unrelated work and inspect
+removed files as well as additions. Copying files on top of an old checkout
+does not remove retired checker workers or untrack private assets. Do not push
+the original development checkout wholesale: its existing Git index includes
+legacy database tables, structure archives and predictor weights. This check
+inspects current files and the Git index, not earlier commits. Creating a new
+branch or deleting a file does not remove it from existing history. Review
+the fork's existing history before publishing an asset-bearing repository.
+Do not rewrite that history or delete unrelated work as part of copying this
+code-only export.
+
+For intended edits after this review, inspect them first, then refresh the
+manifest with `python3 verify_upload.py --write-manifest` and rerun the default
+check. Do not refresh it to bypass a reported private-data or checker-code
+violation. Temporary environments, build outputs and local assets stay out of
+the contribution.
 The existing portable benchmark skill is retained under
 `.agents/skills/coremof-release-curation/`, with its local-asset note aligned
 to this layout. It does not carry scheduler or licensed-node instructions.
