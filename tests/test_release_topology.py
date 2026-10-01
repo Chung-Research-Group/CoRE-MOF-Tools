@@ -12,7 +12,7 @@ from unittest.mock import patch
 from CoREMOF import release_topology as topology
 
 
-SID = "FSR-COD-2016-0106"
+SID = "2016[Cu][pcu]3[FSR]1"
 SHA = "a" * 64
 
 

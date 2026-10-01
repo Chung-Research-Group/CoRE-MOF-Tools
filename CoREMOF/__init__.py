@@ -7,6 +7,7 @@ backends remain lazily imported by the feature that needs them; for example,
 """
 
 from .inputs import collect_cifs, resolve_cif_inputs
+from .identifiers import CoREID, format_core_id, parse_core_id
 
 __version__ = "0.4.0.dev0"
 
@@ -35,6 +36,9 @@ from .projections import export_source_projection
 
 __all__ = [
     "__version__",
+    "CoREID",
+    "format_core_id",
+    "parse_core_id",
     "BenchmarkDependencyError",
     "BenchmarkError",
     "BenchmarkFeasibilityError",

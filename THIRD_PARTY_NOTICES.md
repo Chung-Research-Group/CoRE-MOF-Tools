@@ -51,12 +51,12 @@ been established by the package audit. The related WS24 archive
 (https://doi.org/10.5281/zenodo.12110918) declares CC-BY-4.0. Its files do not
 match these local water-model/scaler bytes, so that record alone is not an
 asset-identity certificate. Method: https://doi.org/10.1021/jacs.4c05879.
-Do not substitute the later CoREMOF-COD benchmark models for these assets.
+Do not substitute the later CoRE-MOF-COD benchmark models for these assets.
 
 ## Database tables and node structures
 
 The legacy `CoREMOF/data/CR.json` and `NCR.json` contain structure-resolved
-information and are not the current CoREMOF-COD release. The bundled
+information and are not the current CoRE-MOF-COD release. The bundled
 `CoREMOF/data/mofid/nodes.zip` contains 1,182 node structures. These files are
 excluded from the code-only contribution. The node archive
 matches the project upstream copy, but its asset-specific source permissions

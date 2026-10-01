@@ -11,7 +11,7 @@ from tests.test_dataset_labels import _make_release
 
 class PublicDatasetNameTests(unittest.TestCase):
     def test_named_and_legacy_like_inputs_keep_their_exact_receipt_identity(self):
-        for name in ("CoREMOF-COD", "fixture-base", "fixture-expanded"):
+        for name in ("CoRE-MOF-COD", "fixture-base", "fixture-expanded"):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
                 root = Path(directory)
                 _make_release(root)
@@ -32,7 +32,7 @@ class PublicDatasetNameTests(unittest.TestCase):
             _make_release(root)
             path = root / "dataset_info.json"
             document = json.loads(path.read_text())
-            document["dataset_version"] = "CoREMOF-COD"
+            document["dataset_version"] = "CoRE-MOF-COD"
             path.write_text(json.dumps(document))
             with self.assertRaisesRegex(ReleaseValidationError, "dataset_version does not match"):
                 CoREMOFDataset.from_release(root)

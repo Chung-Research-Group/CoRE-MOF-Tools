@@ -69,9 +69,8 @@ def calculate_release_mofclassifier(cif_path, *, structure_id, output_dir, pytho
     """
     if os.name != 'posix':
         raise ReleaseMOFClassifierError('Recorded external runtime requires POSIX')
-    if not isinstance(structure_id, str) or not re.fullmatch(
-            r'(?:ASR|FSR|ION)-(?:COD|CSD|SI)-(?:[0-9]{4}|UNKN)-[0-9]{4,}', structure_id):
-        raise ValueError('Use a public CoRE-MOF structure ID')
+    from .identifiers import parse_core_id
+    parse_core_id(structure_id)
     if type(timeout_seconds) is not int or timeout_seconds < 1 or type(memory_limit_mb) is not int or memory_limit_mb < 1024:
         raise ValueError('Use a positive integer timeout and memory_limit_mb >= 1024')
     target = Path(output_dir).absolute()

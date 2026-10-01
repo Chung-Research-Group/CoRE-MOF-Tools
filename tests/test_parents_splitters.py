@@ -1984,7 +1984,7 @@ print(result.receipt()["assignment_sha256"],
             self.assertEqual(receipt["schema_version"], "coremof-split-receipt/1.1")
             self.assertFalse(receipt["integrity"]["cif_files_verified"])
             self.assertEqual(set(receipt["implementation"]["source_sha256"]), {
-                "_authority.py", "dataset.py", "labels.py", "parents.py", "splitters.py"
+                "_authority.py", "dataset.py", "identifiers.py", "labels.py", "parents.py", "splitters.py"
             })
             self.assertIn("PROVISIONAL_PARENT_INPUT", receipt["warnings"])
             self.assertIn("achieved_fractions", receipt)
@@ -2014,7 +2014,7 @@ print(result.receipt()["assignment_sha256"],
 
     def test_receipt_revalidates_implementation_hashes_at_use(self):
         first_hashes = {name: "a" * 64 for name in (
-            "_authority.py", "dataset.py", "labels.py", "parents.py", "splitters.py"
+            "_authority.py", "dataset.py", "identifiers.py", "labels.py", "parents.py", "splitters.py"
         )}
         second_hashes = {name: "b" * 64 for name in first_hashes}
         with patch("CoREMOF.splitters._implementation_hashes", return_value=first_hashes):

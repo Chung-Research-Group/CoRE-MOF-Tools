@@ -43,7 +43,7 @@ def _write_csv(path, fields, rows):
 def _metadata_rows():
     base = [
         (
-            "ASR-COD-2026-0001",
+            "2026[Cu][nan]3[ASR]1",
             "COD",
             "ASR",
             "Cu",
@@ -51,7 +51,7 @@ def _metadata_rows():
             ("CR", "CR", "CR"),
         ),
         (
-            "FSR-COD-2026-0001",
+            "2026[Cu][nan]3[FSR]1",
             "COD",
             "FSR",
             "Fe;Zn",
@@ -59,7 +59,7 @@ def _metadata_rows():
             ("NCR", "NCR", "NCR"),
         ),
         (
-            "ASR-SI-2025-0001",
+            "2025[Cu][nan]3[ASR]200001",
             "SI",
             "ASR",
             "Zn",
@@ -67,7 +67,7 @@ def _metadata_rows():
             ("AMBIGUOUS", "AMBIGUOUS", "AMBIGUOUS"),
         ),
         (
-            "ION-CSD-2024-0001",
+            "2024[Cu][nan]3[ION]100001",
             "CSD",
             "ION",
             "Co",
@@ -395,7 +395,7 @@ class DatasetTests(unittest.TestCase):
         dataset = CoREMOFDataset.from_release(self.root)
         self.assertEqual(dataset.dataset_version, "vtest")
         self.assertEqual(len(dataset), 4)
-        self.assertEqual(dataset.structure_ids[0], "ASR-COD-2026-0001")
+        self.assertEqual(dataset.structure_ids[0], "2026[Cu][nan]3[ASR]1")
         self.assertEqual(len(dataset.metadata_rows), 4)
         self.assertEqual(dataset.parent_by_id[dataset.structure_ids[0]]["rac_size"], "2")
         self.assertEqual(
@@ -405,7 +405,7 @@ class DatasetTests(unittest.TestCase):
         self.assertIn("metadata/metadata.csv", dataset.input_hashes)
         with self.assertRaises(TypeError):
             dataset.dataset_info["classification_definitions"]["3checker"] = []
-        first = dataset["ASR-COD-2026-0001"]
+        first = dataset["2026[Cu][nan]3[ASR]1"]
         self.assertEqual(first.parent_group("rac5").group_id, "R-AAAA0001")
         self.assertEqual(first.cif_manifest["size_bytes"], "10")
 
@@ -414,8 +414,8 @@ class DatasetTests(unittest.TestCase):
             classified.labels, ("CR", "NCR", "AMBIGUOUS", "UNCHECKED")
         )
         self.assertEqual(classified.label_counts()["CR"], 1)
-        self.assertEqual(classified.cr_ids, ("ASR-COD-2026-0001",))
-        self.assertEqual(classified.ncr_ids, ("FSR-COD-2026-0001",))
+        self.assertEqual(classified.cr_ids, ("2026[Cu][nan]3[ASR]1",))
+        self.assertEqual(classified.ncr_ids, ("2026[Cu][nan]3[FSR]1",))
 
     def test_authenticated_generations_reject_copy_and_mutation_attacks(self):
         dataset = CoREMOFDataset.from_release(self.root)
@@ -465,8 +465,8 @@ class DatasetTests(unittest.TestCase):
             ValueError, "checker-view generation changed|fingerprint changed"
         ):
             classified.filter(labels=("CR",))
-        self.assertEqual(classified.ids_for_label("ambiguous"), ("ASR-SI-2025-0001",))
-        self.assertEqual(classified.unchecked_ids, ("ION-CSD-2024-0001",))
+        self.assertEqual(classified.ids_for_label("ambiguous"), ("2025[Cu][nan]3[ASR]200001",))
+        self.assertEqual(classified.unchecked_ids, ("2024[Cu][nan]3[ION]100001",))
         with self.assertRaises(ValueError):
             classified.ids_for_label("MAYBE")
 
@@ -1291,7 +1291,7 @@ class DatasetTests(unittest.TestCase):
         selected = classified.filter(
             labels=("NCR",), sources="cod", variants="fsr", metals="fe"
         )
-        self.assertEqual(selected.structure_ids, ("FSR-COD-2026-0001",))
+        self.assertEqual(selected.structure_ids, ("2026[Cu][nan]3[FSR]1",))
         self.assertTrue(selected.selection_filters["applied"])
         self.assertEqual(selected.selection_filters["selected_count"], 1)
         self.assertEqual(len(selected.selection_filters["steps"]), 1)
@@ -1300,20 +1300,20 @@ class DatasetTests(unittest.TestCase):
         )
         self.assertEqual(
             sequential.structure_ids,
-            ("ASR-COD-2026-0001", "ASR-SI-2025-0001"),
+            ("2026[Cu][nan]3[ASR]1", "2025[Cu][nan]3[ASR]200001"),
         )
         self.assertEqual(len(sequential.selection_filters["steps"]), 2)
         self.assertEqual(classified.select(metals="Cu").labels, ("CR",))
         self.assertEqual(classified.filter(labels="cr").structure_ids, classified.cr_ids)
         self.assertEqual(
-            classified.filter(structure_ids=("ASR-SI-2025-0001",)).structure_ids,
-            ("ASR-SI-2025-0001",),
+            classified.filter(structure_ids=("2025[Cu][nan]3[ASR]200001",)).structure_ids,
+            ("2025[Cu][nan]3[ASR]200001",),
         )
         with self.assertRaises(ValueError):
             classified.filter(labels="maybe")
         with self.assertRaisesRegex(KeyError, "unknown structure_id"):
             classified.filter(structure_ids=("absent",))
-        for value in (True, 1, 1.5, [], {}, " ASR-COD-2026-0001"):
+        for value in (True, 1, 1.5, [], {}, " 2026[Cu][nan]3[ASR]1"):
             with self.subTest(structure_id=value):
                 with self.assertRaises((TypeError, ValueError)):
                     classified.filter(structure_ids=(value,))
@@ -1336,9 +1336,9 @@ class DatasetTests(unittest.TestCase):
         )
         # The final fixture row is UNCHECKED in every published preset because
         # Chen-Manz is unavailable, but it is complete in this two-checker view.
-        self.assertEqual(custom["ION-CSD-2024-0001"].label, "CR")
+        self.assertEqual(custom["2024[Cu][nan]3[ION]100001"].label, "CR")
         self.assertEqual(
-            custom.label_by_id["ION-CSD-2024-0001"], "CR"
+            custom.label_by_id["2024[Cu][nan]3[ION]100001"], "CR"
         )
         self.assertEqual(custom.checker_view, custom.checker_preset)
         self.assertFalse(custom.checker_view_official)

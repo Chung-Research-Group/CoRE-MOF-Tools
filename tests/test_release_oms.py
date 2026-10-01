@@ -11,7 +11,7 @@ from CoREMOF import release_oms as api
 
 
 class ReleaseOMSTests(unittest.TestCase):
-    SID = 'ASR-COD-2012-0875'
+    SID = '2013[Cu][nan]3[ASR]5'
 
     def data(self, count=4):
         return {'structure_id': self.SID, 'protocol_id': api.protocol.PROTOCOL_ID,
@@ -101,7 +101,7 @@ class ReleaseOMSTests(unittest.TestCase):
                 return Path(path) if Path(path) == network else real_check(path, digest)
 
             with patch.object(api, '_check', side_effect=check), patch.object(api.subprocess, 'Popen', side_effect=launch), patch.object(api, '_stop') as stop:
-                result = api.calculate_release_oms(cif, structure_id=self.SID, output_dir=root / 'result', network=network)
+                result = api.calculate_release_oms(cif, structure_id=self.SID, source_database='COD', output_dir=root / 'result', network=network)
             self.assertEqual(cif.read_bytes(), original)
             self.assertEqual(stop.called, timeout)
             self.assertFalse(any(root.glob('.zeopp-oms-replay-*')))

@@ -35,7 +35,8 @@ Run on a compute node with the recorded binary installed::
 
     result = calculate_release_zeopp(
         "structure.cif",
-        structure_id="FSR-COD-2016-0106",
+        structure_id="2016[Co][sqc27]3[FSR]3",
+        source_database="COD",  # from release metadata, not the CoRE ID
         output_dir="new_result",
         network="/runtime/zeopp/bin/network",
         timeout_seconds=300,

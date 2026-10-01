@@ -100,6 +100,7 @@ def _jsonable(value):
 _BASE_IMPLEMENTATION_FILES = (
     "_authority.py",
     "dataset.py",
+    "identifiers.py",
     "labels.py",
     "parents.py",
     "splitters.py",
@@ -107,6 +108,7 @@ _BASE_IMPLEMENTATION_FILES = (
 _TARGET_IMPLEMENTATION_FILES = (
     "_authority.py",
     "dataset.py",
+    "identifiers.py",
     "labels.py",
     "targets.py",
 )
@@ -187,7 +189,7 @@ def _implementation_hashes(
             "target-aware implementation hashing requires the target merge receipt"
         )
     target_hashes = _target_receipt_implementation_hashes(target_receipt)
-    for filename in ("_authority.py", "dataset.py", "labels.py"):
+    for filename in ("_authority.py", "dataset.py", "identifiers.py", "labels.py"):
         if target_hashes[filename] != imported[filename]:
             raise ValueError(
                 "{} changed between target merge and split import".format(filename)

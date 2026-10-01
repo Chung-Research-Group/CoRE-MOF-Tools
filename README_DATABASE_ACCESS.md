@@ -1,11 +1,36 @@
 # Separate database releases and Python tools
 
-CoRE-MOF-Tools contains the API and examples. The separate **CoREMOF-COD**
+CoRE-MOF-Tools contains the API and examples. The separate **CoRE-MOF-COD**
 database repository contains release documentation, schemas and versioned data
 catalogues. Full metadata and the COD/SI CIF archives are prepared for a
 Zenodo deposit, not this Python source tree. All CSD CIFs stay out
 of GitHub, GitHub Release assets and Zenodo. Modified and unmodified CSD CIFs
 have been built as separate local packages for review and subsequent CCDC handoff.
+
+## CoRE IDs
+
+Current records use `YYYY[elements][topology]dimension[variant]serial`, for
+example `2013[Cu][nan]3[ASR]5`. The fields are publication year, metals or
+metalloids, topology, bonded-framework dimensionality, curation variant and
+distinguishing serial number. `0000` denotes an unknown publication year and
+`nan` means that no unambiguous named topology was assigned. The dimension is
+not pore-channel dimensionality. Established published IDs are persistent,
+so their descriptive tokens need not change when newer metadata is available.
+
+```python
+from CoREMOF import parse_core_id
+
+identity = parse_core_id("2013[Cu][nan]3[ASR]5")
+print(identity.dimension, identity.variant)  # 3 ASR
+```
+
+The source database (`COD`, `CSD`, or `SI`) and access category are explicit
+metadata fields, not encoded in a CoRE ID. Join records by the exact
+`structure_id`. CoRE IDs are not the chemical identifiers MOFid-v1/v2 and
+their short topology field is not the full CrystalNets evidence used for
+grouping. Quote bracket-containing filenames in shell commands and percent-
+encode them in URLs. Historical-to-current crosswalks are private and are
+not part of the public release.
 
 ## Release files and links
 
@@ -25,8 +50,8 @@ package has its own membership manifest, checksum ledger and access/licensing
 document. It must not be presented as a
 COD/SI overlay or a complete loader-ready release.
 
-The local archives are `CoREMOF-COD_CSD_modified_cifs_20261001.zip` and
-`CoREMOF-COD_CSD_unmodified_cifs_20261001.zip`. Their private membership records
+The local archives are `CoRE-MOF-COD_CSD_modified_cifs_20261001.zip` and
+`CoRE-MOF-COD_CSD_unmodified_cifs_20261001.zip`. Their private membership records
 are `manifests/ccdc_package_manifest.json` and
 `manifests/classification_manifest.csv` inside each archive. The public catalogue
 records aggregate package counts and hashes, not structure-resolved CSD membership.
@@ -36,7 +61,7 @@ fill after release. A local package is not an uploaded or published collection.
 
 | Current release resource | Link | DOI |
 | --- | --- | --- |
-| CoREMOF-COD Zenodo deposit | | |
+| CoRE-MOF-COD Zenodo deposit | | |
 | CoRE-MOF-Tools Zenodo software archive | | |
 | Modified CSD collection at CCDC | | |
 | Unmodified CSD collection at CCDC | | |
@@ -55,7 +80,7 @@ be loaded without CIF bytes:
 from CoREMOF.dataset import CoREMOFDataset
 
 dataset = CoREMOFDataset.from_release(
-    "/authorized/path/CoREMOF-COD", verify_cif_files=False
+    "/authorized/path/CoRE-MOF-COD", verify_cif_files=False
 )
 view = dataset.classify("5checker")
 print(dict(view.label_counts()))

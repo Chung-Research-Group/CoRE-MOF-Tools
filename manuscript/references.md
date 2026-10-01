@@ -1,7 +1,7 @@
 # Primary references and citation review
 
 The following primary-source pages were checked on 2026-09-07. They support
-the background methods, not this development version's tests or CoREMOF-COD
+the background methods, not this development version's tests or CoRE-MOF-COD
 counts. Local implementation details are supported by [evidence.md](evidence.md).
 Importable entries are provided in [references.bib](references.bib); abbreviated
 author lists should be completed from the DOI records before submission.

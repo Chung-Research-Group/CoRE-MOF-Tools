@@ -99,7 +99,7 @@ for name in ('ccdc', 'mofchecker', 'torch', 'numpy', 'CoREMOF._release_setc_prot
             _make_release(root)
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
-                self.assertEqual(namespace['main']([str(root), '--structure-id', 'ASR-COD-2026-0001']), 0)
+                self.assertEqual(namespace['main']([str(root), '--structure-id', '2026[Cu][nan]3[ASR]1']), 0)
             result = json.loads(output.getvalue())
             self.assertEqual(result['structure']['label'], 'CR')
             self.assertEqual(len(result['structure']['checkers']), 5)
@@ -121,7 +121,7 @@ for name in ('ccdc', 'mofchecker', 'torch', 'numpy', 'CoREMOF._release_setc_prot
             output = io.StringIO()
             with contextlib.redirect_stdout(output), patch('subprocess.Popen') as process:
                 self.assertEqual(runpy.run_path(str(example))['main']([
-                    str(root), '--structure-id', 'ASR-COD-2026-0001',
+                    str(root), '--structure-id', '2026[Cu][nan]3[ASR]1',
                     '--checkers', 'MOFChecker', 'MOSAEC',
                 ]), 0)
                 process.assert_not_called()

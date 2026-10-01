@@ -11,7 +11,7 @@ from unittest.mock import patch
 
 from CoREMOF import release_zeopp as zeo
 
-SID = "FSR-COD-2016-0106"
+SID = "2016[Cu][pcu]3[FSR]1"
 SHA = "a" * 64
 
 
@@ -74,7 +74,7 @@ class ReleaseZeoppProfileTests(unittest.TestCase):
         with self.assertRaises(zeo.ReleaseZeoppError):
             zeo._validate(raw, SID, SHA, "n2_he")
         with self.assertRaises(zeo.ReleaseZeoppError):
-            zeo._validate(probe_record(), "ASR-COD-2000-0001", SHA, "n2_he")
+            zeo._validate(probe_record(), "2000[Cu][nan]3[ASR]1", SHA, "n2_he")
 
     def test_failed_record_cannot_keep_features(self):
         raw = probe_record()
@@ -104,7 +104,7 @@ class ReleaseZeoppIsolationTests(unittest.TestCase):
         self.root = Path(temporary.name)
         self.cif = self.root / "input.cif"
         self.cif.write_bytes(b"data_fixture\n")
-        self.options = dict(cif_path=self.cif, structure_id=SID, output_dir=self.root / "out",
+        self.options = dict(cif_path=self.cif, structure_id=SID, source_database="COD", output_dir=self.root / "out",
                             network=sys.executable, timeout_seconds=1)
 
     def test_existing_output_is_untouched(self):

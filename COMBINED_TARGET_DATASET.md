@@ -1,7 +1,7 @@
-# Combined CoREMOF-COD target dataset
+# Combined CoRE-MOF-COD target dataset
 
 The canonical ML attachment dataset is a target-only, exact-ID left join over
-all 42,574 published CoREMOF-COD structures. It combines accepted historical
+all 42,574 published CoRE-MOF-COD structures. It combines accepted historical
 values with collector-validated current calculations without changing parent
 groups, leakage blocks, cohorts, or train/validation/test assignments.
 
@@ -23,7 +23,7 @@ with at least one finite target, and 28,937 with all three. The independent
 audit verifies 42,574 wide rows, 127,722 long rows, exact source bindings,
 fill-only behavior, native nulls, complete coverage accounting, checksum
 integrity, and byte-identical double builds. The machine-readable public-safe
-counts are in `CoREMOF-COD_COMBINED_TARGET_COVERAGE_20260904.json`.
+counts are in `CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json`.
 
 One accepted historical Widom source record is an explicit scientific null
 with diagnostic `ZERO_DENOMINATOR`. `HISTORICAL_SCIENTIFIC_NULL` means that the
@@ -88,9 +88,9 @@ cohort phases and source versions must be distinct. For example:
 
 ```json
 {
-  "release_version": "CoREMOF-COD",
-  "base": {"phase": "CoREMOF-COD-base", "version": "CoREMOF-COD-base"},
-  "additions": {"phase": "CoREMOF-COD-additions", "version": "CoREMOF-COD"}
+  "release_version": "CoRE-MOF-COD",
+  "base": {"phase": "CoRE-MOF-COD-base", "version": "CoRE-MOF-COD-base"},
+  "additions": {"phase": "CoRE-MOF-COD-additions", "version": "CoRE-MOF-COD"}
 }
 ```
 

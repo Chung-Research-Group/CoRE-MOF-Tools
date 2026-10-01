@@ -17,7 +17,7 @@ recursive-include examples *.py
 include examples/README.md
 include examples/CoREMOF_dataset_splitting_quickstart.ipynb
 include COMBINED_TARGET_DATASET.md
-include CoREMOF-COD_COMBINED_TARGET_COVERAGE_20260904.json
+include CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json
 include .github/workflows/tests.yml
 recursive-include docs/source *.rst
 include docs/Makefile

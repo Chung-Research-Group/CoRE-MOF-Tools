@@ -318,7 +318,7 @@ def stability(structure, *, model_directory=None):
             -   unit by ["unit"], always "nan, °C, nan".
             -   predicted thermal, solvent and water stabilities.     
     This compatibility entry point uses the bundled historical models, not
-    the later CoREMOF-COD multi-seed benchmarking models. Its saved scalers,
+    the later CoRE-MOF-COD multi-seed benchmarking models. Its saved scalers,
     descriptor order and prediction behavior are retained.
     """
     from CoREMOF._historical_stability import copy_verified_models

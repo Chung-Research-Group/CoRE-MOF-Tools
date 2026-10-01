@@ -1123,7 +1123,7 @@ def build(args: argparse.Namespace) -> Path:
             }
         )
         _write_json(staging / "coverage_summary.json", coverage)
-        readme = """# Combined current-available CoREMOF-COD adsorption targets
+        readme = """# Combined current-available CoRE-MOF-COD adsorption targets
 
 In this dataset, **final as of the recorded cutoff** means an immutable,
 fill-only union of every accepted input bound by this receipt at that cutoff.
@@ -1132,7 +1132,7 @@ published structure has a target, or that publication/redistribution is
 authorized.
 
 The canonical attachment table has one row for each of the 42,574 published
-CoREMOF-COD structure identifiers.  It combines reusable historical values marked
+CoRE-MOF-COD structure identifiers.  It combines reusable historical values marked
 `EXISTING` by the frozen completion manifests with collector-validated results
 for keys those same manifests marked `MISSING`.  A current result may fill only
 its corresponding missing key; it cannot overwrite an existing value.

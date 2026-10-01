@@ -3,6 +3,7 @@ import json
 import math
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -10,7 +11,7 @@ from unittest.mock import patch
 
 from CoREMOF import release_mofclassifier as api
 
-SID = 'FSR-COD-2016-0106'
+SID = '2016[Cu][pcu]3[FSR]1'
 DIGEST = 'a' * 64
 
 
@@ -33,6 +34,21 @@ class RecordTests(unittest.TestCase):
         self.assertEqual(api.sha(api.protocol.__file__), api.worker.PROTOCOL_SHA256)
         self.assertEqual(api.sha(Path(api.__file__).with_name('data') / 'mofclassifier_fresh_core_v1.json'),
                          api.worker.CONFIG_SHA256)
+        self.assertEqual(api.sha(Path(api.__file__).with_name('identifiers.py')),
+                         api.worker.IDENTIFIERS_SHA256)
+
+    def test_isolated_protocol_load_keeps_bracket_identifiers(self):
+        code = (
+            "import importlib.util; "
+            "s=importlib.util.spec_from_file_location('worker', {!r}); "
+            "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); "
+            "p=m.load_protocol({!r}); "
+            "assert p.parse_core_id('2013[Cu][nan]3[ASR]5').dimension == 3"
+        ).format(api.worker.__file__, api.protocol.__file__)
+        with tempfile.TemporaryDirectory() as directory:
+            result = subprocess.run([sys.executable, '-I', '-S', '-B', '-c', code],
+                                    cwd=directory, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_inclusive_threshold_and_exact_mean(self):
         for value in (0.0, math.nextafter(0.6, 0.0), 0.6, 1.0):

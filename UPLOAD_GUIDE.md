@@ -21,8 +21,8 @@ The database publication uses full metadata for 42,574 structures, without CIF
 bytes, and separate COD/SI CIF archives for 19,598/5,727 structures on Zenodo.
 The separate modified CSD and unmodified CSD local packages have been built
 with 13,001 and 4,248 structures, respectively, for later CCDC handoff. Their
-archive names are `CoREMOF-COD_CSD_modified_cifs_20261001.zip` and
-`CoREMOF-COD_CSD_unmodified_cifs_20261001.zip`. Neither CSD package may be added to this repository,
+archive names are `CoRE-MOF-COD_CSD_modified_cifs_20261001.zip` and
+`CoRE-MOF-COD_CSD_unmodified_cifs_20261001.zip`. Neither CSD package may be added to this repository,
 GitHub Release assets or Zenodo. Use each package's manifest and confirmed
 access terms, not ASR/FSR/ION or CR/NCR labels, to identify its category.
 
@@ -32,7 +32,7 @@ Existing historical DOI citations are not replacements for the current links.
 | Current release resource | Link | DOI |
 | --- | --- | --- |
 | CoRE-MOF-Tools software archive on Zenodo | | |
-| CoREMOF-COD metadata and COD/SI CIF deposit on Zenodo | | |
+| CoRE-MOF-COD metadata and COD/SI CIF deposit on Zenodo | | |
 | Modified CSD CIF collection at CCDC | | |
 | Unmodified CSD CIF collection at CCDC | | |
 
@@ -46,7 +46,7 @@ metadata-only loader, source-projection and separate catalogue contracts.
 ```bash
 python -m pip install .
 python -m CoREMOF doctor
-python examples/read_checker_results.py /authorized/path/CoREMOF-COD
+python examples/read_checker_results.py /authorized/path/CoRE-MOF-COD
 python examples/build_target_first_benchmark.py --help
 python examples/replay_common_input_benchmark.py --help
 ```

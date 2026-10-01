@@ -25,10 +25,10 @@ from CoREMOF.targets import (
 
 
 IDS = (
-    "ASR-COD-2026-0001",
-    "ASR-CSD-2026-0001",
-    "FSR-COD-2026-0001",
-    "ION-SI-2026-0001",
+    "2026[Cu][nan]3[ASR]1",
+    "2026[Cu][nan]3[ASR]100001",
+    "2026[Cu][nan]3[FSR]1",
+    "2026[Cu][nan]3[ION]200001",
 )
 
 
@@ -44,7 +44,9 @@ def _dataset(root):
     records = []
     hashes = {}
     for index, structure_id in enumerate(IDS):
-        variant, source, _, _ = structure_id.split("-")
+        from CoREMOF.identifiers import parse_core_id
+        variant = parse_core_id(structure_id).variant
+        source = ("COD", "CSD", "COD", "SI")[index]
         # The hidden CSD row bridges the first and third rows through exact
         # hash and source evidence in the full-universe main_union graph.
         source_id = "BRIDGE" if index in (1, 2) else "SRC-{}".format(index)
@@ -404,7 +406,7 @@ class TargetMergeTests(unittest.TestCase):
             filename: hashlib.sha256(
                 (package_root / filename).read_bytes()
             ).hexdigest()
-            for filename in ("_authority.py", "dataset.py", "labels.py", "targets.py")
+            for filename in ("_authority.py", "dataset.py", "identifiers.py", "labels.py", "targets.py")
         }
         self.assertEqual(implementation["source_sha256"], expected)
         self.assertTrue(
@@ -474,11 +476,11 @@ class TargetMergeTests(unittest.TestCase):
 
     def test_parsing_and_receipts_use_the_captured_byte_generation(self):
         source = self.root / "captured.csv"
-        old_bytes = b"structure_id,target\nASR-COD-2026-0001,1\n"
+        old_bytes = b"structure_id,target\n2026[Cu][nan]3[ASR]1,1\n"
         source.write_bytes(old_bytes)
         snapshot = targets_module._capture_file(source)
         source.write_text(
-            "structure_id,target\nASR-COD-2026-0001,999\n", encoding="utf-8"
+            "structure_id,target\n2026[Cu][nan]3[ASR]1,999\n", encoding="utf-8"
         )
         fields, rows = targets_module._read_csv_records(snapshot)
         self.assertEqual(fields, ("structure_id", "target"))
@@ -551,7 +553,7 @@ class TargetMergeTests(unittest.TestCase):
         self.assertEqual(
             split_source_hashes["targets.py"], merge_source_hashes["targets.py"]
         )
-        for filename in ("_authority.py", "dataset.py", "labels.py"):
+        for filename in ("_authority.py", "dataset.py", "identifiers.py", "labels.py"):
             self.assertEqual(split_source_hashes[filename], merge_source_hashes[filename])
 
         tampered = json.loads(json.dumps(merged.receipt()))

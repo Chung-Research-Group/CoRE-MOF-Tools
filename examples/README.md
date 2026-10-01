@@ -40,7 +40,7 @@ The dataset tools include four standard-library-only entry points:
   ranking, excludes null, non-numeric, and non-finite ranking values, and
   writes a ranked CSV plus a hash-bound JSON receipt.
 - [`build_combined_target_dataset.py`](build_combined_target_dataset.py)
-  creates the immutable, fill-only CoREMOF-COD target attachment snapshot from
+  creates the immutable, fill-only CoRE-MOF-COD target attachment snapshot from
   frozen historical evidence plus independently audited current results. It
   retains every published ID and native null, requires exact endpoint and
   release contracts, and supports explicit source-hash and count gates.
@@ -63,7 +63,7 @@ untyped or declare it as `"string"`; declaring it as `"float"` intentionally
 uses normal binary64 parsing. Booleans, nulls, NaN, and infinities are never
 ranked.
 
-Current CoREMOF-COD status: the null-unresolved MOFid projection is explicitly
+Current CoRE-MOF-COD status: the null-unresolved MOFid projection is explicitly
 `STAGE_ONLY`. Parent relations built from it are non-published candidates and
 cannot be promoted by the publication command; screening and splits from
 current live or staged inputs remain exploratory.
@@ -146,7 +146,7 @@ StructureMatcher relations.
 Rank a numeric release-metadata field directly:
 
 ```bash
-python examples/screen_candidates.py /path/to/CoREMOF-COD \
+python examples/screen_candidates.py /path/to/CoRE-MOF-COD \
   --rank-by cell_volume_A3 \
   --source COD \
   --metal Cu \
@@ -158,7 +158,7 @@ used by the notebook. Required-target filtering happens before ranking and,
 when requested, before split assignment:
 
 ```bash
-python examples/screen_candidates.py /path/to/CoREMOF-COD \
+python examples/screen_candidates.py /path/to/CoRE-MOF-COD \
   --target-config targets.json \
   --rank-by xe_uptake \
   --require-target xe_uptake \

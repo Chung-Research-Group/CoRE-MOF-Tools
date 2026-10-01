@@ -145,7 +145,7 @@ Historical SI and CSD downloads
 
 ``CoREMOF.structure.download_from_SI`` and ``download_from_CSD`` retain their
 historical destinations and successful output content. They do not select a
-CoREMOF-COD release version. SI/metadata cache URLs refer to the repository's
+CoRE-MOF-COD release version. SI/metadata cache URLs refer to the repository's
 mutable branch, while CSD retrieval uses the user's installed, licensed CSD.
 Use the checksum-pinned catalog workflow above for version-selected releases.
 Access to an asset does not itself grant permission to redistribute it.

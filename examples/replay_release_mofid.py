@@ -7,7 +7,7 @@ from CoREMOF.release_mofid import calculate_release_mofid
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for option in ("cif-path", "structure-id", "structure-variant", "output-dir",
+    for option in ("cif-path", "structure-id", "structure-variant", "source-database", "output-dir",
                    "python", "method-manifest", "node-manifest", "node-root",
                    "source-root", "pinned-site", "mofid-site"):
         parser.add_argument("--" + option, required=True)

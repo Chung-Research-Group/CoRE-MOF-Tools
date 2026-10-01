@@ -30,7 +30,7 @@ def _release_and_targets(root):
     _make_release(release)
     metadata, parents, manifest = [], [], []
     for index in range(60):
-        sid = "ASR-COD-2026-{:04d}".format(index + 1)
+        sid = "2026[Cu][nan]3[ASR]{}".format(index + 1)
         label = "CR" if index < 40 else "NCR" if index < 56 else "AMBIGUOUS" if index < 58 else "UNCHECKED"
         votes = (("PASS",) * 5 if label == "CR" else ("FAIL",) * 5 if label == "NCR"
                  else ("PASS", "FAIL", "PASS", "FAIL", "PASS") if label == "AMBIGUOUS"

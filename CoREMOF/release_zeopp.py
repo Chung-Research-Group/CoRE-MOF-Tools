@@ -8,7 +8,6 @@ import json
 import math
 import os
 from pathlib import Path
-import re
 import signal
 import subprocess
 import sys
@@ -103,7 +102,7 @@ def _validate(record, structure_id, cif_sha, kind):
             raise ReleaseZeoppError("Framework values differ from raw output")
 
 
-def calculate_release_zeopp(cif_path, *, structure_id, output_dir, network, timeout_seconds=300):
+def calculate_release_zeopp(cif_path, *, structure_id, source_database, output_dir, network, timeout_seconds=300):
     """Calculate N2/He features and bonded-framework dimensionality separately.
 
     Use the recorded binary, not an arbitrary executable on PATH. The output
@@ -113,10 +112,9 @@ def calculate_release_zeopp(cif_path, *, structure_id, output_dir, network, time
     """
     if os.name != "posix":
         raise ReleaseZeoppError("The recorded external binary requires POSIX")
-    if not isinstance(structure_id, str) or re.fullmatch(
-        r"(?:ASR|FSR|ION)-(?:COD|CSD|SI)-(?:[0-9]{4}|UNKN)-[0-9]{4,}", structure_id
-    ) is None:
-        raise ValueError("Use a public CoRE-MOF structure ID")
+    from .identifiers import parse_core_id, validate_source_database
+    parse_core_id(structure_id)
+    validate_source_database(source_database)
     if type(timeout_seconds) is not int or timeout_seconds <= 0:
         raise ValueError("timeout_seconds must be a positive integer")
     destination = Path(output_dir).absolute()
@@ -140,7 +138,7 @@ def calculate_release_zeopp(cif_path, *, structure_id, output_dir, network, time
         row.update(manifest_schema_version="1.0", row_index="0", structure_id=structure_id,
                    canonical_cif_version="user-supplied-exact-bytes", canonical_cif_path=str(cif),
                    cif_basename=cif.name, cif_size_bytes=str(len(payload)), cif_sha256=cif_sha,
-                   source_family=structure_id.split("-")[1])
+                   source_family=source_database)
         manifest = private / "manifest.csv"
         with manifest.open("w", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=framework.MANIFEST_FIELDS)
@@ -222,7 +220,7 @@ def calculate_release_zeopp(cif_path, *, structure_id, output_dir, network, time
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("cif_path", type=Path)
-    for name in ("structure-id", "output-dir", "network"):
+    for name in ("structure-id", "source-database", "output-dir", "network"):
         parser.add_argument("--" + name, required=True)
     parser.add_argument("--timeout-seconds", type=int, default=300)
     result = calculate_release_zeopp(**vars(parser.parse_args(argv)))

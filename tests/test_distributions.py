@@ -54,7 +54,7 @@ class DistributionTests(unittest.TestCase):
             "examples/README.md",
             "examples/CoREMOF_dataset_splitting_quickstart.ipynb",
             "COMBINED_TARGET_DATASET.md",
-            "CoREMOF-COD_COMBINED_TARGET_COVERAGE_20260904.json",
+            "CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json",
             ".github/workflows/tests.yml",
             "docs/source/target_first_benchmark.rst",
             "manuscript/workflows.md",

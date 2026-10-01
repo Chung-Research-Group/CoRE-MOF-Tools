@@ -2,8 +2,10 @@
 """Reproduce the frozen September 12 common-input benchmark assignments.
 
 This is an assignment replay, not a new dataset or scientific recalculation.
-It uses archived target-free groups, diversity strata, input-availability
-decisions and the original clean test. Targets and predictions are not read.
+It validates archived target-free groups, diversity strata, input-availability
+decisions and frozen membership. It never reruns the sampler: renaming records
+can change sort order but must not change an existing assignment. Targets and
+predictions are not read.
 No code from the input archive is executed and no archive files are extracted.
 """
 import argparse
@@ -18,16 +20,13 @@ import re
 import shutil
 import tarfile
 import tempfile
-from types import SimpleNamespace
 
-from CoREMOF import benchmarks as algorithm
 from CoREMOF._transactions import publish_directory
 
 
 DATASET_ID = 'coremof_cod_common_input_equal_size_20260912_v1'
-ASSIGNMENT_SHA256 = '9e72992970518d039f9631b1f45b516f4ff3603f7945bdcb82dbad283529dcbd'
 PREFIX = 'coremof_cod_workflow_handoff_20260913_v1/'
-BASE = 'workstation_files/CoREMOF-COD_benchmark_transfer_20260912_v1/dataset/'
+BASE = 'workstation_files/CoRE-MOF-COD_benchmark_transfer_20260912_v1/dataset/'
 DERIVED = 'workstation_files/' + DATASET_ID + '/'
 FILES = {
     'groups': BASE + 'full_release_grouping.csv.gz',
@@ -139,67 +138,103 @@ def indexed(table):
     return result
 
 
-def reconstruct(metadata, full_groups, topology, fixed_test, seeds=(912, 913, 914, 915)):
-    """Use the current package's exact group sampler with saved strata/test IDs."""
-    cr = tuple(sorted(s for s, r in metadata.items() if r['label'] == 'CR'))
-    ncr = tuple(sorted(s for s, r in metadata.items() if r['label'] == 'NCR'))
-    if len(cr) + len(ncr) != len(metadata) or not fixed_test <= set(cr):
+def validate_frozen_assignments(table, metadata, full_groups, fixed_test,
+                                seeds=(912, 913, 914, 915)):
+    """Validate and type frozen rows without sorting, sampling or repartitioning."""
+    cr = {sid for sid, row in metadata.items() if row['label'] == 'CR'}
+    ncr = {sid for sid, row in metadata.items() if row['label'] == 'NCR'}
+    if len(cr) + len(ncr) != len(metadata) or not fixed_test <= cr:
         raise ValueError('The selected population or fixed test has an invalid label')
-    blocks = {s: full_groups[s]['effective_leakage_block'] for s in metadata}
-    test_blocks = {blocks[s] for s in fixed_test}
-    if any(blocks[s] in test_blocks for s in set(metadata) - fixed_test):
+    blocks = {sid: full_groups[sid]['effective_leakage_block'] for sid in metadata}
+    test_blocks = {blocks[sid] for sid in fixed_test}
+    if any(blocks[sid] in test_blocks for sid in set(metadata) - fixed_test):
         raise ValueError('A fixed-test group also contains a train/validation candidate')
-    strata = {}
-    for s, row in metadata.items():
-        top = topology[s]
-        category = ('|'.join(str(top.get(k, '')).strip() or '<MISSING>' for k in
-                    ('network_dimension', 'single_node_net', 'all_node_net', 'single_all_agree'))
-                    if top['topology_available'].lower() == 'true' else '<NO_CURRENT_SUCCESS>')
-        strata[s] = (row['label'], full_groups[s]['source_database'], full_groups[s]['structure_variant'],
-                     category, row['diversity_tier'], row['diversity_stratum'])
-    counts = (0, (len(ncr) + 1) // 2, len(ncr))
+    group_members = defaultdict(set)
+    for sid, group in blocks.items():
+        group_members[group].add(sid)
     validation_count = len(cr) - (8 * len(cr) + 5) // 10 - len(fixed_test)
-    remaining = tuple(sorted(set(cr) - fixed_test))
-    pool = tuple(sorted(set(metadata) - fixed_test))
-    output = []
+    expected_counts = {'train': len(cr) - len(fixed_test) - validation_count,
+                       'validation': validation_count, 'test': len(fixed_test)}
+    expected_runs = {f'seed{seed}_q{qkey}': (seed, q, count)
+                     for seed in seeds
+                     for qkey, q, count in (('0', '0', 0),
+                         ('0p5', '0.5', (len(ncr) + 1) // 2), ('1', '1', len(ncr)))}
+    fields = {'run_key', 'seed', 'requested_ncr_pool_fraction', 'actual_ncr_ratio',
+              'structure_id', 'label', 'partition', 'effective_leakage_block',
+              'diversity_tier', 'diversity_stratum'}
+    runs = defaultdict(list)
+    assignments = []
+    for incoming in table:
+        if set(incoming) != fields:
+            raise ValueError('Frozen assignment fields differ from the declared contract')
+        row = dict(incoming)
+        key = row['run_key']
+        if key not in expected_runs:
+            raise ValueError('Unexpected frozen run key')
+        seed, q, count = expected_runs[key]
+        row['seed'] = int(row['seed'])
+        row['actual_ncr_ratio'] = float(row['actual_ncr_ratio'])
+        sid = row['structure_id']
+        if (sid not in metadata or str(row['seed']) != str(seed)
+                or row['requested_ncr_pool_fraction'] != q
+                or row['actual_ncr_ratio'] != count / len(cr)
+                or row['effective_leakage_block'] != blocks[sid]
+                or any(row[k] != metadata[sid][k] for k in
+                       ('label', 'diversity_tier', 'diversity_stratum'))):
+            raise ValueError('Frozen assignment disagrees with its input metadata')
+        runs[key].append(row)
+        assignments.append(row)
+    if set(runs) != set(expected_runs):
+        raise ValueError('Frozen run inventory is incomplete')
+    stable_partitions = {}
+    selected = {}
+    for key, run in runs.items():
+        seed, q, count = expected_runs[key]
+        ids = {row['structure_id'] for row in run}
+        if len(ids) != len(run) or len(ids) != len(cr):
+            raise ValueError('Frozen cohort size or uniqueness differs')
+        if Counter(row['partition'] for row in run) != expected_counts:
+            raise ValueError('Frozen partition sizes differ')
+        if Counter(row['label'] for row in run) != +Counter({'CR': len(cr)-count, 'NCR': count}):
+            raise ValueError('Frozen CR/NCR counts differ')
+        if {row['structure_id'] for row in run if row['partition'] == 'test'} != fixed_test:
+            raise ValueError('Frozen pure-CR test membership differs')
+        by_group = defaultdict(set)
+        for row in run:
+            sid = row['structure_id']
+            by_group[blocks[sid]].add(row['partition'])
+            identity = (seed, sid)
+            if identity in stable_partitions and stable_partitions[identity] != row['partition']:
+                raise ValueError('A persistent structure changes partition across q')
+            stable_partitions[identity] = row['partition']
+        if any(len(parts) != 1 for parts in by_group.values()):
+            raise ValueError('A related-structure group crosses partitions')
+        if any(not group_members[group] <= ids for group in by_group):
+            raise ValueError('Frozen cohort selects only part of an eligible group')
+        selected[(seed, q)] = ids
     for seed in seeds:
-        adds = algorithm._nested_exact_block_memberships(
-            ncr, blocks, strata, counts, seed, 'ncr-whole-block-priority', 'NCR addition')
-        removes = algorithm._nested_exact_block_memberships(
-            remaining, blocks, strata, counts, seed, 'cr-whole-block-removal-priority', 'CR removal')
-        levels = []
-        for q, n in zip(('0', '0.5', '1'), counts):
-            retained = tuple(sorted(set(cr) - set(removes[n])))
-            levels.append(SimpleNamespace(requested_ncr_pool_fraction=q, cr_ids=retained,
-                ncr_ids=adds[n], structure_ids=tuple(sorted(retained + adds[n]))))
-        partitions = algorithm._assign_transition_balanced_blocks(pool, levels, blocks, strata, seed, validation_count)
-        for qkey, level in zip(('0', '0p5', '1'), levels):
-            run = []
-            for s in level.structure_ids:
-                row = metadata[s]
-                run.append(dict(run_key=f'seed{seed}_q{qkey}', seed=seed,
-                    requested_ncr_pool_fraction=level.requested_ncr_pool_fraction,
-                    actual_ncr_ratio=len(level.ncr_ids) / len(cr), structure_id=s, label=row['label'],
-                    partition='test' if s in fixed_test else partitions[blocks[s]],
-                    effective_leakage_block=blocks[s], diversity_tier=row['diversity_tier'], diversity_stratum=row['diversity_stratum']))
-            expected = {'train': len(cr) - len(fixed_test) - validation_count,
-                        'validation': validation_count, 'test': len(fixed_test)}
-            if Counter(row['partition'] for row in run) != expected:
-                raise ValueError('The group sampler did not reproduce equal partition sizes')
-            output.extend(run)
-    return output
+        previous = selected[(seed, '0')]
+        for q in ('0.5', '1'):
+            current = selected[(seed, q)]
+            if not (previous & ncr) <= current or not (current & cr) <= previous:
+                raise ValueError('Frozen cohort nesting differs')
+            previous = current
+        if not ncr <= selected[(seed, '1')]:
+            raise ValueError('The q=1 endpoint omits eligible NCR structures')
+    return assignments
 
 
 def replay(path, expected_sha256, output):
     output = Path(output).absolute()
     if output.exists() or output.is_symlink():
         raise FileExistsError(output)
-    code_paths = [Path(__file__).resolve(), Path(algorithm.__file__).resolve()]
+    code_paths = [Path(__file__).resolve()]
     code_hashes = {str(p): sha(p) for p in code_paths}
     payloads, hashes = load_inputs(path, expected_sha256)
     receipt = json.loads(payloads['expected_receipt'])
     if receipt['dataset_id'] != next(Path(name).parent.name for name in hashes
-            if name.endswith('/source_population_model_status.csv')) or receipt['suite_assignment_sha256'] != ASSIGNMENT_SHA256:
+            if name.endswith('/source_population_model_status.csv')) or not re.fullmatch(
+                '[0-9a-f]{64}', str(receipt.get('suite_assignment_sha256', ''))):
         raise ValueError('This example only replays the declared frozen experiment')
     groups = indexed(rows(payloads['groups'], compressed=True))
     topology = indexed(rows(payloads['topology']))
@@ -233,15 +268,11 @@ def replay(path, expected_sha256, output):
     fixed = set(json.loads(payloads['original_receipt'])['fixed_test_ids'])
     if len(fixed) != 468 or fixed & excluded:
         raise ValueError('The original 468-CR test is not preserved')
-    assignments = reconstruct(remaining, groups, topology, fixed)
-    actual_digest = hashlib.sha256(canonical(assignments)).hexdigest()
-    if actual_digest != ASSIGNMENT_SHA256:
-        raise ValueError('Current package does not reproduce the frozen assignment digest: ' + actual_digest)
     expected_rows = rows(payloads['expected_membership'])
-    if len(expected_rows) != len(assignments) or any(
-        {k: str(v) for k, v in row.items()} != expected for row, expected in zip(assignments, expected_rows)
-    ):
-        raise ValueError('Generated assignments differ from the archived membership table')
+    assignments = validate_frozen_assignments(expected_rows, remaining, groups, fixed)
+    actual_digest = hashlib.sha256(canonical(assignments)).hexdigest()
+    if actual_digest != receipt['suite_assignment_sha256']:
+        raise ValueError('Frozen membership differs from its assignment digest: ' + actual_digest)
     run_counts = {}
     for key in sorted({row['run_key'] for row in assignments}):
         run = [row for row in assignments if row['run_key'] == key]
@@ -258,6 +289,7 @@ def replay(path, expected_sha256, output):
         source='archived full-release groups, diversity strata and certified input-availability decisions',
         targets_or_predictions_read=False, science_or_training_run=False,
         grouping_or_diversity_recalculated=False, model_input_certification_rerun=False,
+        cohort_selection_or_split_rerun=False, assignment_row_order_preserved=True,
         full_release_label_purity_verified=True, crossed_groups=0,
         official_split=False, publication_authorized=False)
     if any(sha(p) != code_hashes[str(p)] for p in code_paths):

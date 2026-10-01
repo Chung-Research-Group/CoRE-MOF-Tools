@@ -225,10 +225,8 @@ def calculate_release_topology(
     """
     if os.name != "posix":
         raise ReleaseTopologyError("The recorded Julia runtime requires POSIX")
-    if not isinstance(structure_id, str) or re.fullmatch(
-        r"(?:ASR|FSR|ION)-(?:COD|CSD|SI)-(?:[0-9]{4}|UNKN)-[0-9]{4,}", structure_id
-    ) is None:
-        raise ValueError("Use a public CoRE-MOF structure ID")
+    from .identifiers import parse_core_id
+    parse_core_id(structure_id)
     if isinstance(timeout_seconds, bool) or not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
         raise ValueError("timeout_seconds must be finite and positive")
     destination = Path(output_dir).absolute()

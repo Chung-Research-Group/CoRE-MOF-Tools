@@ -14,7 +14,6 @@ import json
 import math
 import os
 from pathlib import Path
-import re
 import shutil
 import signal
 import subprocess
@@ -22,6 +21,7 @@ import sys
 import tempfile
 
 from . import _release_mofid_protocol as protocol
+from .identifiers import parse_core_id, validate_source_database
 
 
 PROTOCOL_SHA256 = "54481294fbb78e94aae9f0db4baaaa879ad321309b18aecf9fe51d3c00061bd9"
@@ -53,10 +53,7 @@ def _read_profile(method_manifest, node_manifest):
 
 
 def _safe_id(structure_id, variant):
-    if variant not in {"ASR", "FSR", "ION"} or re.fullmatch(
-        r"(?:ASR|FSR|ION)-(?:COD|CSD|SI)-(?:[0-9]{4}|UNKN)-[0-9]{4,}",
-        structure_id,
-    ) is None or not structure_id.startswith(variant + "-"):
+    if parse_core_id(structure_id).variant != variant:
         raise ValueError("Use a public CoRE-MOF structure ID and its matching variant")
 
 
@@ -141,7 +138,7 @@ def _stop_own_group(process):
 
 
 def calculate_release_mofid(
-    cif_path, *, structure_id, structure_variant, output_dir, python,
+    cif_path, *, structure_id, structure_variant, source_database, output_dir, python,
     method_manifest, node_manifest, node_root, source_root, pinned_site,
     mofid_site, library_paths=(), existing_mofid_v1=None, timeout_seconds=300,
 ):
@@ -156,6 +153,7 @@ def calculate_release_mofid(
     if os.name != "posix":
         raise ReleaseMOFidError("The frozen external runtime requires POSIX")
     _safe_id(structure_id, structure_variant)
+    validate_source_database(source_database)
     if isinstance(timeout_seconds, bool) or not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
         raise ValueError("timeout_seconds must be finite and positive")
     _read_profile(method_manifest, node_manifest)
@@ -169,7 +167,7 @@ def calculate_release_mofid(
         raise FileNotFoundError(f"Create the output parent first: {destination.parent}")
     row = {
         "structure_id": structure_id, "structure_variant": structure_variant,
-        "source_database": structure_id.split("-")[1], "source_id": "",
+        "source_database": source_database, "source_id": "",
         "cif_file": source_cif.name, "cif_sha256": cif_sha,
         "existing_mofid_v1": existing_mofid_v1, "existing_mofid_v2": None,
     }

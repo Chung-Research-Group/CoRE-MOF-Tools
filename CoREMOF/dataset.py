@@ -94,6 +94,7 @@ from .labels import (
     classify_checker_row,
     resolve_checker_view,
 )
+from .identifiers import parse_core_id, validate_source_database
 
 
 PARENT_STATUSES = frozenset({"MATCHED", "UNMATCHED", "NOT_AVAILABLE"})
@@ -207,7 +208,7 @@ _M2T_RELEASE_STATE = (
 )
 _ALLOWED_PUBLIC_AUTHORITY_STATE_DECLARATIONS = {
     ("dataset_info", "release_status"): _STAGED_RELEASE_STATUS,
-    # The atomically installed CoREMOF-COD release repeats the same exact staged
+    # The atomically installed CoRE-MOF-COD release repeats the same exact staged
     # status in its parent-method registry.  Accept that one value at that one
     # path; all other authority-shaped declarations remain closed.
     ("parent_group_methods", "release_status"): _STAGED_RELEASE_STATUS,
@@ -327,9 +328,6 @@ _M2T_MOFID_V2_PLACEHOLDERS = frozenset(
         "not available",
         "unavailable",
     }
-)
-_STRUCTURE_ID_RE = re.compile(
-    r"^(ASR|FSR|ION)-(COD|CSD|SI)-(\d{4}|UNKN)-(\d{4})$"
 )
 _PARENT_GROUP_PREFIXES = MappingProxyType(
     {
@@ -2620,26 +2618,28 @@ def _validate_metadata_identity(rows: Sequence[Mapping[str, str]]) -> None:
 
     for row_number, row in enumerate(rows, start=2):
         structure_id = row["structure_id"]
-        match = _STRUCTURE_ID_RE.fullmatch(structure_id)
-        if match is None:
+        try:
+            core_id = parse_core_id(structure_id)
+        except ValueError as exc:
             raise ReleaseValidationError(
                 "metadata.csv:{} has invalid public structure_id {!r}".format(
                     row_number, structure_id
                 )
-            )
-        variant, source, _, _ = match.groups()
-        if row["structure_variant"] != variant:
+            ) from exc
+        if row["structure_variant"] != core_id.variant:
             raise ReleaseValidationError(
                 "{} structure_variant {!r} disagrees with its public ID".format(
                     structure_id, row["structure_variant"]
                 )
             )
-        if row["source_database"] != source:
+        try:
+            validate_source_database(row["source_database"])
+        except ValueError as exc:
             raise ReleaseValidationError(
-                "{} source_database {!r} disagrees with its public ID".format(
+                "{} source_database {!r} must be COD, CSD or SI metadata".format(
                     structure_id, row["source_database"]
                 )
-            )
+            ) from exc
         if (
             not row["source_id"]
             or row["source_id"] != row["source_id"].strip()

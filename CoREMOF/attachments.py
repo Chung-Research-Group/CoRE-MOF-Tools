@@ -532,6 +532,7 @@ def _current_source_hashes() -> Dict[str, str]:
         "_authority.py",
         "attachments.py",
         "dataset.py",
+        "identifiers.py",
         "targets.py",
         "_transactions.py",
     )

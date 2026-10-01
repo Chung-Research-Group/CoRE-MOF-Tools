@@ -101,7 +101,7 @@
   ],
   "published_metadata_count_only": {
     "recomputed_date_local": "2026-09-07",
-    "dataset_version": "CoREMOF-COD",
+    "dataset_version": "CoRE-MOF-COD",
     "unique_structure_ids": 42574,
     "duplicate_ids": 0,
     "checker_view": "5checker",
@@ -115,7 +115,7 @@
     "CoREMOF/attachments.py": "3516812e9b043f5fa1f33b187e74d8e1bf328bcf25ec1965b14368b9b53282f2"
   },
   "target_aggregate_source": {
-    "path": "CoREMOF-COD_COMBINED_TARGET_COVERAGE_20260904.json",
+    "path": "CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json",
     "sha256": "f25b6e21cb7f5764297d7583dba2d66f1bd766ce73602522cc9abe6587112df4",
     "data_cutoff_utc": "2026-09-04T05:43:23Z",
     "scope": "Public-safe aggregate only; not restricted structure-resolved rows or their checksum bindings"

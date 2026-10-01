@@ -26,11 +26,11 @@ class ReleaseMOFidContractTests(unittest.TestCase):
         self.assertEqual(done.returncode, 0, done.stderr)
 
     def test_path_like_and_mismatched_ids_rejected(self):
-        for name in ("../ASR-COD-2000-0001", "/tmp/example", "ASR-COD-2000-0001/..",
-                     "FSR-COD-2000-0001", ""):
+        for name in ("../2000[Cu][nan]3[ASR]1", "/tmp/example", "2000[Cu][nan]3[ASR]1/..",
+                     "2000[Cu][nan]3[FSR]1", ""):
             with self.subTest(name=name), self.assertRaises(ValueError):
                 replay._safe_id(name, "ASR")
-        replay._safe_id("ASR-COD-UNKN-0001", "ASR")
+        replay._safe_id("0000[Cu][nan]3[ASR]1", "ASR")
 
     def test_profile_modified_manifest_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -88,7 +88,7 @@ class ReleaseMOFidContractTests(unittest.TestCase):
         self.assertEqual(protocol.formula_from_symbols(["Zn", "O", "O", "C"]), "C1O2Zn1")
 
     def test_timeout_does_not_revalidate_existing_v1(self):
-        row = {"structure_id": "FSR-COD-2000-0001", "structure_variant": "FSR",
+        row = {"structure_id": "2000[Cu][nan]3[FSR]1", "structure_variant": "FSR",
                "cif_file": "input.cif", "existing_mofid_v1": "[Zn] MOFid-v1.pcu.cat0"}
         result = protocol.timeout_record(row, "a"*64, "b"*64, "c"*64, "d"*64, 30)
         protocol.validate_result_record(result, row["structure_id"])
@@ -104,8 +104,8 @@ class ReleaseMOFidIsolationTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.cif = self.root / "source.cif"
         self.cif.write_bytes(b"data_test\n")
-        self.options = dict(cif_path=self.cif, structure_id="ASR-COD-2000-0001",
-            structure_variant="ASR", output_dir=self.root / "result", python=sys.executable,
+        self.options = dict(cif_path=self.cif, structure_id="2000[Cu][nan]3[ASR]1",
+            structure_variant="ASR", source_database="COD", output_dir=self.root / "result", python=sys.executable,
             method_manifest=self.cif, node_manifest=self.cif, node_root=self.root,
             source_root=self.root, pinned_site=self.root, mofid_site=self.root)
 
@@ -124,7 +124,7 @@ class ReleaseMOFidIsolationTests(unittest.TestCase):
         fake = types.SimpleNamespace(wait=lambda timeout: None, returncode=1)
         def launch(command, **kwargs):
             request = json.loads(Path(command[-1]).read_text())
-            copied = Path(request['private_root']) / 'input' / 'ASR-COD-2000-0001.cif'
+            copied = Path(request['private_root']) / 'input' / '2000[Cu][nan]3[ASR]1.cif'
             self.assertEqual(copied.read_bytes(), self.cif.read_bytes())
             self.assertNotEqual(copied.resolve(), self.cif.resolve())
             return fake

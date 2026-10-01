@@ -8,12 +8,12 @@ has twelve shared assignments: seeds 912–915 and NCR-pool fractions
 is the fraction of the eligible NCR pool, not the training NCR percentage.
 
 The executable example ``examples/replay_common_input_benchmark.py``
-reconstructs these assignments with the currently installed package's exact
-group sampler. It requires the private September 13 workflow handoff and its
+validates and copies these frozen assignments without rerunning a group
+sampler. It requires the approved workflow handoff and its
 independently verified archive checksum::
 
     python examples/replay_common_input_benchmark.py \
-      --handoff-archive /private/coremof_cod_workflow_handoff_20260913_v1.tar.gz \
+      --handoff-archive /private/approved_workflow_handoff.tar.gz \
       --archive-sha256 VERIFIED_ARCHIVE_SHA256 \
       --output /private/new-assignment-replay
 
@@ -27,14 +27,18 @@ What is reproduced
 The example reuses the archived full-release related-structure groups,
 representative-diversity strata, original test IDs and recorded common-input
 availability decisions. It excludes complete affected eligible groups,
-verifies full-release group label purity, then reruns nested NCR selection,
-equal-sized CR removal and group-preserving train/validation assignment.
+verifies full-release group label purity, nested NCR additions, equal-sized
+CR removals, constant partition sizes, and stable within-seed partitions.
+It preserves archived row order and exact assignments. This is essential when
+identifiers change, because sorting new names and resampling would create a
+different experiment.
 Each structure remains an individual row. No target or prediction table is
 read, no archived Python code is executed, and no files are extracted.
 
-Both the canonical assignment digest and every exported membership row must
-match the frozen experiment. The required assignment SHA-256 is
-``9e72992970518d039f9631b1f45b516f4ff3603f7945bdcb82dbad283529dcbd``.
+The canonical typed assignment digest must match
+``suite_assignment_sha256`` in the receipt bound by the verified archive.
+An identifier-translated export has its own digest, not the original file's
+digest. Translation does not authorize changing membership or scientific data.
 Output includes the reproduced CSV, a receipt binding the inputs and current
 code, partition counts, a group-crossing audit and a checksum ledger.
 Any mismatch fails without publishing an output directory.
@@ -42,7 +46,7 @@ Any mismatch fails without publishing an output directory.
 What is not reproduced
 -----------------------
 
-This replay does not recalculate descriptors, rebuild the original groups or
+This replay does not resample, recalculate descriptors, rebuild the original groups or
 diversity index, certify graph/grid preprocessing, regenerate targets or
 train models. Those stages have separate scientific/runtime contracts.
 The frozen checker view and model-input eligibility are not replaced with a

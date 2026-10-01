@@ -22,13 +22,13 @@ class HandbookTests(unittest.TestCase):
     def test_package_source_and_user_surfaces_pass_first_use_audit_normal_and_S(self):
         auditor = (
             ROOT.parent
-            / "CoREMOF-COD"
+            / "CoRE-MOF-COD"
             / "dataset_split"
             / "scripts"
             / "audit_first_use_terminology.py"
         )
         if not auditor.is_file():
-            self.skipTest("CoREMOF-COD terminology auditor is not available")
+            self.skipTest("CoRE-MOF-COD terminology auditor is not available")
         paths = (
             ROOT / "CoREMOF" / "parents.py",
             ROOT / "CoREMOF" / "splitters.py",

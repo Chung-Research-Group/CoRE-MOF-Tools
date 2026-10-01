@@ -147,7 +147,7 @@ def _current_implementation_hashes() -> Dict[str, str]:
     package_root = Path(__file__).resolve().parent
     return {
         filename: _sha256_file(package_root / filename)
-        for filename in ("_authority.py", "dataset.py", "labels.py", "targets.py")
+        for filename in ("_authority.py", "dataset.py", "identifiers.py", "labels.py", "targets.py")
     }
 
 

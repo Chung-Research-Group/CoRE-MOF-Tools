@@ -815,13 +815,13 @@ class CRNCRBenchmarkTests(unittest.TestCase):
     def test_generated_benchmark_receipt_passes_first_use_terminology_audit(self):
         auditor = (
             Path(__file__).resolve().parents[2]
-            / "CoREMOF-COD"
+            / "CoRE-MOF-COD"
             / "dataset_split"
             / "scripts"
             / "audit_first_use_terminology.py"
         )
         if not auditor.is_file():
-            self.skipTest("CoREMOF-COD terminology auditor is not available")
+            self.skipTest("CoRE-MOF-COD terminology auditor is not available")
         suite = build_cr_ncr_benchmark(
             _classified(),
             ncr_pool_fractions=(0, 1),

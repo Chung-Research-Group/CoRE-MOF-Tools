@@ -1,6 +1,6 @@
 """Integrity and finite-value checks for the original bundled predictors.
 
-This contract does not describe the later CoREMOF-COD benchmark models.
+This contract does not describe the later CoRE-MOF-COD benchmark models.
 No optional scientific dependency is imported here.
 """
 from __future__ import annotations

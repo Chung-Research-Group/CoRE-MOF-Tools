@@ -152,7 +152,7 @@ class ManuscriptWorkflowTests(unittest.TestCase):
                       (landing.parent / "index.rst").read_text(encoding="utf-8"))
 
     def test_snapshot_counts_and_development_status_are_explicit(self):
-        coverage = json.loads((ROOT / "CoREMOF-COD_COMBINED_TARGET_COVERAGE_20260904.json")
+        coverage = json.loads((ROOT / "CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json")
                               .read_text(encoding="utf-8"))
         manuscript = (WORKSPACE / "manuscript.md").read_text(encoding="utf-8")
         self.assertIn(__version__, manuscript)

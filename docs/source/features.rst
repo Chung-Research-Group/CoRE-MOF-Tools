@@ -90,7 +90,7 @@ and no alternative model is substituted.
 
 ``stability()`` is the compatibility interface to the historical
 models and their original scalers, obtained separately and hash-verified before
-use. It does not load the later CoREMOF-COD
+use. It does not load the later CoRE-MOF-COD
 multi-seed benchmarking models. Reproducing those experiments requires their
 separately recorded inputs, assignments, fitted models and environments.
 Use the separate ``historical-stability`` extra and the original hash-verified

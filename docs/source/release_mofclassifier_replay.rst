@@ -15,7 +15,7 @@ Missing models, invalid scores, parser failures and timeouts never give FAIL.
 
    result = calculate_release_mofclassifier(
        "structure.cif",
-       structure_id="FSR-COD-2016-0106",
+       structure_id="2016[Co][sqc27]3[FSR]3",
        output_dir="new_classifier_replay",
        python="/path/to/recorded/env/bin/python",
        model_root="/path/to/recorded/env/lib/python3.9/site-packages/MOFClassifier",

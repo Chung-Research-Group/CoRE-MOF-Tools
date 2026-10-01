@@ -13,7 +13,8 @@ existing behaviour. Do not substitute their results for the release OMS field.
 
    result = calculate_release_oms(
        "structure.cif",
-       structure_id="FSR-COD-2016-0106",
+       structure_id="2016[Co][sqc27]3[FSR]3",
+       source_database="COD",  # from release metadata, not the CoRE ID
        output_dir="new_oms_result",
        network="/path/to/recorded/zeopp/bin/network",
    )

@@ -68,8 +68,8 @@ def inspect(root):
             errors.append(name + ': local data/model/archive visible to Git')
         if ('mosaec' in rel.parts and 'data' in rel.parts) or path.name in forbidden_workers:
             errors.append(name + ': removed checker implementation visible to Git')
-        if '/data/' in name and (name.startswith('2026-CoREMOF-COD/main/') or
-                                name.startswith('2026-CoREMOF-COD/si/')):
+        if '/data/' in name and (name.startswith('2026-CoRE-MOF-COD/main/') or
+                                name.startswith('2026-CoRE-MOF-COD/si/')):
             errors.append(name + ': private plot input visible to Git')
         data = path.read_bytes()
         if secret_pattern.search(data):

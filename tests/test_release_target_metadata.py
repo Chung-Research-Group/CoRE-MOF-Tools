@@ -21,7 +21,7 @@ except ImportError:
     jsonschema = None
 
 
-def target_row(sid="FSR-COD-2000-0001", endpoint="ch4", value="0.0", status="SUCCESS"):
+def target_row(sid="2000[Cu][nan]3[FSR]1", endpoint="ch4", value="0.0", status="SUCCESS"):
     name, unit, temperature, pressure = mod.ENDPOINTS[endpoint]
     return {"structure_id": sid, "endpoint": endpoint, "cif_sha256": "",
         "target_name": name, "unit": unit, "temperature_K": str(temperature),

@@ -303,12 +303,11 @@ def calculate_release_racs(cif_path, *, structure_id, output_dir, python,
     changed runtime files raise ``ReleaseRACError``. Outputs are private and
     never replace existing directories or registered release evidence.
     """
-    import re
     if os.name != "posix":
         raise ReleaseRACError("The sealed release runtime requires POSIX")
     schema = _schema(depth)
-    if re.fullmatch(r"(?:ASR|FSR|ION)-(?:COD|CSD|SI)-(?:[0-9]{4}|UNKN)-[0-9]{4,}", structure_id) is None:
-        raise ValueError("Use a public CoRE-MOF structure ID, not a path")
+    from .identifiers import parse_core_id
+    parse_core_id(structure_id)
     if type(timeout_seconds) is not int or not 1 <= timeout_seconds <= 3600:
         raise ValueError("timeout_seconds must be an integer in 1..3600")
     interpreter = _check(Path(python).resolve(strict=True), PYTHON_SHA256)

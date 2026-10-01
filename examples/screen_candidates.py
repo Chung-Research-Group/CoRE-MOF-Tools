@@ -55,7 +55,7 @@ from CoREMOF.targets import TargetDataError, merge_targets_from_config
 
 SCHEMA_VERSION = "coremof-screening-receipt/1.0"
 _COREMOF_PACKAGE_ROOT = Path(_coremof_dataset_module.__file__).resolve().parent
-_CLASSIFICATION_SOURCE_FILES = ("_authority.py", "dataset.py", "labels.py")
+_CLASSIFICATION_SOURCE_FILES = ("_authority.py", "dataset.py", "identifiers.py", "labels.py")
 _TARGET_SOURCE_FILES = _CLASSIFICATION_SOURCE_FILES + ("targets.py",)
 _SPLIT_SOURCE_FILES = _CLASSIFICATION_SOURCE_FILES + (
     "parents.py",

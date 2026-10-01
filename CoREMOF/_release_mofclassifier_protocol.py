@@ -45,7 +45,10 @@ EXPECTED_DETERMINISTIC_ALGORITHMS = True
 EXPECTED_RUNTIME_APPROVAL_STATE = "UNAPPROVED_REQUIRES_RELEASE_REVIEW"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 UID_RE = re.compile(r"^coremof:[a-z0-9][a-z0-9._-]*:[^:]+$")
-STRUCTURE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
+try:
+    from .identifiers import parse_core_id
+except ImportError:  # Isolated worker loads this module directly by file path.
+    from identifiers import parse_core_id
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = REPO_ROOT / "dataset_split/config/mofclassifier_fresh_core_v1.json"
@@ -478,8 +481,10 @@ def load_manifest(path: Path, expected_sha256: str) -> Tuple[List[Dict[str, str]
             raise MofclassifierRunError(f"non-contiguous row_index at position {expected_index}")
         if not UID_RE.fullmatch(row["persistent_uid"]):
             raise MofclassifierRunError(f"invalid persistent_uid at row {expected_index}")
-        if not STRUCTURE_ID_RE.fullmatch(row["structure_id"]):
-            raise MofclassifierRunError(f"invalid structure_id at row {expected_index}")
+        try:
+            parse_core_id(row["structure_id"])
+        except ValueError as exc:
+            raise MofclassifierRunError(f"invalid structure_id at row {expected_index}") from exc
         cif_path = Path(row["canonical_cif_path"])
         if not cif_path.is_absolute() or str(cif_path) != row["canonical_cif_path"]:
             raise MofclassifierRunError(f"canonical CIF path is not exact absolute syntax at row {expected_index}")

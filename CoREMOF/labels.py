@@ -1,7 +1,7 @@
 """Strict CoRE-MOF checker consensus labels.
 
 This module deliberately has no scientific-Python dependencies.  It implements
-the public three-, four-, and five-checker definitions used by the CoREMOF-COD release
+the public three-, four-, and five-checker definitions used by the CoRE-MOF-COD release
 metadata.  Execution failures and other known non-votes are never interpreted
 as scientific failures.
 """

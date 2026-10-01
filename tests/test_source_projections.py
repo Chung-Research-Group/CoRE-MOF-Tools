@@ -27,7 +27,7 @@ def _fixture(root):
     template = _parent_rows()[0]
     for index in range(25):
         source = 'COD' if index < 24 else 'CSD'
-        sid = 'ASR-{}-2026-{:04d}'.format(source, index + 1)
+        sid = '2026[Cu][nan]3[ASR]{}'.format(index + 1 + (100000 if source == 'CSD' else 0))
         label = 'CR' if index < 20 else 'NCR'
         row = dict(_metadata_rows()[0], structure_id=sid, source_database=source,
                    source_id='SOURCE-' + sid, cif_file='cifs/' + sid + '.cif',
@@ -150,7 +150,7 @@ class SourceProjectionTests(unittest.TestCase):
 
     def test_no_omitted_structure_or_machine_path_in_contract(self):
         text = self.path.read_text()
-        self.assertNotIn('ASR-CSD-2026-0025', text)
+        self.assertNotIn('2026[Cu][nan]3[ASR]100025', text)
         self.assertNotIn(str(self.root), text)
 
     def test_group_profiles_cannot_be_recombined_or_reordered(self):

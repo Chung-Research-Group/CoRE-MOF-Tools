@@ -57,7 +57,7 @@ Create the output parent first and choose a new, nonexistent output directory::
 
     result = calculate_release_topology(
         "structure.cif",
-        structure_id="FSR-COD-2016-0106",
+        structure_id="2016[Co][sqc27]3[FSR]3",
         output_dir="new_result",
         julia="/runtime/julia-1.12.6/bin/julia",
         project="/runtime/crystalnets",

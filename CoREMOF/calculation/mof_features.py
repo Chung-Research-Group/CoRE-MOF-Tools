@@ -258,7 +258,7 @@ def RACs(structure, depth=3):
         structure (str or path-like): path to one CIF.
         depth (int): maximum autocorrelation depth. The historical public
             default is 3. Setting this to 5 changes the descriptor depth but
-            does not by itself reproduce the sealed CoREMOF-COD RAC5 method.
+            does not by itself reproduce the sealed CoRE-MOF-COD RAC5 method.
        
     Returns:
         Dictionary:

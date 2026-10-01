@@ -10,7 +10,8 @@ import sys
 
 
 PYTHON_SHA256 = '9024c0445314fe47972ac371dd460c4949aa9bb211ba8934f682c608bd209176'
-PROTOCOL_SHA256 = '3087a86cf76fc1f1abc9be56f9380f3a2e5bf64b1bdf786dce4f342f3cd8c0da'
+PROTOCOL_SHA256 = 'bf7d571929f6bb9d883a518cb82e069a4b26cea671b1e8b8f5a8028a31a43fc0'
+IDENTIFIERS_SHA256 = 'ce2642db0a903b701e8a770b570ac8fb4b47a182c2e53a3e6b02ce82493f07c3'
 CONFIG_SHA256 = 'd341fecb4fc275bec143ce2a54cf88953ace1697122f44161e852de6b706fe64'
 VERSIONS = {'MOFClassifier': '0.1.1', 'torch': '2.7.0+cu118', 'numpy': '1.26.4',
             'ase': '3.23.0', 'pymatgen': '2024.8.9'}
@@ -18,6 +19,26 @@ VERSIONS = {'MOFClassifier': '0.1.1', 'torch': '2.7.0+cu118', 'numpy': '1.26.4',
 
 def deny_network(*args, **kwargs):
     raise RuntimeError('Recorded model replay does not download software or models')
+
+
+def load_protocol(protocol_path):
+    """Load the exact validator beside the protocol in an isolated process."""
+    import hashlib
+    protocol_path = Path(protocol_path)
+    loaded = None
+    for name, path, expected in (
+        ('identifiers', protocol_path.with_name('identifiers.py'), IDENTIFIERS_SHA256),
+        ('recorded_mofclassifier', protocol_path, PROTOCOL_SHA256),
+    ):
+        if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise RuntimeError('Recorded model method differs: ' + name)
+        spec = importlib.util.spec_from_file_location(name, path)
+        loaded = importlib.util.module_from_spec(spec)
+        sys.modules[name] = loaded
+        spec.loader.exec_module(loaded)
+        if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
+            raise RuntimeError('Recorded model method changed during import: ' + name)
+    return loaded
 
 
 def main():
@@ -36,10 +57,7 @@ def main():
     for name, expected in (('protocol', PROTOCOL_SHA256), ('config', CONFIG_SHA256)):
         if hashlib.sha256(Path(request[name]).read_bytes()).hexdigest() != expected:
             raise RuntimeError('Recorded model method differs: ' + name)
-    spec = importlib.util.spec_from_file_location('recorded_mofclassifier', request['protocol'])
-    protocol = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = protocol
-    spec.loader.exec_module(protocol)
+    protocol = load_protocol(request['protocol'])
     summary = protocol.run(Path(request['manifest']), request['manifest_sha256'], Path(request['config']),
                            Path(request['output']), [0], package_root_override=Path(request['model_root']),
                            private_root=Path(request['private_root']))

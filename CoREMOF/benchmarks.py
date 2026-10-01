@@ -256,6 +256,7 @@ def _current_source_hashes() -> Dict[str, str]:
         "_authority.py",
         "benchmarks.py",
         "dataset.py",
+        "identifiers.py",
         "labels.py",
         "parents.py",
         "projections.py",

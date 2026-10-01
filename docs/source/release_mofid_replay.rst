@@ -39,9 +39,10 @@ No path is taken from a particular workstation by default. For example::
     from CoREMOF.release_mofid import calculate_release_mofid
 
     record = calculate_release_mofid(
-        "FSR-COD-2016-0106.cif",
-        structure_id="FSR-COD-2016-0106",
+        "2016[Co][sqc27]3[FSR]3.cif",
+        structure_id="2016[Co][sqc27]3[FSR]3",
         structure_variant="FSR",
+        source_database="COD",  # from release metadata, not the CoRE ID
         output_dir="new_replay",  # must not already exist
         python=pinned_python,
         method_manifest=method_manifest,

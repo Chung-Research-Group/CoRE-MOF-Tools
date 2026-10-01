@@ -8,7 +8,6 @@ import json
 import math
 import os
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tempfile
@@ -16,6 +15,7 @@ import tempfile
 from . import _release_zeopp_oms_protocol as protocol
 from .release_zeopp import NETWORK_SHA256, _check, _sha, _stop
 from ._transactions import publish_directory
+from .identifiers import parse_core_id, validate_source_database
 
 
 PROTOCOL_SHA256 = "d1e5f9c0f2c8244ad92045d8e85609ca1a964e80656b09e9f6785cb95729d533"
@@ -49,7 +49,7 @@ def _validate(record, structure_id, cif_sha):
         raise ReleaseOMSError('Invalid surface-definition distance')
 
 
-def calculate_release_oms(cif_path, *, structure_id, output_dir, network, timeout_seconds=300):
+def calculate_release_oms(cif_path, *, structure_id, source_database, output_dir, network, timeout_seconds=300):
     """Calculate the recorded ``network -oms CIF`` result on an isolated copy.
 
     A successful zero is retained. An execution failure is unavailable, not a
@@ -59,9 +59,8 @@ def calculate_release_oms(cif_path, *, structure_id, output_dir, network, timeou
     """
     if os.name != 'posix':
         raise ReleaseOMSError('The recorded external binary requires POSIX')
-    if not isinstance(structure_id, str) or re.fullmatch(
-            r'(?:ASR|FSR|ION)-(?:COD|CSD|SI)-(?:[0-9]{4}|UNKN)-[0-9]{4,}', structure_id) is None:
-        raise ValueError('Use a public CoRE-MOF structure ID')
+    parse_core_id(structure_id)
+    validate_source_database(source_database)
     if type(timeout_seconds) is not int or timeout_seconds <= 0:
         raise ValueError('timeout_seconds must be a positive integer')
     destination = Path(output_dir).absolute()
@@ -86,7 +85,7 @@ def calculate_release_oms(cif_path, *, structure_id, output_dir, network, timeou
         row.update(manifest_schema_version='1.0', row_index='0', structure_id=structure_id,
                    canonical_cif_version='user-supplied-exact-bytes', canonical_cif_path=str(cif),
                    cif_basename=cif.name, cif_size_bytes=str(len(data)), cif_sha256=cif_sha,
-                   source_family=structure_id.split('-')[1])
+                   source_family=source_database)
         manifest = root / 'manifest.csv'
         with manifest.open('w', newline='') as stream:
             writer = csv.DictWriter(stream, fieldnames=protocol.MANIFEST_FIELDS)
@@ -149,7 +148,7 @@ def calculate_release_oms(cif_path, *, structure_id, output_dir, network, timeou
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('cif_path')
-    for name in ('structure-id', 'output-dir', 'network'):
+    for name in ('structure-id', 'source-database', 'output-dir', 'network'):
         parser.add_argument('--' + name, required=True)
     parser.add_argument('--timeout-seconds', type=int, default=300)
     result = calculate_release_oms(**vars(parser.parse_args(argv)))

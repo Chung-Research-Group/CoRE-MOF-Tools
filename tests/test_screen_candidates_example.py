@@ -36,14 +36,14 @@ SPEC.loader.exec_module(SCREEN)
 
 
 IDS = (
-    "ASR-COD-2026-0001",  # eligible, lower score
-    "ASR-COD-2026-0002",  # eligible, higher score
-    "ASR-COD-2026-0003",  # missing required target
-    "ASR-COD-2026-0004",  # non-finite ranking value
-    "ASR-CSD-2026-0001",  # wrong source
-    "FSR-COD-2026-0001",  # wrong variant
-    "ASR-COD-2026-0005",  # NCR
-    "ASR-COD-2026-0006",  # wrong metal
+    "2026[Cu][nan]3[ASR]1",  # eligible, lower score
+    "2026[Cu][nan]3[ASR]2",  # eligible, higher score
+    "2026[Cu][nan]3[ASR]3",  # missing required target
+    "2026[Cu][nan]3[ASR]4",  # non-finite ranking value
+    "2026[Cu][nan]3[ASR]100001",  # wrong source
+    "2026[Cu][nan]3[FSR]1",  # wrong variant
+    "2026[Cu][nan]3[ASR]5",  # NCR
+    "2026[Cu][nan]3[ASR]6",  # wrong metal
 )
 
 
@@ -59,9 +59,11 @@ def _base_dataset(root, screening_scores=None):
     records = []
     parents = {}
     for index, structure_id in enumerate(IDS):
-        variant, source, _, _ = structure_id.split("-")
-        is_ncr = structure_id == "ASR-COD-2026-0005"
-        metal = "Zn" if structure_id == "ASR-COD-2026-0006" else "Cu"
+        from CoREMOF.identifiers import parse_core_id
+        variant = parse_core_id(structure_id).variant
+        source = "CSD" if index == 4 else "COD"
+        is_ncr = structure_id == "2026[Cu][nan]3[ASR]5"
+        metal = "Zn" if structure_id == "2026[Cu][nan]3[ASR]6" else "Cu"
         status = "FAIL" if is_ncr else "PASS"
         metadata = {
             "structure_id": structure_id,
@@ -335,7 +337,7 @@ class ScreeningExampleTests(unittest.TestCase):
             "coremof_source_sha256"
         ]
         self.assertEqual(
-            set(source_hashes), {"_authority.py", "dataset.py", "labels.py", "targets.py"}
+            set(source_hashes), {"_authority.py", "dataset.py", "identifiers.py", "labels.py", "targets.py"}
         )
         package_root = Path(__file__).resolve().parents[1] / "CoREMOF"
         for filename, digest in source_hashes.items():
@@ -691,7 +693,7 @@ print(hashlib.sha256(payload.encode("utf-8")).hexdigest())
         )
         self.assertEqual(
             set(result.receipt["implementation"]["coremof_source_sha256"]),
-            {"_authority.py", "dataset.py", "labels.py"},
+            {"_authority.py", "dataset.py", "identifiers.py", "labels.py"},
         )
         self.assertIsNone(result.receipt["target_merge_receipt"])
         self.assertEqual(
@@ -1073,6 +1075,7 @@ print(hashlib.sha256(payload.encode("utf-8")).hexdigest())
             {
                 "_authority.py",
                 "dataset.py",
+                "identifiers.py",
                 "labels.py",
                 "parents.py",
                 "splitters.py",

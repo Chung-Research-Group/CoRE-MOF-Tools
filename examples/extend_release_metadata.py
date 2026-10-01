@@ -375,7 +375,7 @@ def build(source, target_root, output, source_ledger_hash, target_ledger_hash, *
         info.setdefault("tabular_files", {})["metadata/targets.jsonl"] = {
             "row_count": len(cif_hashes), "size_bytes": (staging / "metadata/targets.jsonl").stat().st_size}
         emit("dataset_info.json", canonical(info))
-        target_readme = ("# CoREMOF-COD target-enriched metadata candidate\n\n"
+        target_readme = ("# CoRE-MOF-COD target-enriched metadata candidate\n\n"
             "This is a private, staged copy, not an authorized public release.\n"
             "CIFs, checker evidence, feature values and related-structure groups are unchanged.\n"
             "Accepted targets are included in metadata.csv, metadata.jsonl and every structure JSON.\n"

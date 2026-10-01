@@ -1,6 +1,6 @@
 ---
 name: coremof-release-curation
-description: Read saved CoREMOF-COD checker results or prepare and replay grouped CR/NCR benchmarks from an explicitly versioned release.
+description: Read saved CoRE-MOF-COD checker results or prepare and replay grouped CR/NCR benchmarks from an explicitly versioned release.
 ---
 
 # CoRE-MOF CR/NCR benchmark workflows
@@ -16,6 +16,16 @@ checker outcomes does not run the checkers and needs no checker engines or
 CCDC installation. This route does not require the historical handoff below.
 Keep archive publication catalogues distinct from the file-level catalogue
 accepted by `CoREMOF.retrieval.fetch_release`.
+
+Use the database name **CoRE-MOF-COD**. Release CoRE IDs have the form
+`YYYY[elements][topology]dimension[variant]serial`; use `CoREMOF.parse_core_id`
+and obtain source/access categories from metadata, never from the filename.
+CoRE IDs are distinct from chemical MOFid-v1/v2 strings. Do not reinterpret
+descriptive name tokens as grouping evidence or rename established IDs when
+metadata changes. Read the CoRE-ID section of the database access guide when
+editing identifier-bearing exports. Private historical crosswalks stay outside
+releases. When replaying frozen experiments, validate and preserve translated
+membership rather than rerunning a sampler with newly sorted identifiers.
 
 ## Choose the requested workflow
 
@@ -93,7 +103,7 @@ parent or identity claim. The benchmark adds the requested criterion edges and
 takes connected-component closure; every resulting effective leakage block is
 indivisible across train, validation, and test.
 
-The checksum-bound CoREMOF-COD integration has 6,294 raw strict CR and 2,299 raw
+The checksum-bound CoRE-MOF-COD integration has 6,294 raw strict CR and 2,299 raw
 strict NCR rows. Some share an effective block with another checker label, so
 the default must fail closed. Explicitly request
 `complete_release_label_pure_effective_blocks`: it excludes 1,601 CR and 572

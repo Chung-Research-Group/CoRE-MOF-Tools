@@ -44,7 +44,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('root', type=Path, help='authorized metadata/source root')
     parser.add_argument('--expected-version', required=True,
-                        help='explicit dataset name, e.g. CoREMOF-COD')
+                        help='explicit dataset name, e.g. CoRE-MOF-COD')
     parser.add_argument('--expected-ledger-sha256', help='trusted metadata ledger hash')
     parser.add_argument('--projection-contract', type=Path)
     parser.add_argument('--projection-sha256', help='independently received contract hash')

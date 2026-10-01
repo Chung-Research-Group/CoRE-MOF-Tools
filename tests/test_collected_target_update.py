@@ -19,7 +19,7 @@ class CollectedTargetUpdateTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        self.sid = "FSR-COD-2020-0001"
+        self.sid = "2020[Cu][nan]3[FSR]1"
         self.cif_hash = hashlib.sha256(b"synthetic CIF").hexdigest()
         self.task = {"structure_id": self.sid, "endpoint": "ch4", "task_id": "test-ch4",
                      "status": "MISSING", "cif_sha256": self.cif_hash}

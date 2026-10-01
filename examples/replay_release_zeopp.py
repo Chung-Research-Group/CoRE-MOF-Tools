@@ -3,7 +3,7 @@
 Example::
 
     python examples/replay_release_zeopp.py structure.cif \
-      --structure-id FSR-COD-2016-0106 --output-dir new_zeopp_result \
+      --structure-id "2016[Co][sqc27]3[FSR]3" --source-database COD --output-dir new_zeopp_result \
       --network /runtime/zeopp/bin/network
 
 The output parent must exist, but the destination must not. The recorded

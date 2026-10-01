@@ -1,7 +1,7 @@
 # CoRE-MOF-Tools manuscript and workflow workspace
 
 **Historical software draft, September 7, 2026.** This workspace is preserved
-for its methods and executable recipes, not as the final CoREMOF-COD paper or
+for its methods and executable recipes, not as the final CoRE-MOF-COD paper or
 the current benchmark-results record. The target-first and frozen-assignment
 guides linked from the package README describe the maintained workflows.
 External checker execution has since been removed from this distribution.
@@ -14,7 +14,7 @@ comparison.
 Source baseline: `0.4.0.dev0`, commit
 `fad92f7cc8991325aff780da4dbeb6d3b0d537f6`, branch
 `agent/dataset-splitting-api`, inspected on 2026-09-07. The source worktree was
-clean before this documentation work. Database version `CoREMOF-COD` is a separate
+clean before this documentation work. Database version `CoRE-MOF-COD` is a separate
 identifier from the software version. These documentation additions follow the
 baseline commit; they are not represented as already committed or published.
 

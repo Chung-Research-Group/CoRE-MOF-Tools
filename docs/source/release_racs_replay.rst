@@ -52,8 +52,8 @@ already be available. This function never downloads or installs them::
     from CoREMOF.release_racs import calculate_release_racs
 
     result = calculate_release_racs(
-        "FSR-COD-2016-0106.cif",
-        structure_id="FSR-COD-2016-0106",
+        "2016[Co][sqc27]3[FSR]3.cif",
+        structure_id="2016[Co][sqc27]3[FSR]3",
         output_dir="new_rac5_replay",  # must not already exist
         python=pinned_python,
         source_archive=molsimplify_source_archive,

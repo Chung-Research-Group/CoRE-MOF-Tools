@@ -82,22 +82,22 @@ class ReleaseRACSchemaTests(unittest.TestCase):
         result.update(execution_status="ERROR", available=False, descriptors={"partial": 0},
                       values_float_hex=None, error={"type": "TestError"})
         with self.assertRaisesRegex(racs.ReleaseRACError, "null entire vector"):
-            racs._validate_result(result, "ASR-COD-2000-0001", "a" * 64, 5)
+            racs._validate_result(result, "2000[Cu][nan]3[ASR]1", "a" * 64, 5)
 
     def test_success_float_hex_and_identity_checked(self):
         result = self.result()
-        racs._validate_result(result, "ASR-COD-2000-0001", "a" * 64, 5)
+        racs._validate_result(result, "2000[Cu][nan]3[ASR]1", "a" * 64, 5)
         result["values_float_hex"][next(iter(result["descriptors"]))] = "0x1.0p+0"
         with self.assertRaisesRegex(racs.ReleaseRACError, "representation differ"):
-            racs._validate_result(result, "ASR-COD-2000-0001", "a" * 64, 5)
+            racs._validate_result(result, "2000[Cu][nan]3[ASR]1", "a" * 64, 5)
         with self.assertRaisesRegex(racs.ReleaseRACError, "identity/schema"):
-            racs._validate_result(result, "ASR-COD-2000-0002", "a" * 64, 5)
+            racs._validate_result(result, "2000[Cu][nan]3[ASR]2", "a" * 64, 5)
 
     @staticmethod
     def result():
         schema = racs._schema(5)
         return {"schema": "coremof-release-racs/1.0", "profile": racs.PROFILE,
-            "structure_id": "ASR-COD-2000-0001", "cif_sha256": "a" * 64,
+            "structure_id": "2000[Cu][nan]3[ASR]1", "cif_sha256": "a" * 64,
             "depth": 5, "schema_sha256": racs.SCHEMA_SHA256[5],
             "metadata_names": list(schema.values()), "call_arguments": racs.CALL_ARGUMENTS,
             "execution_status": "SUCCESS", "available": True,
@@ -112,7 +112,7 @@ class ReleaseRACIsolationTests(unittest.TestCase):
         self.root = Path(self.temporary.name)
         self.cif = self.root / "source.cif"
         self.cif.write_bytes(b"data_test\n")
-        self.options = dict(cif_path=self.cif, structure_id="ASR-COD-2000-0001",
+        self.options = dict(cif_path=self.cif, structure_id="2000[Cu][nan]3[ASR]1",
             output_dir=self.root / "result", python=sys.executable, source_archive=self.cif,
             environment_manifest=self.cif, timeout_seconds=1)
 
@@ -135,7 +135,7 @@ class ReleaseRACIsolationTests(unittest.TestCase):
         fake = types.SimpleNamespace(wait=lambda timeout: None, returncode=1)
         def launch(command, **kwargs):
             request = json.loads(Path(command[-1]).read_text())
-            copied = Path(request['private_root']) / 'input' / 'ASR-COD-2000-0001.cif'
+            copied = Path(request['private_root']) / 'input' / '2000[Cu][nan]3[ASR]1.cif'
             self.assertEqual(copied.read_bytes(), self.cif.read_bytes())
             self.assertNotEqual(copied.resolve(), self.cif.resolve())
             self.assertNotIn("LD_PRELOAD", kwargs["env"])

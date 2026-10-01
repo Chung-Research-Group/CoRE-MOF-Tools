@@ -1,4 +1,4 @@
-# CoREMOF-COD GPU benchmark handoff
+# CoRE-MOF-COD GPU benchmark handoff
 
 This guide is the minimal transfer-and-run contract for the target-independent
 strict five-checker benchmark. Use the exact source commit and restricted data
@@ -29,7 +29,7 @@ benchmark adds the selected criterion edges and takes connected-component
 closure. Each resulting effective leakage block is indivisible across train,
 validation, and test.
 
-The checksum-bound CoREMOF-COD integration run has:
+The checksum-bound CoRE-MOF-COD integration run has:
 
 | Pool | Raw strict rows | Label-pure eligible rows | Excluded with a mixed-label block |
 |---|---:|---:|---:|
@@ -37,7 +37,7 @@ The checksum-bound CoREMOF-COD integration run has:
 | NCR | 2,299 | 1,727 | 572 |
 
 The raw pools cannot be selected in full without crossing effective leakage
-blocks. Therefore the CoREMOF-COD sensitivity ladder must explicitly request:
+blocks. Therefore the CoRE-MOF-COD sensitivity ladder must explicitly request:
 
 ```text
 complete_release_label_pure_effective_blocks
@@ -88,12 +88,12 @@ metadata, parents, feature tables, and CIF manifest, but intentionally omits
 the CIF bytes. Do not pass `--verify-cifs` with that compact root. If modelling
 requires structure files, obtain the separate restricted full archive and
 verify its own receipt and SHA-256 before use. A flattened share archive is not
-automatically a loadable release root; never mix inherited base cohort and CoREMOF-COD files.
+automatically a loadable release root; never mix inherited base cohort and CoRE-MOF-COD files.
 
 ## 3. Build assignments without targets
 
 ```bash
-coremof benchmark-cr-ncr /secure/path/to/CoREMOF-COD \
+coremof benchmark-cr-ncr /secure/path/to/CoRE-MOF-COD \
   --group-criteria priority_main \
   --cohort-eligibility complete_release_label_pure_effective_blocks \
   --ncr-pool-fractions 0.0 0.2 0.4 0.6 0.8 1.0 \
@@ -108,7 +108,7 @@ Equivalent Python:
 from CoREMOF.dataset import CoREMOFDataset
 
 dataset = CoREMOFDataset.from_release(
-    "/secure/path/to/CoREMOF-COD"
+    "/secure/path/to/CoRE-MOF-COD"
 )
 classified = dataset.classify("5checker")
 suite = classified.build_cr_ncr_benchmark(
@@ -161,7 +161,7 @@ Widom coverage is 28,944 rather than the raw `EXISTING` count plus new-success
 count.
 
 ```bash
-coremof attach-targets /secure/path/to/CoREMOF-COD \
+coremof attach-targets /secure/path/to/CoRE-MOF-COD \
   --manifest /secure/coremof-ml-work/benchmark_outputs/coremof_cr_ncr_benchmark/runs/seed42_q0p0.csv \
   --receipt /secure/coremof-ml-work/benchmark_outputs/coremof_cr_ncr_benchmark/receipt.json \
   --config /secure/path/to/targets.json \

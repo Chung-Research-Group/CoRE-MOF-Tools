@@ -1,4 +1,4 @@
-"""Explicit historical downloads, separate from version-selected CoREMOF-COD.
+"""Explicit historical downloads, separate from version-selected CoRE-MOF-COD.
 
 Access rights and a working licensed CSD installation are caller requirements.
 Use fetch_release.py with a pinned catalog for an exact database release.

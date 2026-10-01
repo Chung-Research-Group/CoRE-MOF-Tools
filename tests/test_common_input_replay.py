@@ -25,13 +25,28 @@ def population():
     return metadata, groups, topology, {f'structure-{i:03d}' for i in range(10)}
 
 
+def frozen_rows(metadata, groups):
+    result = []
+    for qkey, q, count in (('0', '0', 0), ('0p5', '0.5', 10), ('1', '1', 20)):
+        for i in list(range(100-count)) + list(range(100, 100+count)):
+            sid = f'structure-{i:03d}'
+            result.append(dict(run_key='seed912_q'+qkey, seed='912',
+                requested_ncr_pool_fraction=q, actual_ncr_ratio=str(count/100),
+                structure_id=sid, label=metadata[sid]['label'],
+                partition='test' if i < 10 else 'validation' if i < 20 else 'train',
+                effective_leakage_block=groups[sid]['effective_leakage_block'],
+                diversity_tier='test', diversity_stratum=str(i%4)))
+    return result
+
+
 class CommonInputReplayTests(unittest.TestCase):
     def test_assignments_ignore_targets_and_are_order_independent(self):
         metadata, groups, topology, fixed = population()
-        first = example.reconstruct(metadata, groups, topology, fixed, seeds=(912,))
+        archived = frozen_rows(metadata, groups)
+        first = example.validate_frozen_assignments(archived, metadata, groups, fixed, seeds=(912,))
         for row in metadata.values():
             row['target'] = object()  # Must never be serialized or consumed.
-        second = example.reconstruct(dict(reversed(list(metadata.items()))), groups, topology, fixed, seeds=(912,))
+        second = example.validate_frozen_assignments(archived, dict(reversed(list(metadata.items()))), groups, fixed, seeds=(912,))
         self.assertEqual(first, second)
         self.assertEqual(len(first), 300)
         for q in ('0', '0.5', '1'):
@@ -43,17 +58,36 @@ class CommonInputReplayTests(unittest.TestCase):
             by_id.setdefault(row['structure_id'], set()).add(row['partition'])
         self.assertTrue(all(len(parts) == 1 for parts in by_id.values()))
 
+    def test_renaming_retains_membership_and_row_order(self):
+        metadata, groups, topology, fixed = population()
+        archived = frozen_rows(metadata, groups)
+        mapping = {sid: f'2026[Cu][nan]3[ASR]{120-i}' for i, sid in enumerate(metadata)}
+        renamed = [dict(row, structure_id=mapping[row['structure_id']]) for row in archived]
+        new_metadata = {mapping[sid]: value for sid, value in metadata.items()}
+        new_groups = {mapping[sid]: value for sid, value in groups.items()}
+        rows = example.validate_frozen_assignments(renamed, new_metadata, new_groups,
+                                                  {mapping[sid] for sid in fixed}, seeds=(912,))
+        self.assertEqual([r['structure_id'] for r in rows], [r['structure_id'] for r in renamed])
+        self.assertEqual([r['partition'] for r in rows], [r['partition'] for r in archived])
+
+    def test_changed_assignment_rejected(self):
+        metadata, groups, topology, fixed = population()
+        archived = frozen_rows(metadata, groups)
+        archived[25]['partition'] = 'validation'
+        with self.assertRaisesRegex(ValueError, 'partition sizes'):
+            example.validate_frozen_assignments(archived, metadata, groups, fixed, seeds=(912,))
+
     def test_shared_test_group_is_rejected(self):
         metadata, groups, topology, fixed = population()
         groups['structure-020']['effective_leakage_block'] = groups['structure-000']['effective_leakage_block']
         with self.assertRaisesRegex(ValueError, 'fixed-test group'):
-            example.reconstruct(metadata, groups, topology, fixed)
+            example.validate_frozen_assignments(frozen_rows(metadata, groups), metadata, groups, fixed, seeds=(912,))
 
     def test_unchecked_label_is_not_treated_as_ncr(self):
         metadata, groups, topology, fixed = population()
         metadata['structure-105']['label'] = 'UNCHECKED'
         with self.assertRaisesRegex(ValueError, 'invalid label'):
-            example.reconstruct(metadata, groups, topology, fixed)
+            example.validate_frozen_assignments(frozen_rows(metadata, groups), metadata, groups, fixed, seeds=(912,))
 
     def make_archive(self, root, corrupt=False, duplicate=False, link=False,
                      prefix=None, dataset_id=None):
