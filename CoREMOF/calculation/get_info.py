@@ -1,45 +1,71 @@
 """Get publication information from DOI.
 """
 
-import requests, time
+from datetime import date as calendar_date
+import math
+import time
+from urllib.parse import quote
+
+
+def _publication_date(data):
+    """Prefer a valid online date, then print, without inventing precision."""
+    if not isinstance(data, dict):
+        return "unknown"
+    for name in ("published-online", "published-print"):
+        value = data.get(name)
+        if not isinstance(value, dict):
+            continue
+        parts = value.get("date-parts")
+        if not isinstance(parts, list) or len(parts) != 1:
+            continue
+        parts = parts[0]
+        if (not isinstance(parts, list) or not 1 <= len(parts) <= 3
+                or any(type(part) is not int for part in parts)):
+            continue
+        try:
+            calendar_date(parts[0], parts[1] if len(parts) > 1 else 1, parts[2] if len(parts) > 2 else 1)
+        except ValueError:
+            continue
+        return "-".join([str(parts[0])] + [f"{part:02d}" for part in parts[1:]])
+    # Licence start, metadata creation, deposit and indexing dates are not
+    # publication dates. Never use them to assign a release naming year.
+    return "unknown"
 
 
 def get_publication_date(doi, max_retries=3, delay=5):
-    """Get publicated date.
+    """Get Crossref's online publication date, otherwise its print date.
 
     Args:
-        doi (str): DOI.
+        doi (str): DOI identifier, without a resolver URL.
+        max_retries (int): maximum request attempts, including the first.
+        delay (float): seconds between retryable transport failures.
        
     Returns:
         str:
-            -   time of DOI.
+            -   YYYY, YYYY-MM, YYYY-MM-DD, or ``unknown``. Missing date
+                components are not filled. A licence start date is never
+                substituted for publication. This lookup does not modify
+                existing metadata or release IDs.
     """
-        
-    url = f"https://api.crossref.org/works/{doi}"
+    if type(max_retries) is not int or max_retries < 1:
+        raise ValueError("max_retries must be a positive integer")
+    if isinstance(delay, bool) or not isinstance(delay, (int, float)) or not math.isfinite(delay) or delay < 0:
+        raise ValueError("delay must be a finite nonnegative number")
+    if not isinstance(doi, str) or not doi.strip():
+        return "unknown"
+    import requests
+    url = "https://api.crossref.org/works/" + quote(doi.strip(), safe="/")
     for attempt in range(max_retries):
         try:
             response = requests.get(url, timeout=15)
             if response.status_code == 200:
-                data = response.json().get("message", {})
-                if 'published-online' in data:
-                    date = data['published-online']['date-parts'][0]
-                elif 'published-print' in data:
-                    date = data['published-print']['date-parts'][0]
-                elif 'license' in data:
-                    date = data['license'][0]['start']['date-parts'][0]
-                else:
-                    return "unknown"
-                if len(date) == 3:
-                    return f"{date[0]}-{date[1]:02d}-{date[2]:02d}"
-                elif len(date) == 2:
-                    return f"{date[0]}-{date[1]:02d}"
-                else:
-                    return str(date[0])
+                payload = response.json()
+                return _publication_date(payload.get("message") if isinstance(payload, dict) else None)
             else:
                 return "unknown"
-        except requests.exceptions.ReadTimeout:
-            print(f"[Timeout] DOI: {doi}, retrying ({attempt + 1}/{max_retries})...")
-            time.sleep(delay)
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+            if attempt + 1 < max_retries:
+                time.sleep(delay)
         except Exception as e:
             print(f"[Error] DOI: {doi} failed due to {e}")
             return "unknown"

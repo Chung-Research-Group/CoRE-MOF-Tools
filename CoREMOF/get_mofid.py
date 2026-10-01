@@ -7,9 +7,9 @@ from ase import neighborlist
 import networkx as nx
 from ase.build import sort
 import ase
-import glob
 import os
-import shutil
+from pathlib import Path
+import tempfile
 import numpy as np
 import collections
 
@@ -35,20 +35,28 @@ metals  = ['Li', 'Na', 'K', 'Rb', 'Cs', 'Fr', 'Be', 'Mg', 'Ca', 'Sr', 'Ba', 'Ra'
           'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr'
          ]
 
-def run_v1(structure):
+def run_v1(structure, *, output_path=None):
 
     """Converting CIF to mofid-v1, see https://snurr-group.github.io/mofid/ for additional installation. Tip: Please check CMAKE, JAVA, etc. before installing.
 
     Args:
         structure (str): path to your CIF.
+        output_path (str, optional): new directory for supporting outputs.
+            If omitted, temporary outputs are isolated and removed after use.
 
     Returns:
-        String:
-            -   mofid-v1.
+        dict: MOFid-v1 identifier and its fragment/topology information.
     """
 
-    mofid_v1 = cif2mofid(structure)
-    return mofid_v1 # mofid_v1['mofid'], mofid_v1['smiles_nodes'], mofid_v1['smiles_linkers'], mofid_v1['topology'], mofid_v1['cat']
+    structure_path = Path(structure).resolve(strict=True)
+    if not structure_path.is_file():
+        raise ValueError("MOFid input must be a CIF file")
+    if output_path is not None:
+        destination = Path(output_path).absolute()
+        destination.mkdir(parents=True, exist_ok=False)
+        return cif2mofid(str(structure_path), output_path=str(destination))
+    with tempfile.TemporaryDirectory(prefix="coremof-mofid-v1-") as directory:
+        return cif2mofid(str(structure_path), output_path=directory)
 
 def dict2str(dct):
     """Convert symbol-to-number dict to str.
@@ -270,7 +278,7 @@ def remove_pbc_cuts(atoms):
         return atoms
 
 def run_v2(structure, nodes_dataset, refname):
-    """run mofidv2 from CIF.
+    """Run the generic MOFid-v2 wrapper with a read-only node library.
 
     Args:
         structure (str): path to your MOF.
@@ -280,76 +288,64 @@ def run_v2(structure, nodes_dataset, refname):
     Returns:
         str:
             -   mofid-v2.
+
+    Raises:
+        ValueError: a node is unmatched or has multiple library matches.
+        RuntimeError: fragment extraction or MOFid-v1 evidence is unavailable.
+
+    This generic compatibility method retains ``ltol=0.3`` and ``stol=2``.
+    It is not the pinned CoRE-MOF-COD release calculation (``ltol=0.25``, ``stol=1.5``).
+    Unavailable nodes never produce invented Type identifiers. Intermediate
+    files use one private temporary directory; the caller's ``Output`` and
+    the reference node library are never deleted or modified.
     """
-    # get list of nodes
-    try:
-        shutil.rmtree("Output")
-    except:
-        pass
-    # get list of nodes
-    nodes_type = glob.glob(nodes_dataset+"/*xyz")
-    nodes = []
-    for node_file in nodes_type:
-        nodes.append(node_file.split("/")[-1].split("_")[0])
-    nodes = list(set(nodes))
-    # get information of mofid-v1
-    mofidv1 = run_v1(structure)
-    linkers = mofidv1["smiles_linkers"]
-    all_linkers = []
-    for linker in linkers:
-        all_linkers.append(sf.encoder(linker))
-    topology = mofidv1["topology"]
-    cat = mofidv1["cat"]
-    # get_node_linker_files(cifpath)
-    check = split_nodes_from_cif("Output/AllNode/nodes.cif", "Output")
-    if check == 1:
-        print("nan")
-        return "nan"
-    else:
-        all_nodes_xyz = glob.glob("./Output/node*xyz")
+    structure_path = Path(structure).resolve(strict=True)
+    library = Path(nodes_dataset).resolve(strict=True)
+    if not structure_path.is_file() or not library.is_dir():
+        raise ValueError("MOFid requires a CIF file and a node-library directory")
+    nodes_type = sorted(library.glob("*.xyz"))
+    if not nodes_type:
+        raise ValueError("The node library contains no XYZ files")
+    if not isinstance(refname, str) or not refname or "\n" in refname or "\r" in refname:
+        raise ValueError("refname must be a nonempty single-line string")
+    with tempfile.TemporaryDirectory(prefix="coremof-mofid-v2-") as directory:
+        output = Path(directory) / "fragments"
+        mofidv1 = run_v1(structure_path, output_path=output)
+        if not isinstance(mofidv1, dict):
+            raise RuntimeError("MOFid-v1 returned no fragment evidence")
+        linkers = mofidv1.get("smiles_linkers")
+        topology, cat = mofidv1.get("topology"), mofidv1.get("cat")
+        if (not isinstance(linkers, list) or any(not isinstance(item, str) for item in linkers)
+                or not isinstance(topology, str) or not topology or cat is None):
+            raise RuntimeError("MOFid-v1 returned incomplete fragment/topology evidence")
+        all_linkers = [sf.encoder(linker) for linker in linkers]
+        if split_nodes_from_cif(str(output / "AllNode/nodes.cif"), str(output)) != 0:
+            raise RuntimeError("MOFid-v2 node extraction is unavailable")
+        all_nodes_xyz = sorted(output.glob("node*.xyz"))
+        if not all_nodes_xyz:
+            raise RuntimeError("MOFid-v2 node extraction produced no nodes")
         all_nodes_part = []
+        matcher = StructureMatcher(ltol=0.3, stol=2, angle_tol=5,
+                                   primitive_cell=False, scale=False,
+                                   comparator=ElementComparator())
         for node_xyz in all_nodes_xyz:
             node_formula = xyz2fomula(node_xyz)
-            if node_formula in nodes:
-                matcher = StructureMatcher(ltol = 0.3,
-                                           stol = 2,
-                                           angle_tol = 5,
-                                           primitive_cell = False,
-                                           scale = False,
-                                           comparator=ElementComparator()) 
-                matched = False
-                known_nodes = glob.glob(nodes_dataset+ "/" + node_formula + "*xyz")
-                
-                mof = remove_pbc_cuts(ase_read(node_xyz))
-                a = convert_ase_pymat(mof)
-                for i in range(len(known_nodes)):
-                    b = convert_ase_pymat(remove_pbc_cuts(ase_read(known_nodes[i])))
-                    if matcher.fit(a, b):
-                        node_part = os.path.basename(known_nodes[i].replace(".xyz", ""))
-                        all_nodes_part.append(node_part)
-                        matched = True
-                        print(node_formula, "the node can be found in nodes dataset")
-                        break
-                if not matched:
-                    # raise RuntimeError(f"fail matched from nodes dataset, stop")
-                    node_part = node_formula + "_Type-" + str(len(known_nodes) + 1)
-                    all_nodes_part.append(node_part)
-                    shutil.move(node_xyz, nodes_dataset + "/" + node_part + ".xyz")
-                    print("new node found, has moved the nodes dataset")
-            else:
-                node_part = node_formula + "_Type-1"
-                all_nodes_part.append(node_part)
-                shutil.move(node_xyz, nodes_dataset + "/" + node_part + ".xyz")
-                print("new node found, has moved the nodes dataset")
+            known_nodes = [path for path in nodes_type if path.stem.split("_", 1)[0] == node_formula]
+            a = convert_ase_pymat(remove_pbc_cuts(ase_read(node_xyz)))
+            matches = []
+            for known_node in known_nodes:
+                b = convert_ase_pymat(remove_pbc_cuts(ase_read(known_node)))
+                if matcher.fit(a, b):
+                    matches.append(known_node.stem)
+            if not matches:
+                raise ValueError(f"NOT_AVAILABLE_UNMATCHED_NODE: {node_formula}")
+            if len(matches) != 1:
+                raise ValueError(f"NOT_AVAILABLE_AMBIGUOUS_NODE: {node_formula}: {matches}")
+            all_nodes_part.append(matches[0])
 
-    linkers_part = ".".join(all_linkers)
-    nodes_part = ".".join(f"[{node}]" for node in all_nodes_part)
-    mofidv2 = nodes_part + "." + linkers_part + " " + "MOFid-v2." + topology + ".cat" + cat + ";" + refname
-    try:
-        shutil.rmtree("Output")
-    except:
-        pass
-    return mofidv2
+        linkers_part = ".".join(all_linkers)
+        nodes_part = ".".join(f"[{node}]" for node in all_nodes_part)
+        return f"{nodes_part}.{linkers_part} MOFid-v2.{topology}.cat{cat};{refname}"
 
 def are_identical_smiles(smiles1, smiles2):
     obConversion = ob.OBConversion()

@@ -1,0 +1,173 @@
+{
+  "schema_version": "coremof-cod-curation-v41/1",
+  "profile": "cod_curation_v4_1_20260716",
+  "original_cpu_fingerprint_sha256": "20335e23a9049d8d02dfed70d9962ae836188dad718338109b2d6225f9971263",
+  "original_python_version": "3.9.21",
+  "packages": {
+    "ase": "3.25.0",
+    "gemmi": "0.7.0",
+    "numpy": "1.26.4",
+    "pymatgen": "2024.8.9",
+    "scipy": "1.13.1",
+    "spglib": "2.6.0",
+    "networkx": "3.2.1",
+    "PyCifRW": "4.4.6",
+    "torch": "2.7.0+cu118"
+  },
+  "scientific_policy": {
+    "ase_skin_angstrom": 0.125,
+    "asr_is_derived_from_fsr": true,
+    "confirmed_ion_skips_asr": true,
+    "max_auto_atoms": 2000,
+    "pacman": {
+      "atom_type": true,
+      "charge_device_policy": "cpu",
+      "coordinate_tolerance_angstrom": 0.001,
+      "cpu_is_reference": true,
+      "digits": 10,
+      "keep_connect": true,
+      "method": "DDEC6",
+      "net_charge_tolerance_e": 0.00001,
+      "neutral": true,
+      "seed": 0,
+      "version": "1.4.2"
+    },
+    "per_source_timeout_seconds": 3600,
+    "run_validators": false,
+    "total_pair_margin_angstrom": 0.25,
+    "unknown_components_preserved_and_reviewed": true,
+    "validators_are_independent": true
+  },
+  "assets": {
+    "scripts/curate_cod_one_v4_1.py": {
+      "sha256": "c7ed76e78962eb2b7f44fdf50d815de6d3d1daaae137356889c00b42d51f91dd",
+      "bytes": 77226,
+      "required_for": "all"
+    },
+    "scripts/curation_policy_v4_1.py": {
+      "sha256": "0bd8017acc9c48f4a675e764af4bb50f2b18653e788b917e961059d109b13f65",
+      "bytes": 36545,
+      "required_for": "all"
+    },
+    "scripts/pacman_v4_1.py": {
+      "sha256": "e1698d6b0786d75745a89af422d567c8b1b3cd4ccfb5001807ba66ad16739569",
+      "bytes": 12448,
+      "required_for": "all"
+    },
+    "config/ion_overrides_v2.json": {
+      "sha256": "9c21f19a858e8c2882ecf88d96ce516127903c38a852ea5c04ef2c6b9a200de9",
+      "bytes": 361,
+      "required_for": "all"
+    },
+    "v4_1/config/ion_policy_20260716_1.json": {
+      "sha256": "f5b014044baf2325fe6f80db589f38d447b4d43c83d245560ffadd03d140014d",
+      "bytes": 3424,
+      "required_for": "all"
+    },
+    "v4_1/config/neutral_solvents_20260716_1.json": {
+      "sha256": "8a6c2da43e0b8b1a465e8a3583643860a1985b33f9dc47797edc864096adc34f",
+      "bytes": 5692,
+      "required_for": "all"
+    },
+    "vendor/CoRE-MOF-Tools/CoREMOF/utils/atoms_definitions.py": {
+      "sha256": "3f987856e8a2204a49f41018aaef4676e3dd6015cb9923c7f7772b4a1dec7ea6",
+      "bytes": 29572,
+      "required_for": "all"
+    },
+    "vendor/CoRE-MOF-Tools/CoREMOF/utils/ions_list.py": {
+      "sha256": "9f601d252cbe57aeb57f4a012e59a04b149cf65b13ac56eedd9a86c38a1f3e3d",
+      "bytes": 2153,
+      "required_for": "all"
+    },
+    "v4_1/runtime/PACMANCharge/__init__.py": {
+      "sha256": "0e856da29efa4b029a80d2792551fcf0f36289b29ea4d6084ad14ed119305c43",
+      "bytes": 34,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/atom_init.json": {
+      "sha256": "cb90bd2257dbf8cfc4e6b2b6d4348d4616e8e9680f1339b1461137032e0f1894",
+      "bytes": 28392,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/bader.pkl": {
+      "sha256": "5cbccce1981b42f033761a3ddef63db335bcce8bb8d6a884c96b2ba8473bc252",
+      "bytes": 707,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/bader.pth": {
+      "sha256": "2388ef4adb316bd5ba883d121b725e9b06db1c4bf187ce8a2e20ab225bec1cb5",
+      "bytes": 38341388,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/bandgap.pkl": {
+      "sha256": "50153a795660fa072594554d81dd12d339ea1395ce00c4e438d6e03096251d2a",
+      "bytes": 724,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/bandgap.pth": {
+      "sha256": "7db881f12de580febf6cc3775fcc11cd480d8c5872ab0caaa1a9585b3e9048e4",
+      "bytes": 18355621,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/cm5.pkl": {
+      "sha256": "ae392696e2483ffca1f36829c7df1570bf4c159d3d279c0523a86345873f11da",
+      "bytes": 723,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/cm5.pth": {
+      "sha256": "9f2c9ebc7975d9cc9b9c7d1bb1cdb6f7c74e902a67ad4d69096ae6b3a6f89d9f",
+      "bytes": 38338661,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/ddec.pkl": {
+      "sha256": "49abf0d3d3cf0c00bc2055c877f090b01cce36f45081c8aded5ee6de6bb6096a",
+      "bytes": 723,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/ddec.pth": {
+      "sha256": "0943adbbd2faf0d4aaa51bc7b2da4dbf216ebec1aaa021e468159af39190095d",
+      "bytes": 38304633,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/pbe.pkl": {
+      "sha256": "2da05b25f66439214d70a9adf06a4dfc111c76dae7796e6dfbc9138f7575dbe8",
+      "bytes": 724,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/pbe.pth": {
+      "sha256": "82a7595fc22e29d019bd02420138e1457172bf1ea58edf984f53c33ce4d92247",
+      "bytes": 18355621,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/pmcharge.py": {
+      "sha256": "403c0dc5bec584bfb745f3aeae1bc944c29147fe052b79ece9888d287c02c485",
+      "bytes": 33727,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/repeat.pkl": {
+      "sha256": "74f7330bccc4f561a8e303ea91f826f3c32e0931b90691e9182e5670c0066d43",
+      "bytes": 733,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMANCharge/repeat.pth": {
+      "sha256": "e456e7935b718032ccfaf24bc99dbbd89dced6831d097acedd76b32f2b398978",
+      "bytes": 38341388,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMAN_charge-1.4.2.dist-info/METADATA": {
+      "sha256": "0f4110475a6c3c59cd12eea51ea9664b2b72e98ad8222afae4be6437e8452341",
+      "bytes": 4261,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMAN_charge-1.4.2.dist-info/RECORD": {
+      "sha256": "cd6051b2aac1dedbca6d6654b846e67e47602f2619a5ebe1488f813aa80a8ec8",
+      "bytes": 1077,
+      "required_for": "charging"
+    },
+    "v4_1/runtime/PACMAN_charge-1.4.2.dist-info/WHEEL": {
+      "sha256": "227f454cdc5e3fad0a9d3906c3bc24ea624f61dfdd4128c46665dd05d30223ef",
+      "bytes": 91,
+      "required_for": "charging"
+    }
+  }
+}

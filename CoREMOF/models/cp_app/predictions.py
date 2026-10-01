@@ -4,6 +4,7 @@ from .descriptors import cv_features
 import joblib
 import glob
 import copy
+from CoREMOF._heat_capacity import normalize_temperatures
 
 FEATURES = cv_features
 
@@ -27,7 +28,11 @@ def predict_Cv_ensemble_structure(models: list, FEATURES: list, df_features: pd.
         raise ValueError("No atomic features were found for the requested structure")
     if "structure_name" not in df_features:
         raise ValueError("The feature table must contain a 'structure_name' column")
-    structure_names = df_features["structure_name"].dropna().unique()
+    if df_features.columns.has_duplicates:
+        raise ValueError("The feature table contains duplicate column names")
+    if df_features["structure_name"].isna().any():
+        raise ValueError("Every atomic feature row must have a structure_name")
+    structure_names = df_features["structure_name"].unique()
     if len(structure_names) != 1:
         raise ValueError(
             "Expected features for exactly one structure; found "
@@ -40,11 +45,35 @@ def predict_Cv_ensemble_structure(models: list, FEATURES: list, df_features: pd.
         raise ValueError(f"Feature table is missing required columns: {preview}{suffix}")
     if "site AtomicWeight" not in df_features:
         raise ValueError("Feature table is missing required column 'site AtomicWeight'")
+    if not FEATURES or len(set(FEATURES)) != len(FEATURES):
+        raise ValueError("Feature names must be nonempty and distinct")
+    try:
+        values = df_features[FEATURES].to_numpy(dtype=float)
+        weights = df_features["site AtomicWeight"].to_numpy(dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Atomic features and weights must be numeric") from exc
+    if not np.isfinite(values).all():
+        raise ValueError("Atomic features must all be finite; no imputation is performed")
+    if not np.isfinite(weights).all() or (weights <= 0).any():
+        raise ValueError("Atomic weights must all be finite and positive")
+    if not np.isfinite(np.sum(weights)):
+        raise ValueError("Total atomic weight must be finite")
         
     df_site_structure = copy.deepcopy(df_features)
     structure_name = structure_names[0]
     for model_idx,model in enumerate(models):
-        df_site_structure["pCv_{}_predicted_{}".format(temperature, model_idx)]=model.predict(df_site_structure[FEATURES])
+        # Preserve the model's floating-point dtype and historical summation
+        # arithmetic. Promoting XGBoost float32 outputs changes valid values.
+        predicted = np.asarray(model.predict(df_site_structure[FEATURES]))
+        if (predicted.shape != (len(df_site_structure),)
+                or predicted.dtype.kind not in "biuf"
+                or not np.isfinite(predicted).all()):
+            raise ValueError(
+                f"Heat-capacity model {model_idx} must return one finite value per atom"
+            )
+        if not np.isfinite(np.sum(predicted)):
+            raise ValueError(f"Heat-capacity model {model_idx} has a non-finite total")
+        df_site_structure["pCv_{}_predicted_{}".format(temperature, model_idx)] = predicted
     results=[]
     predicted_mol=[]
     predicted_gr=[]
@@ -59,6 +88,8 @@ def predict_Cv_ensemble_structure(models: list, FEATURES: list, df_features: pd.
         "Cv_molar_{}_mean".format(temperature): np.mean(predicted_mol),
         "Cv_molar_{}_std".format(temperature): np.std(predicted_mol),
     })
+    if not all(np.isfinite(value) for key, value in results[0].items() if key != "name"):
+        raise ValueError("Heat-capacity ensemble aggregation produced non-finite values")
     return results
 
 
@@ -90,9 +121,7 @@ def predict_Cv_ensemble_structure_multitemperatures(
      
     if temperatures is None:
         temperatures = [300.0]
-    temperatures = list(temperatures)
-    if not temperatures:
-        raise ValueError("At least one prediction temperature is required")
+    temperatures = normalize_temperatures(temperatures)
 
     all_features = pd.read_csv(features_file)
     if "structure_name" not in all_features.columns:

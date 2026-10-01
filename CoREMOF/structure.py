@@ -13,6 +13,14 @@ import requests
 
 from gemmi import cif
 
+from ._legacy_retrieval import (
+    check_output_file,
+    extract_archives,
+    publish_text,
+    validate_cache,
+    validate_refcode,
+)
+
 package_directory = os.path.abspath(__file__).replace("structure.py","")
 
 files_to_download = {
@@ -29,20 +37,32 @@ def _ensure_data_file(file_name):
     if file_name not in files_to_download:
         raise ValueError(f"Unknown CoRE MOF data file: {file_name}")
     file_path = Path(package_directory, file_name)
+    if file_path.is_symlink():
+        raise ValueError(f"Refusing a symlink cache file: {file_path}")
     if file_path.is_file():
         return file_path
+    if file_path.exists():
+        raise FileExistsError(f"Cache path is not an ordinary file: {file_path}")
 
     file_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         with requests.get(files_to_download[file_name], timeout=60, stream=True) as response:
             response.raise_for_status()
             with tempfile.NamedTemporaryFile(dir=file_path.parent, delete=False) as tmp:
+                temporary_path = Path(tmp.name)
                 for chunk in response.iter_content(chunk_size=1024 * 1024):
                     if chunk:
                         tmp.write(chunk)
-                temporary_path = Path(tmp.name)
-        temporary_path.replace(file_path)
-    except Exception:
+        validate_cache(temporary_path, file_name)
+        try:
+            # Never replace a cache another caller created while downloading.
+            os.link(temporary_path, file_path)
+        except FileExistsError:
+            if not file_path.is_file() or file_path.is_symlink():
+                raise
+            validate_cache(file_path, file_name)
+        temporary_path.unlink()
+    except BaseException:
         if "temporary_path" in locals():
             temporary_path.unlink(missing_ok=True)
         raise
@@ -61,16 +81,20 @@ class download_from_SI():
 
     Args:
         output_folder (str): path to save structures.
+        overwrite (bool): explicitly replace selected files, default False.
 
     Returns:
         cif:
             CoRE MOF SI dataset.   
     """
 
-    def __init__(self, output_folder="./CoREMOF2024DB"):
+    def __init__(self, output_folder="./CoREMOF2024DB", *, overwrite=False):
         
         self.SI_path = Path(package_directory, 'data', 'SI')
         self.output = output_folder
+        self.overwrite = overwrite
+        if type(overwrite) is not bool:
+            raise TypeError("overwrite must be a boolean")
         self.run()
 
     def run(self):
@@ -80,16 +104,10 @@ class download_from_SI():
             
         cr_zip = _ensure_data_file('data/SI/CR.zip')
         ncr_zip = _ensure_data_file('data/SI/NCR.zip')
-        CR_files = self.list_zip(cr_zip)
-        NCR_files = self.list_zip(ncr_zip)
-     
-        os.makedirs(self.output+"/CR/", exist_ok=True)
-        os.makedirs(self.output+"/NCR/", exist_ok=True)
-
-        for file in CR_files[:]:
-            self.get_from_SI(cr_zip, file, self.output)
-        for file in NCR_files[:]:
-            self.get_from_SI(ncr_zip, file, self.output)
+        extract_archives(
+            [(cr_zip, None), (ncr_zip, None)], self.output,
+            overwrite=self.overwrite, ensure_directories=("CR", "NCR"),
+        )
 
     def list_zip(self, zip_path):
 
@@ -107,7 +125,7 @@ class download_from_SI():
             file_list = zip_ref.namelist()
             return file_list
     
-    def get_from_SI(self, zip_path, entry, output_folder):
+    def get_from_SI(self, zip_path, entry, output_folder, *, overwrite=False):
 
         """unzip files from a ZIP.
 
@@ -115,30 +133,27 @@ class download_from_SI():
             zip_path (str): path to ZIP.
             entry (str): name of structure.
             output_folder (str): path to save structures. 
+            overwrite (bool): explicitly replace this entry, default False.
         """
                 
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            file_list = zip_ref.namelist()
-            if entry in file_list:
-                destination = Path(output_folder).resolve()
-                member_path = (destination / entry).resolve()
-                if destination not in member_path.parents and member_path != destination:
-                    raise ValueError(f"Unsafe path in ZIP archive: {entry}")
-                zip_ref.extract(entry, destination)
+        extract_archives([(zip_path, entry)], output_folder, overwrite=overwrite)
             
-def download_from_CSD(refcode, output_folder="./CoREMOF2024DB"):
+def download_from_CSD(refcode, output_folder="./CoREMOF2024DB", *, overwrite=False):
 
     """download structures from CSD, you need to install [CSD python API](https://downloads.ccdc.cam.ac.uk/documentation/API/installation_notes.html) with licence.
 
     Args:
         refcode (str): CSD refcode.
         output_folder (str): path to save structures.
+        overwrite (bool): explicitly replace the selected CIF, default False.
 
     Returns:
         cif:
             downloading CIF.  
     """
 
+    validate_refcode(refcode)
+    output = check_output_file(Path(output_folder) / (refcode + '.cif'), overwrite=overwrite)
     try:
         from ccdc import io
     except ImportError as exc:
@@ -147,11 +162,12 @@ def download_from_CSD(refcode, output_folder="./CoREMOF2024DB"):
         ) from exc
 
     csd_reader = io.EntryReader('CSD')
-    cryst = csd_reader.crystal(refcode)
-    data = cryst.to_string('cif')
-    os.makedirs(output_folder, exist_ok=True)
-    with open(os.path.join(output_folder, refcode+'.cif'), 'w', encoding='utf-8') as f:
-        f.write(data)
+    try:
+        cryst = csd_reader.crystal(refcode)
+        data = cryst.to_string('cif')
+    finally:
+        csd_reader.close()
+    publish_text(output, data, overwrite=overwrite)
 
 
 def information(dataset, entry, show_units=False):

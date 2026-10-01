@@ -1,0 +1,953 @@
+Classification and dataset splitting
+====================================
+
+The splitting API loads an existing CoRE MOF release, independently
+recomputes its checker-consensus labels, and assigns whole parent groups to
+train, validation, or test. It does not run a checker or calculate a missing
+RAC, MOFid, or Zeo++ result.
+
+For target-complete CR/NCR cohorts selected before splitting, see
+:doc:`target_first_benchmark`. This opt-in workflow preserves the full-release
+group graph and leaves existing split defaults unchanged.
+
+.. warning::
+
+   This is an initial development API. Splits made from the current CoRE-MOF-COD parent
+   tables are reproducible exploratory splits, not an official CoRE MOF
+   benchmark. The current null-unresolved MOFid projection is explicitly
+   ``STAGE_ONLY``: parent relations built from it are non-published candidates
+   and cannot be promoted by the publication command. An official split will
+   require publication-eligible MOFid evidence, rebuilt audited parent tables,
+   and a release-provided audited split manifest.
+
+Project-defined split identifiers
+---------------------------------
+
+``priority_main``, ``main_union``, ``auto``, and ``parent_only`` are
+CoREMOF-tools API identifiers, not community-standard crystallographic terms.
+``parent_only`` means that the selected parent method's resolved groups alone
+form the split blocks; it adds no relationship from any other method.
+
+At first use here, **release-authorized and available** mean that a criterion's
+``status/group/size`` triad is declared in ``parent_group_methods.json``,
+stored in ``parent_groups.csv``, and validated by the loader. ``MATCHED``
+means available with an observed group size of at least two; ``UNMATCHED``
+means available with size one; ``NOT_AVAILABLE`` supplies no edge and its
+size-one group only preserves the table shape. The size must equal the number
+of release rows carrying that group. Unavailable rows never match and become
+unique singletons or explicit exclusions.
+
+At first use here, **exact RAC5** means equality of all 264 ordered finite
+values after IEEE-754 binary64 parsing, mapping ``-0.0`` to ``+0.0``, and
+``float.hex()`` serialization, with ``rtol=atol=0`` and no scaling, deletion,
+imputation, or rounding. **Exact MOFid** means equality of the complete
+release-authorized current string after converting to text; collapsing each
+Unicode-whitespace run to one ASCII space; trimming; case-insensitively
+rejecting an empty field
+or ``-``, ``nan``, ``none``, ``null``, ``n/a``, ``na``, ``unknown``,
+``missing``, ``timeout``, ``timed out``, ``error``, ``failed``, ``fail``,
+``fail process``, ``failed process``, or ``process failed``; applying Unicode
+NFKC; and case-folding, in that order. It is not partial/fuzzy matching and
+does not change CIF bytes, atoms, bonds, occupancies, coordinates, chemistry,
+or unit cells.
+
+``priority_main`` is the explanatory parent hierarchy. It is computed over the
+complete release from ``rac_status/rac_group/rac_size``,
+``mofid2_status/mofid2_group/mofid2_size``, and
+``mofid1_status/mofid1_group/mofid1_size`` in
+``parent_groups/parent_groups.csv``. It seeds components from every available
+release-authorized exact RAC5 group, then processes exact MOFid-v2 groups, and
+finally processes exact MOFid-v1 groups. At each lower step, a group touching no stronger
+component creates a component; one touching exactly one stronger component
+attaches only its unresolved rows; and one touching two or more stronger
+components never merges them, records ``PARENT_METHOD_CONFLICT``, and leaves
+lower-only rows unresolved. A structure with none of the three inputs becomes
+a unique singleton unless explicit exclusion is requested. This is not a
+row-wise first-nonmissing fallback. Zeo++, CrystalNets, source ID, common name,
+CIF hash, provisional source-ID/MOFid transitive groups, and
+StructureMatcher do not enter this hierarchy.
+
+The word **priority** in ``priority_main`` means the RAC5 → MOFid-v2 →
+MOFid-v1 precedence used to explain parent groups. It does not rank, schedule,
+or recalculate failed scientific features; calculation-retry scheduling is a
+separate curation-operation queue outside this package.
+
+``main_union`` is a separate conservative leakage guard, not an explanatory
+parent claim. It reads full hashes from ``manifests/cif_manifest.csv`` and the
+source/RAC5/MOFid status, group, and size columns from the parent table. It forms
+full-release transitive connected components from exact full CIF SHA-256,
+source-sibling, RAC5, MOFid-v2, and MOFid-v1 edges before any experiment
+filter. A missing CIF SHA-256 fails closed; missing optional evidence adds no
+edge; nulls never match; and all available edges are unioned without
+precedence. The source group compares the ordered ``(source_database,
+source_id)`` pair after applying the text procedure above to each field, so
+equal IDs in different databases never match. Normal release loading requires
+that triad and never uses metadata fallback. A manually constructed object
+with no source-criterion fields instead strips and uppercases the database
+(``UNKNOWN`` only if blank), and strips, case-folds,
+Unicode-whitespace-splits, and ASCII-space-joins the source ID; that fallback
+does not apply NFKC or reject nonblank placeholders, and explicit
+``NOT_AVAILABLE`` never falls back. ``leakage_guard="auto"`` is only a selector: it chooses
+``main_union`` for ``priority_main`` and ``parent_only`` for an explicitly
+selected direct/reference method. ``parent_only`` uses only that selected
+explanatory grouping as blocks and adds no cross-method edge. An unresolved
+``priority_main`` conflict is excluded under ``parent_only`` but may remain
+safely assigned and diagnosed under ``main_union``. Consequently, two
+different explanatory groups may share one ``main_union`` block without being
+labelled the same parent.
+
+Quick example
+-------------
+
+Load a release and build a COD/SI CR-versus-NCR split:
+
+.. code-block:: python
+
+   from CoREMOF.dataset import CoREMOFDataset
+
+   ds = CoREMOFDataset.from_release("/path/to/CoRE-MOF-COD")
+   classified = ds.classify(checkers="5checker")
+
+   # Direct CR/NCR membership for screening or export:
+   cr_ids = classified.cr_ids
+   ncr_ids = classified.ncr_ids
+
+   split = classified.train_valid_test_split(
+       parent_method="priority_main",
+       fractions=(0.8, 0.1, 0.1),
+       random_state=42,
+       labels=("CR", "NCR"),
+       sources=("COD", "SI"),
+       leakage_guard="auto",
+   )
+
+The result keeps an indivisible leakage block in exactly one partition. The
+achieved fractions can differ from the requested fractions when a block is
+large; this is expected and is reported in the result summary.
+
+The COD/SI filter above is applied *after* leakage blocks are constructed from
+the complete COD+CSD+SI release universe. It therefore requires the authorized
+full-release tables and manifests. A standalone open COD/SI bundle cannot
+reproduce a bridge mediated by a hidden CSD row unless the release supplies an
+audited projection of the full-universe block IDs.
+
+.. code-block:: python
+
+   print(split.counts)
+   train_idx, valid_idx, test_idx = split
+   split.write("model_splits", stem="cod_si_5checker_seed42")
+
+Use the explicit ``train_ids``, ``validation_ids``, and ``test_ids`` fields
+when saving or joining a split. ``train_indices``, ``validation_indices``, and
+``test_indices`` are zero-based positions in the classified view passed to the
+splitter. The corresponding ``*_release_indices`` fields refer to the original
+``metadata.csv`` order. In the assignment CSV, ``view_index`` is blank for a
+row outside the classified view, whereas ``release_index`` is always present.
+Neither index is persistent; ``structure_id`` is the stable cross-table key.
+
+A compact one-call form is also available:
+
+.. code-block:: python
+
+   from CoREMOF.splitters import split_release
+
+   split = split_release(
+       "/path/to/CoRE-MOF-COD",
+       checkers="3checker",
+       parent_method="rac5",
+       fractions=(0.8, 0.1, 0.1),
+       random_state=42,
+       labels=("CR", "NCR"),
+       sources=("COD", "SI"),
+   )
+
+Five separate choices
+---------------------
+
+``checkers``, ``parent_method``, ``leakage_guard``, the row filters, and
+``required_targets`` answer different questions. They are intentionally not
+combined into one opaque "split mode".
+
+``checkers``
+   Decides how the classification label is recomputed. It does not describe
+   structural relatedness.
+
+``parent_method``
+   Selects the scientific parent or duplicate relation to analyse. It does not
+   change a CR/NCR label.
+
+``leakage_guard``
+   Decides which known relations must remain together during partitioning. It
+   can be broader than the selected explanatory parent method.
+
+Filters
+   Select eligible labels, source databases, structure variants, metals, or
+   explicit structure IDs. Filtering does not relabel a row and does not erase
+   a relation that was found in the complete release universe.
+
+``required_targets``
+   Names the target endpoints that an eligible row must actually contain.
+   Target availability is checked before assignment so target-null rows are
+   excluded from train/validation/test, while the leakage graph still uses the
+   complete release universe and therefore keeps hidden bridge relations.
+
+Checker views
+-------------
+
+The three official views are:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 82
+
+   * - View
+     - Included checkers
+   * - ``3checker``
+     - MOFClassifier, original MOFChecker, and Chen-Manz
+   * - ``4checker``
+     - The 3-checker view plus MOSAEC
+   * - ``5checker``
+     - The 4-checker view plus SETC-GAT
+
+Every view uses strict consensus:
+
+* all included checkers ``PASS`` gives ``CR``;
+* all included checkers ``FAIL`` gives ``NCR``;
+* a complete PASS/FAIL mixture gives ``AMBIGUOUS``; and
+* any unavailable or non-voting result gives ``UNCHECKED``.
+
+There is no majority vote. A timeout, execution error, unsupported input, or
+missing upstream output can never become ``NCR``.
+
+An explicit ordered sequence of canonical checker names is accepted for a
+user experiment:
+
+.. code-block:: python
+
+   custom = ds.classify(
+       checkers=("MOFClassifier", "MOFChecker", "MOSAEC")
+   )
+
+The same strict rule applies, but the receipt identifies this as
+``USER_DEFINED`` with a stable ``custom:...`` identifier. It is not presented
+as an official release label.
+
+When ``split_release()`` receives an already classified dataset, omitting
+``checkers`` preserves that dataset's view. Supplying ``checkers`` explicitly
+requires an exact match and raises on a conflict; an explicit request is never
+silently ignored. A release path or an unclassified dataset still defaults to
+the 5-checker view.
+
+Parent methods
+--------------
+
+Use the exact API keys below.
+
+Here **canonicalized identifier text** has a narrow release-defined meaning:
+convert the release-authorized current value to text, collapse every
+Unicode-whitespace run to one ASCII space, trim it, reject a whole-field
+missing/execution
+placeholder, apply Unicode NFKC, and apply Unicode case-folding, in that
+order. Rejected case-insensitive whole fields are empty text, ``-``, ``nan``,
+``none``, ``null``, ``n/a``, ``na``, ``unknown``, ``missing``,
+``timeout``, ``timed out``, ``error``, ``failed``, ``fail``, ``fail process``,
+``failed process``, and ``process failed``. A source key is the exact ordered
+pair of separately canonicalized ``source_database`` and ``source_id``; the
+database namespace is retained. A MOFid key is the complete canonicalized
+release-authorized current MOFid string, never a prefix or fuzzy match, and it
+is eligible only
+when its release status is ``SUCCESS``, ``SUCCESS_TOPOLOGY_UNKNOWN``,
+``SUCCESS_TOPOLOGY_ERROR``, or ``SUCCESS_TOPOLOGY_TIMEOUT``.
+
+The release builder freshly recomputes the equality edges and connected
+components over every current row of each named release: 36,628 rows for
+inherited base cohort and, independently, all 42,574 superset rows for CoRE-MOF-COD. It does not
+seed the superset from a previous base component or import an earlier
+source-ID/MOFid edge. Missing, null, placeholder, unresolved-reconciliation,
+ambiguous-node, timeout, error, no-MOF, unmatched-node, and
+decomposition-error MOFid values add no edge and never match through a common
+null. This text processing does not change or modify CIF bytes, atoms, bonds,
+occupancies, coordinates, chemistry, or unit cells. The splitter consumes the
+release-authorized group/status/size columns and does not rerun the
+canonicalization or relation construction.
+
+The **RAC5 fingerprint** is exact equality of all 264 finite descriptor
+columns listed in order at ``criteria.rac5.ordered_descriptors`` in
+``parent_group_methods.json``. It uses no scaling, feature deletion,
+imputation, or tolerance: every value is parsed as finite binary64, ``-0.0`` is
+mapped to ``+0.0``, and ``float.hex()`` tokens are compared in order with
+``rtol=atol=0``. The **selected Zeo++ fingerprint** is exact equality
+of ``density_g_cm3``, largest cavity, pore-limiting, and largest-free-path
+diameters; accessible and nonaccessible N2 surface areas in m2/cm3 and m2/g;
+accessible and nonaccessible N2 volumes in cm3/g and as fractions; and
+``he_void_fraction``, plus exact N2 channel dimension and available
+bonded-framework periodic dimension. Its 13 numbers use the same finite
+binary64, negative-zero, and ``float.hex()`` procedure; its numeric tolerance
+is zero and N2/He probe radii are 1.655/1.32 A. One invalid number or hard gate
+makes the fingerprint unavailable. Unit-cell-extensive areas/volumes, OMS,
+topology labels, and framework-component counts are excluded.
+
+The **current CrystalNets scientific fingerprint**, where current means the
+topology evidence authorized by the loaded release rather than a runtime
+search for newer output, requires ``SUCCESS``,
+``topology_available=true``, ``error=null``, and nonempty complete SingleNodes
+and AllNodes subnets. It includes network dimension, interpenetrated-subnet
+count, catenation degree, subnet count, top-level single-node/all-node nets and
+agreement, and, for every canonically sorted subnet, single/all agreement plus
+each node view's status, dimension, topology key, topology name, and
+topological genome. Canonical sorted-key JSON is used; complete subnet
+projections are sorted, duplicates are retained, and the result is SHA-256
+hashed. Runtime, CIF paths/hashes, diagnostics, software boilerplate, and
+original subnet order are excluded. Both count fields must be integers at
+least one and equal the subnet count; subnet indices must be unique/contiguous
+before sorting. Top-level dimension, nets, and agreement may be null for
+heterogeneous subnets and remain part of the fingerprint. Each node view must
+have ``SUCCESS``, dimension 0--3, and a nonblank topology key; topology name
+and genome may be null. An incomplete/unsuccessful result adds no
+edge; this is exact fingerprint equality, not a topology-similarity tolerance.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 20 58
+
+   * - ``parent_method``
+     - Role
+     - Relation
+   * - ``priority_main``
+     - Recommended
+     - Conflict-aware RAC5, then MOFid v2, then MOFid v1 evidence hierarchy
+   * - ``rac5``
+     - Main/direct
+     - Exact equality of every validated depth-5 RAC descriptor
+   * - ``mofid_v2``
+     - Main/direct
+     - Exact equality of complete canonicalized release-authorized MOFid v2 text; missing values never match; current CoRE-MOF-COD input remains provisional until pinned-result promotion
+   * - ``mofid_v1``
+     - Main/direct
+     - Exact equality of complete canonicalized MOFid v1 text; missing values never match
+   * - ``rac5_zeo``
+     - Reference
+     - Exact combined RAC5 and release-selected Zeo++ fingerprint
+   * - ``rac5_crystalnets``
+     - Optional non-decisive reference
+     - Reads ``rac_crystalnets_status/group/size``; an ``RT-`` group requires exact equality of all 264 finite RAC5 values plus a complete successful current CrystalNets scientific fingerprint; missing, nonfinite, partial, timed-out, or failed input adds no evidence
+   * - ``mofid_v2_crystalnets``
+     - Optional non-decisive reference
+     - Reads ``mofid2_crystalnets_status/group/size``; an ``M2T-`` group requires exact equality of complete canonicalized MOFid v2 with status exactly ``SUCCESS``, ``SUCCESS_TOPOLOGY_UNKNOWN``, ``SUCCESS_TOPOLOGY_ERROR``, or ``SUCCESS_TOPOLOGY_TIMEOUT``, plus that complete CrystalNets fingerprint. The latter two are successful calculated identifiers whose embedded topology qualifier is ERROR or TIMEOUT, not MOFid execution failures. Every other MOFid-v2 status and every incomplete CrystalNets input adds no edge; this reference is provisional whenever its release-authorized MOFid-v2 input is provisional. If the release-authorized MOFid-v2 values change, rebuild the M2T groups before use
+   * - ``structure_matcher_strict``
+     - Optional reference
+     - ``SM-`` is a convenience connected component of exhaustive composition-compatible pairs whose forward/reverse pinned strict pymatgen 2024.2.8 ElementComparator fits pass with ``fit(..., symmetric=True)``, ltol=stol=0.001, angle_tol=0.01, primitive_cell/attempt_supercell true, scale/allow_subset false, supercell_size=num_sites, and no ignored species. Direct symmetric edges are authoritative; a component is not duplicate proof. Parser failures, timeouts, and execution errors are NOT_AVAILABLE rather than unmatched; this method enters neither ``priority_main`` nor ``main_union``
+   * - ``zeo``
+     - Reference
+     - Exact release-selected Zeo++ fingerprint
+   * - ``source_id``
+     - Reference
+     - Exact canonicalized ``(source_database, source_id)`` sibling key; no cross-database match
+   * - ``common_name``
+     - Reference
+     - Exact NFKC/whitespace/case-folded common name; sparse and non-unique
+   * - ``identity_union``
+     - Reference
+     - Provisional source-ID/MOFid transitive groups: freshly recompute the inherited base cohort over its 36,628 current rows and CoRE-MOF-COD independently over its 42,574 current rows from exact canonicalized namespaced source-ID and eligible complete MOFid-v2/MOFid-v1 edges, then take connected-component closure; no earlier component or MOFid edge is imported, and no structural descriptor is used
+   * - ``none``
+     - Control
+     - One independent singleton per structure
+
+The recommended direct sensitivity analyses are ``rac5``, then
+``mofid_v2``, then ``mofid_v1``. The other methods are kept as references;
+they should not be interpreted as interchangeable proofs of parentage.
+
+Exact RAC or RAC/Zeo equality is fingerprint equivalence, not proof of a
+shared synthetic parent. The project-defined ``identity_union`` key means
+exactly the provisional source-ID/MOFid transitive groups stated above. Each
+group, and therefore each value counted by ``identity_size``, is one
+transitive connected component of structures joined by those
+identifier-equality edges; it is not a count of edges or identifiers. All
+three edge types are unioned with equal status and no priority or conflict
+rule, so one
+can bridge components made by another. Each named release is recomputed
+independently from its current rows; no earlier component or MOFid edge is
+imported. A null, rejected placeholder, or non-success MOFid status adds no
+edge and missing or unresolved identifiers never match. The relation uses no
+RAC5, Zeo++, CrystalNets topology, CIF hash, common name, or StructureMatcher
+input; it is not proof of chemical or geometric identity and is excluded from
+both ``priority_main`` and ``main_union``. A relation built from stage-only
+MOFid evidence remains a staged candidate and must be rebuilt if the
+authorized MOFid evidence changes.
+
+``RT-``, ``M2T-``, and ``SM-`` are criterion prefixes, not scientific
+results. They mean an exact RAC5-plus-current-CrystalNets group, an exact
+MOFid-v2-plus-current-CrystalNets group, and a connected component of strict
+direct StructureMatcher edges, respectively. The following compact digest is
+only a group label, not a topology name, MOFid, RMSD, or similarity score.
+The release builder hashes the criterion name and its complete comparison key
+with length-delimited UTF-8 SHA-256, starts with eight uppercase hexadecimal
+characters after the prefix, and extends every actually colliding prefix one
+character at a time until unique in the CoRE-MOF-COD superset.
+Missing or failed RAC5/CrystalNets/MOFid input creates no ``RT-`` or ``M2T-``
+evidence. Directional fit disagreement or an unresolved pair creates no
+strict edge; an incomplete strict component is projected to structure-specific
+``NOT_AVAILABLE`` singletons.
+
+``structure_matcher_strict`` is accepted only when the release declares its
+audited ``sm_*`` columns. The frozen method uses Python 3.9, pymatgen 2024.2.8,
+and NumPy 1.26.4. It blocks candidates by the parsed structure's
+``ElementComparator`` fractional-composition hash and attempts every pair in
+an equal block; routine formula, DOI, source, RAC5, topology, site count, and
+volume are not exclusionary blocks. Each forward/reverse call uses
+``fit(..., symmetric=True)`` with ``ltol=stol=0.001``,
+``angle_tol=0.01``, ``primitive_cell=true``, ``scale=false``,
+``attempt_supercell=true``, ``allow_subset=false``,
+``supercell_size=num_sites``, and no ignored species. An undirected direct edge
+requires both calls to succeed.
+
+The pinned direct ``CifParser`` expands declared symmetry, merges generated
+sites at ``site_tolerance=1e-4``, rounds coordinates near 1/3 or 2/3 at
+``frac_tolerance=1e-4``, checks occupancy, sorts the periodic structure, and
+preserves disorder. It performs no manual repair, occupancy choice, atom
+deletion, or chemistry edit. Parser, timeout, OOM, and matcher failures are
+``NOT_AVAILABLE`` rather than nonmatches; directional disagreement is
+``ASYMMETRIC_RESULT`` and creates no edge.
+
+The group is a convenience connected-component view over authoritative direct
+edges. Since the tolerance relation can be non-transitive, a component does
+not assert that every member pair directly matches; degree, edge count,
+possible-edge count, completeness, clique status, and the direct ledger must
+be consulted. Forward and reverse normalized RMS/maximum displacement divide
+periodic site displacement by the corresponding direction's
+``(V/Nsites)^(1/3)``. They are dimensionless, are not angstrom RMSD, and do not
+come from the separate ``charnley/rmsd`` molecular Kabsch program. This
+optional method changes neither ``priority_main`` nor ``main_union``; the old
+``ltol=0.2``, ``stol=0.3``, ``angle_tol=5``, ``scale=true`` profile is
+documentation-only and is neither executed nor exposed.
+
+The loader accepts ``sm_*`` columns only when
+``criteria.structure_matcher_strict`` declares the exact
+``pymatgen_structure_matcher_strict_v2`` optional-reference contract. The
+contract requires direct symmetric strict-match edges, identifies connected
+components as a non-transitive convenience view, and keeps the criterion out
+of both default hierarchies. Incomplete components must be represented by
+unique ``NOT_AVAILABLE`` singletons, never ``PARTIAL`` public rows.
+
+The method declaration binds
+``parent_groups/structure_matcher_strict_evidence_receipt.json`` by a full
+lowercase SHA-256. That passing release-adapter receipt is itself bound to the
+exact parent table and strict pair-ledger hash and records pair, edge,
+structure, and unavailable counts. Both the declaration and receipt must say
+that historical relaxed evidence was neither executed nor exposed. The receipt hash is included
+among the dataset and split input hashes.
+
+The CrystalNets-combined methods are accepted only when the release declares
+their validated parent columns. They remain reference/sensitivity criteria
+and do not change ``priority_main``, whose explanatory precedence remains
+exact RAC5, then complete MOFid v2, then complete MOFid v1. They add no
+``main_union`` edge. Incomplete or unsuccessful CrystalNets results never
+match. A release with provisional MOFid v2 evidence must also mark
+``mofid_v2_crystalnets`` provisional in its method contract.
+
+Missing parent evidence
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The default is ``missing_parent="singleton"``. Each unavailable criterion gets
+its own structure-specific group and therefore never matches another missing
+value. Set ``missing_parent="exclude"`` only when the experiment deliberately
+requires complete parent evidence; exclusions are reported and are never
+silent.
+
+A conflict in ``priority_main`` is different from missing evidence. When a
+lower-priority MOFid relation would join two stronger RAC-anchored components,
+the explanatory resolver does not silently merge those anchors. With the
+default ``auto``/``main_union`` guard, the row remains assigned inside its full
+leakage block and is marked ``PARENT_METHOD_CONFLICT`` in
+``parent_diagnostics``; it is not excluded. If ``priority_main`` is explicitly
+paired with ``parent_only``, the unresolved row is excluded.
+
+Every lower-priority group that spans multiple stronger components is also
+retained in the structured ``parent_conflicts`` ledger, including conflicts
+that contain only already anchored rows and therefore require no exclusion.
+Each entry records the lower method/group, stronger components, component
+members, all affected members, and unresolved members. The row-oriented
+``parent_diagnostics`` and group-oriented ledger answer different questions.
+
+Leakage guards
+--------------
+
+The accepted guards are:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 22 78
+
+   * - Guard
+     - Behavior
+   * - ``auto``
+     - Resolve to ``main_union`` for ``priority_main`` and to ``parent_only``
+       for an explicit direct or reference method
+   * - ``main_union``
+     - Keep every transitive component formed by exact CIF identity,
+       source-sibling, available RAC5, available MOFid v2, and available MOFid
+       v1 edges in one partition
+   * - ``parent_only``
+     - Keep only the selected method's grouping from the loaded release table together
+
+``priority_main`` is not implemented as a naive row-by-row fallback. Such a
+fallback can choose RAC5 for one row and MOFid for another even though a valid
+lower-level or transitive relation connects them. With ``leakage_guard="auto"``,
+the explanatory priority remains RAC5 > MOFid v2 > MOFid v1, but assignment is
+constrained by the complete ``main_union`` component.
+
+Leakage blocks are built on the complete release before applying ``labels``,
+``sources``, ``variants``, ``metals``, or explicit-ID filters. A filtered-out
+row can therefore remain an invisible bridge between two selected rows. This
+prevents a convenient filter from creating train/test leakage.
+
+Target and feature joins
+------------------------
+
+Join external target results before splitting so structures without the
+required endpoints are excluded before partition assignment. CSV, JSON, and
+JSONL target files can be combined in one modelling table. Units, conditions,
+and CSV type conversions are explicit; the package does not infer or impute
+them.
+
+.. code-block:: python
+
+   from CoREMOF.dataset import CoREMOFDataset
+   from CoREMOF.targets import AliasRegistry, TargetSource
+
+   ds = CoREMOFDataset.from_release("/path/to/CoRE-MOF-COD")
+   sources = (
+       TargetSource(
+           "/path/to/uptake.csv",
+           id_column="structure_name",
+           target_columns=("uptake",),
+           target_names={"uptake": "xe_uptake"},
+           value_types={"xe_uptake": "float"},
+           units={"xe_uptake": "mol/kg"},
+           conditions={"xe_uptake": {"temperature_K": 298, "pressure_bar": 1}},
+       ),
+       TargetSource(
+           "/path/to/selectivity.jsonl",
+           target_columns=("selectivity",),
+           units={"selectivity": "dimensionless"},
+           conditions={"selectivity": {"temperature_K": 298}},
+       ),
+   )
+   modelling = ds.merge_targets(
+       sources,
+       feature_tables=("rac5", "zeo", "topology"),
+   )
+   classified = modelling.classify("5checker")
+   split = classified.train_valid_test_split(
+       parent_method="priority_main",
+       required_targets=("xe_uptake", "selectivity"),
+       required_target_mode="all",
+       random_state=42,
+   )
+
+Exact current public IDs are accepted directly. Earlier/v11 identifiers are
+accepted only through an explicit hash-bound registry, with every allowed
+alias column named by the caller:
+
+.. code-block:: python
+
+   aliases = AliasRegistry(
+       "/path/to/audited_name_registry.csv",
+       current_id_column="structure_id",
+       alias_columns=("previous_public_id", "v11_structure_id"),
+   )
+   modelling = ds.merge_targets(sources, alias_registry=aliases)
+
+There is no fuzzy matching. Ambiguous aliases, unknown IDs, conflicting
+duplicate values, or conflicting definitions for one target name fail the
+complete merge. Null values remain null. Output rows contain current IDs only.
+Use ``target_names`` to map a generic input column such as ``uptake`` to a
+canonical endpoint such as ``xe_uptake`` without editing a source file.
+Units, conditions, and value types are declared against canonical names;
+provenance retains the original input column.
+
+Scientific meaning is also preserved literally. A Rosenbluth weight should be
+named, for example, ``rosenbluth_weight`` and declared ``dimensionless``; it
+must not be relabelled as a Henry coefficient or uptake without a separate,
+documented conversion and a new canonical target.
+
+``TargetMergedDataset.write()`` emits a merged CSV, observation-level
+provenance JSONL, and hash-bound receipt. The receipt is also embedded in a
+subsequent split receipt. A required-target exclusion uses
+``MISSING_REQUIRED_TARGET``. Crucially, the ``main_union`` leakage graph is
+still constructed from the complete release, including structures with no
+target data.
+
+For repeatable command-line workflows, put the target sources, definitions,
+optional alias registry, and requested feature tables in a JSON configuration:
+
+.. code-block:: bash
+
+   coremof merge-targets /path/to/CoRE-MOF-COD \
+     --config targets.json \
+     --output-directory model_inputs
+
+   coremof split /path/to/CoRE-MOF-COD \
+     --target-config targets.json \
+     --require-target xe_uptake \
+     --require-target selectivity \
+     --output-directory model_splits
+
+High-throughput screening
+-------------------------
+
+``examples/screen_candidates.py`` validates, filters, and ranks a release or
+target-merged table in one unattended command:
+
+.. code-block:: bash
+
+   python examples/screen_candidates.py /path/to/CoRE-MOF-COD \
+     --target-config targets.json \
+     --rank-by xe_uptake \
+     --require-target xe_uptake \
+     --checkers 5checker \
+     --label CR \
+     --source COD \
+     --order descending \
+     --limit 1000 \
+     --split \
+     --parent-method priority_main \
+     --leakage-guard auto \
+     --output-directory screening/xe_uptake
+
+Checker, identity, and required-target filters run before ranking. Null,
+non-numeric, and non-finite values are excluded without imputation, and ties
+use ascending ``structure_id``. Integer values and decimal text are ranked
+without conversion through binary64, so values above ``2**53`` remain exact;
+native floats retain their IEEE-754 values. Booleans, nulls, NaN, and
+infinities are not rankable. Required targets are flat CSV columns. The receipt
+hashes the script, exact package source closure, release and embedded
+target/config/alias/feature inputs, ranked CSV, and optional split outputs.
+An optional split uses the complete release leakage graph and remains
+exploratory rather than official.
+
+Both standalone split receipts and the nested split section of screening
+receipts retain the selected parent method, its machine-readable definition,
+the requested guard (for example ``auto``), the resolved guard (for example
+``main_union``), and the resolved guard's machine-readable definition. Thus a
+receipt does not require a reader to infer policy semantics from a coined
+identifier.
+
+The historical local ``henry.txt`` files contain dimensionless average
+Rosenbluth weights, not Henry coefficients, uptake, or selectivity. Ranking
+them in descending order demonstrates the workflow only.
+
+Filters do not change labels
+----------------------------
+
+Classification retains all four labels unless a filter is requested:
+
+.. code-block:: python
+
+   all_labels = ds.classify(checkers="3checker")
+   modelling = all_labels.filter(
+       labels=("CR", "NCR"),
+       sources=("COD",),
+       variants=("ASR", "FSR"),
+       metals=("Cu", "Zn"),
+   )
+
+The train/validation/test convenience methods default to
+``labels=("CR", "NCR")``. AMBIGUOUS and UNCHECKED structures are not lost:
+they remain explicit exclusions in the assignment table and receipt. Change
+``labels`` deliberately to include them. A structure passes the metal filter
+when its current metal list in the loaded release contains at least one requested element.
+Each Python filter accepts one exact string or an ordered ``list``/``tuple``
+of exact strings. Sets, frozensets, mappings, byte strings, generators, and
+other unordered or one-shot containers are rejected rather than reordered
+before receipt hashing.
+
+Stratification is independent from filtering. The default
+``stratify_by=("label",)`` tries to preserve the selected label distribution
+while assigning complete blocks. Additional public metadata fields can be
+requested, for example:
+
+.. code-block:: python
+
+   split = modelling.train_valid_test_split(
+       parent_method="priority_main",
+       stratify_by=("label", "source_database"),
+       random_state=42,
+   )
+
+More or smaller strata can make exact balance harder. The grouping constraint
+always wins over a requested stratum fraction.
+``stratify_by`` likewise accepts one exact string or an ordered
+``list``/``tuple`` of exact strings; unordered and one-shot containers are
+rejected. Split fractions must be an ordered ``list``/``tuple`` of exactly
+three finite, non-boolean numeric values. Numeric text is not coerced.
+
+Compare parent assumptions
+--------------------------
+
+Run the direct methods separately when assessing how sensitive a model is to
+the parent definition:
+
+.. code-block:: python
+
+   results = {}
+   for method in ("rac5", "mofid_v2", "mofid_v1"):
+       results[method] = classified.train_valid_test_split(
+           parent_method=method,
+           leakage_guard="parent_only",
+           fractions=(0.8, 0.1, 0.1),
+           random_state=42,
+           labels=("CR", "NCR"),
+       )
+
+These are three different scientific assumptions, not three replicas of the
+same split. The result receipt records the method, resolved guard, missing-data
+policy, selected IDs, requested and achieved fractions, label counts, seed,
+algorithm version, input fingerprints, and the parent-conflict ledger.
+Implementation versions and source hashes are frozen when the result is
+constructed, so a later code edit cannot silently change the receipt for an
+existing in-memory split.
+
+Target-independent diversity and paired CR/NCR benchmarks
+----------------------------------------------------------
+
+The APIs below are additive; the historical ``split()``,
+``train_valid_test_split()``, ``SplitResult``, and ``coremof split`` behavior
+and receipt schema are unchanged.
+
+``main_union_plus_criteria`` is the project-defined effective-block policy.
+Before every label, source, variant, metal, ID, or target filter, it starts
+from ``main_union``--the complete-release connected components over exact full
+CIF SHA-256, database-namespaced source siblings, and available
+release-authorized exact RAC5, MOFid-v2, and MOFid-v1 groups--adds
+co-membership edges for every ordered selected explanatory criterion, and
+takes connected-component closure again. Missing criterion evidence is a
+per-structure singleton and adds no shared edge. One **effective leakage
+block** is indivisible across partitions; it is a guard, not identity or
+common-parent proof.
+
+.. code-block:: python
+
+   from CoREMOF import available_group_criteria
+
+   print(available_group_criteria(classified.dataset))
+   split = classified.data_split(
+       group_criteria=("RT", "source_id"),
+       train=0.8,
+       val=0.1,
+       test=0.1,
+       leakage_guard="main_union_plus_criteria",
+       diversity="representative",
+       random_state=42,
+   )
+
+At their first use here, ``RT`` is exact equality of all 264 finite depth-5
+RAC5 binary64 values plus a complete current-success CrystalNets fingerprint;
+that fingerprint includes network dimension; interpenetrated-subnet,
+catenation, and subnet counts; top-level single-node/all-node nets and
+agreement; and every complete SingleNodes and AllNodes subnet's status,
+dimension, topology key, topology name, topological genome, and agreement.
+Incomplete input adds no match. ``M2T`` is exact equality of the complete
+canonical release-authorized MOFid-v2 string plus that fingerprint. Canonical
+MOFid text converts a non-null value to text, collapses Unicode-whitespace runs
+to one ASCII space, trims, rejects empty/declared whole-field placeholders,
+applies Unicode NFKC, then case-folds; it changes no CIF, coordinate, atom,
+occupancy, bond, chemistry, topology, or unit cell. Its eligible statuses are
+``SUCCESS``, ``SUCCESS_TOPOLOGY_UNKNOWN``, ``SUCCESS_TOPOLOGY_ERROR``, and
+``SUCCESS_TOPOLOGY_TIMEOUT``; every other status or incomplete input adds no
+match. M2T remains provisional with provisional MOFid and must be rebuilt when
+authorized MOFid-v2 values change. ``SM`` is the convenience connected
+component over authoritative direct symmetric matches from the pinned strict
+pymatgen protocol: forward and reverse ``fit(..., symmetric=True)`` must both
+pass under Python 3.9, pymatgen 2024.2.8, NumPy 1.26.4, ElementComparator,
+``ltol=stol=0.001``, ``angle_tol=0.01``, ``primitive_cell=True``,
+``scale=False``, ``attempt_supercell=True``, ``allow_subset=False``,
+``supercell_size=num_sites``, and no ignored species. Its direct CifParser uses
+site/coordinate tolerances 0.0001, expands declared symmetry, merges sites
+within tolerance, rounds coordinates near one third/two thirds, checks
+occupancy, sorts the periodic Structure, preserves disorder, and performs no
+manual repair, occupancy selection, atom deletion, or chemistry edit. Direct
+edges are authoritative, components are not all-pair duplicate claims, and
+parser/timeout/OOM/matcher/asymmetric/execution failures are ``NOT_AVAILABLE``
+rather than unmatched. RT, M2T, and SM are
+reference-only and enter neither ``priority_main`` nor the pre-existing
+``main_union`` by themselves.
+
+``representative`` is the versioned target-free diversity profile. It uses a
+complete 264-value finite RAC5 vector first, otherwise the complete selected
+Zeo++ vector of 13 intensive N2/He fields plus N2 channel and bonded-framework
+dimensions, otherwise an explicit no-numeric tier. Each numeric tier uses
+median/interquartile-range scaling; a zero-IQR field remains with unit scale,
+so median-centered deviations are retained rather than forced to zero, and no
+scientific feature is imputed. RAC5 is reduced to at most 32 principal
+components. Sorted IDs enter deterministic MiniBatchKMeans with profile seed
+2602 and ``k=min(n,256,max(16,ceil(sqrt(n))))``. These clusters balance
+distributions only and cannot divide an effective block. Source, variant,
+current topology category, and availability tier are balanced alongside them.
+Install the pinned backend with ``pip install "CoREMOF-tools[benchmark]"``
+(NumPy 1.26.4, scikit-learn 1.5.0, SciPy 1.13.1, joblib 1.5.3, and
+threadpoolctl 3.6.0); absence/version drift raises ``BenchmarkDependencyError``
+instead of silently falling back. Numerical libraries run with a one-thread
+limit and their non-path runtime identity is receipted; cross-architecture bit
+identity is not guaranteed.
+
+For the paired benchmark, strict five-checker CR means all five named checker
+results are available and PASS; strict five-checker NCR means all five are
+available and FAIL. ``NOT_AVAILABLE`` is a non-vote and never becomes NCR.
+``full_cr`` fixes cohort size after the declared cohort-eligibility policy.
+The raw complete-release CR/NCR counts remain in the audit as C_raw and M_raw;
+with eligible counts C and M and requested NCR-pool fraction q, each cohort uses
+``round_half_up(q*M)`` NCR and ``C-round_half_up(q*M)`` CR structures; q=1
+therefore uses every NCR row rather than creating a necessarily 100%-NCR
+composition. ``fixed_pure_cr`` reserves one common approximately requested-
+size test from whole effective blocks whose complete-release members are all
+strict CR. The test is identical across ratios/seeds and has zero block overlap
+with train or validation.
+
+The CoRE-MOF-COD raw strict pools cross blocks that also contain another checker
+label, so the default fails closed rather than selecting a partial block. The
+audited sensitivity ladder must explicitly use
+``cohort_eligibility="complete_release_label_pure_effective_blocks"``. This
+policy retains only complete-release effective blocks whose members all have
+one strict label; it is an explicit exclusion sensitivity, not relabeling.
+
+.. code-block:: python
+
+   cohorts = classified.build_cr_ncr_cohorts(
+       ncr_pool_fractions=(0.0, 0.2, 0.4, 0.6, 0.8, 1.0),
+       seeds=(42, 43, 44, 45, 46),
+       total_size="full_cr",
+       train=0.8,
+       val=0.1,
+       test=0.1,
+       group_criteria="priority_main",
+       cohort_eligibility="complete_release_label_pure_effective_blocks",
+       diversity="representative",
+       test_policy="fixed_pure_cr",
+   )
+   suite = cohorts.data_split(include_full_cr_diagnostic=True)
+   suite.write("benchmark_outputs")
+
+Within one seed, increasing q adds an NCR priority prefix and removes a CR
+suffix; persistent structures retain their partition. Deviations forced by
+whole blocks are reported. ``full_cr_diagnostic`` is a supplementary view over
+the complete raw strict-CR pool, including rows excluded by the label-pure
+sensitivity policy, and reports
+exact-ID/same-block overlap with training; it is not the independent paper
+test. Construction reports exact counts and fails closed when ``M>C`` or
+``M>C-test_count``. The checksum-bound published CoRE-MOF-COD integration has raw
+counts C_raw=6,294 and M_raw=2,299. With ``priority_main`` and the explicit
+label-pure policy, 1,601 CR and 572 NCR rows are excluded with non-label-pure
+blocks, leaving eligible C=4,693 and M=1,727. Thus q=1 uses 1,727 NCR plus
+2,966 CR rows. Every real run recomputes and records raw, excluded, and
+eligible counts. The separate staged checker overlay has C=9,143 and M=9,769
+and is an explicitly non-default infeasible diagnostic, not the published
+benchmark authority. The writer also emits a companion four-label accounting
+manifest for AMBIGUOUS and UNCHECKED rows. Every new output remains exploratory
+with ``official_split=false``.
+
+Targets attach only after assignment. ``keep`` is a left join preserving every
+selected ID and null; ``error`` requires all declared targets; ``drop`` creates
+only a filtered derived view without refill, rebalance, or resplit. The
+existing typed CSV/JSON/JSONL, exact-ID/explicit-alias, units, conditions, and
+conflict rules are reused. Attachment receipts reference the frozen assignment
+digest and retain its ``official_split`` state; target hashes never enter or
+change the original split receipt. For
+``drop``, the receipt retains pre-drop missingness and separately reports
+derived coverage and dropped IDs by run and partition. A premerged table or
+persisted manifest must match the exact release version, structure universe,
+and base input hashes; equal IDs alone do not establish that binding.
+
+.. code-block:: python
+
+   attached = split.attach_targets(target_sources, missing="keep")
+   attached_suite = suite.attach_targets(target_sources, missing="keep")
+
+The persisted CLI form verifies both files before attachment::
+
+   coremof attach-targets /path/to/CoRE-MOF-COD \
+     --manifest model_split.csv --receipt model_split.json \
+     --config targets.json --output-directory attached_targets
+
+Without ``--receipt``, the command looks for ``model_split.json`` beside
+``model_split.csv``.
+
+The target-free benchmark CLI requires the same explicit sensitivity policy::
+
+   coremof benchmark-cr-ncr /secure/path/to/CoRE-MOF-COD \
+     --group-criteria priority_main \
+     --cohort-eligibility complete_release_label_pure_effective_blocks \
+     --output-directory benchmark_outputs
+
+The thin CLI commands are ``coremof benchmark-cr-ncr`` and
+``coremof attach-targets``; use ``--help`` for the same self-contained method
+definitions and output options. A compact transfer checklist is available in
+the repository's ``ML_BENCHMARK_HANDOFF.md``.
+
+Reproducibility and balance
+---------------------------
+
+Assignment is deterministic for the same validated release, parameters, and
+``random_state``. Metadata row order does not change the
+``structure_id``-to-partition mapping or the assignment digest. Positional
+indices and complete receipt bytes may change because they intentionally bind
+the supplied release/view order and input files. Each guard block is
+indivisible, so exact 80/10/10 counts may be impossible. The splitter optimizes
+total-size and per-label balance at block level and reports the achieved
+fractions, per-label counts, largest block, and deviations.
+
+Changing ``random_state`` may change which complete blocks enter a partition;
+it never changes labels, parent groups, or block membership.
+
+Provisional and official splits
+-------------------------------
+
+A split generated by the current API is exploratory and emits
+``official_split=false``. Passing ``official=True`` fails closed because the
+current releases contain no audited official assignment manifest. Loading such
+a manifest is a planned feature, not an inferred mode.
+
+When a future release adds structures to a frozen base split, the package will
+not move base rows silently. If an addition connects parent groups already
+frozen in different partitions, the addition is reported as
+``SPLIT_BRIDGE_CONFLICT`` and excluded from the modelling partitions while the
+scientific relation is preserved. This frozen-extension logic is not yet
+implemented. In the current independent exploratory runs, 124 of 8,593 shared
+5-checker CR/NCR IDs moved between separately generated inherited base cohort and CoRE-MOF-COD
+splits; that is acceptable only because both are explicitly provisional.
+
+The current public CoRE-MOF-COD parent table also authorizes fewer RAC parent edges
+than the RAC feature table contains: 25,618 rows have an available RAC parent
+status, while 29,891 rows have complete RAC features. This is intentional at
+the package boundary. The splitter trusts parent statuses in the loaded release and never
+constructs an unapproved edge from feature values.
+
+Data and licensing
+------------------
+
+Loading and splitting use release tables and manifests by default. They do not
+need a CCDC
+licence or installations of MOSAEC, SETC-GAT, Zeo++, molSimplify, MOFid, or
+CrystalNets. The splitter does not copy CIFs.
+
+Default validation checks manifest membership, paths, declared sizes, and full
+SHA-256 syntax but does not rehash the CIF bytes. Use
+``CoREMOFDataset.from_release(path, verify_cif_files=True)`` or the one-call
+``split_release(..., verify_cif_files=True)`` form (CLI:
+``--verify-cifs``) for byte-level size and hash verification. ``main_union``
+fails closed if any structure lacks a full manifest SHA-256.
+
+The ability to select CSD or SI rows does not grant redistribution rights.
+COD is the clearly open source, but the API applies no source filter when
+``sources=None``. CSD structure files remain licence-gated, and SI assets
+require an asset-level rights check before redistribution.
+
+This handoff adds no restricted data to GitHub. The historical repository
+already contains legacy SI archives and is not a sanitized data-free clone.
+Do not add release tables, CIF archives, checker findings,
+structure-resolved targets, or generated assignment manifests; those require an
+approved manual or institutional transfer after recipient rights are
+confirmed; do not place them in Git, Git LFS, or an unapproved public-cloud
+service. Verify the supplied SHA-256 ledgers after transfer. Outputs retain
+``official_split=false`` and remain restricted until their row-level
+redistribution rights are reviewed.

@@ -31,7 +31,7 @@
 
 .. raw:: html
 
-   <h2 id="workflows">One toolkit, four connected workflows</h2>
+   <h2 id="workflows">One toolkit, five connected workflows</h2>
 
 Move from source data to analysis without stitching together undocumented
 scripts. Each workflow has explicit requirements, predictable outputs, and
@@ -85,6 +85,17 @@ troubleshooting guidance.
       +++
       **Includes:** ensemble uncertainty summaries
 
+   .. grid-item-card:: Classification & dataset splits
+      :link: splitting
+      :link-type: doc
+      :class-card: coremof-card
+
+      Join external targets to current features, recompute strict 3-, 4-, or
+      5-checker labels, and create deterministic parent-aware partitions.
+
+      +++
+      **Main policy:** RAC5 > MOFid v2 > MOFid v1
+
 .. raw:: html
 
    <h2 id="getting-started">Start with a healthy environment</h2>
@@ -103,7 +114,7 @@ which optional scientific components are available.
 
          conda create -n coremof python=3.11
          conda activate coremof
-         pip install CoREMOF-tools
+         python -m pip install /path/to/audited/CoRE-MOF-Tools
          coremof doctor
 
    .. grid-item::
@@ -111,7 +122,7 @@ which optional scientific components are available.
       .. raw:: html
 
          <div class="coremof-checklist">
-           <div><strong>1</strong><span><b>Install the base package</b><small>Database lookup and diagnostics work independently of licensed tools.</small></span></div>
+           <div><strong>1</strong><span><b>Install the base package</b><small>Release classification, splitting, and diagnostics need no scientific stack; use <code>[full]</code> for historical calculation features.</small></span></div>
            <div><strong>2</strong><span><b>Run <code>coremof doctor</code></b><small>See feature availability and actionable setup guidance.</small></span></div>
            <div><strong>3</strong><span><b>Choose a workflow</b><small>Follow examples with documented units, outputs, and dependencies.</small></span></div>
          </div>
@@ -156,10 +167,15 @@ which optional scientific components are available.
 
 .. note::
 
-   CSD downloads and MOSAEC require a licensed CSD installation. Zeo++ and
-   MOFid are external programs. Heat-capacity prediction requires ensemble
-   files from the full GitHub repository. :doc:`installation` explains each
-   optional component.
+   Use the audited ``0.4.0.dev0`` source checkpoint or wheel described in
+   :doc:`installation`; the hosted site and stable PyPI package may describe
+   earlier published versions. Follow the guides in the matching source tree.
+   CSD retrieval requires the user's licensed CSD provider.
+   Reading checker results requires no checker engine or CCDC installation;
+   external-checker execution interfaces provide migration notices only. New
+   checker calculations require the original software obtained separately.
+   Zeo++ and MOFid are external programs. Historical predictors require
+   separately obtained, authorized model assets.
 
 .. toctree::
    :maxdepth: 2
@@ -168,6 +184,25 @@ which optional scientific components are available.
 
    installation
    quickstart
+   retrieval
+   database_access
+   release_exports
+   frozen_assignment_replay
+   release_mofid_replay
+   release_racs_replay
+   release_topology_replay
+   release_zeopp_replay
+   release_curation_replay
+   cod_curation_replay
+   release_oms_replay
+   release_checkers_replay
+   release_setc_replay
+   release_mosaec_replay
+   release_mofclassifier_replay
+   historical_stability
+   splitting
+   target_first_benchmark
+   research_workflows
    features
    troubleshooting
    references

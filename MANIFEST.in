@@ -1,0 +1,44 @@
+exclude CoREMOF/data/SI/*.zip
+# Prevent stale egg-info manifests from reintroducing removed checker assets.
+prune CoREMOF/data/mosaec
+exclude CoREMOF/_release_checkers_protocol.py
+exclude CoREMOF/_release_checkers_worker.py
+exclude CoREMOF/_release_mosaec_worker.py
+exclude CoREMOF/_release_setc_protocol.py
+exclude CoREMOF/_release_setc_worker.py
+include THIRD_PARTY_NOTICES.md
+recursive-include licenses *.txt
+include ML_BENCHMARK_HANDOFF.md
+include ruff.toml
+recursive-include CoREMOF/_topology_profile *.jl *.toml
+include README_DATASET_SPLITTING.md
+include README_DATABASE_ACCESS.md
+recursive-include examples *.py
+include examples/README.md
+include examples/CoREMOF_dataset_splitting_quickstart.ipynb
+include COMBINED_TARGET_DATASET.md
+include CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json
+include .github/workflows/tests.yml
+recursive-include docs/source *.rst
+include docs/Makefile
+include docs/make.bat
+include docs/requirements.txt
+include docs/source/conf.py
+include docs/source/_static/custom.css
+include docs/source/_static/coremof-logo.png
+include manuscript/workflows.md
+include manuscript/README.md
+include manuscript/manuscript.md
+include manuscript/evidence.md
+include manuscript/figures_and_tables.md
+include manuscript/references.md
+include manuscript/references.bib
+include manuscript/verification.json
+include manuscript/figures/workflow.svg
+include manuscript/figures/workflow.pdf
+include manuscript/figures/workflow.png
+# Retain the portable benchmark skill, not original-host operational runbooks.
+recursive-include .agents/skills/coremof-release-curation *.md
+include UPLOAD_GUIDE.md
+include LOCAL_ASSETS.json
+include verify_upload.py

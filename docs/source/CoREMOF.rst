@@ -14,6 +14,20 @@ Subpackages
 Submodules
 ----------
 
+CoREMOF.attachments module
+--------------------------
+
+.. automodule:: CoREMOF.attachments
+   :members:
+   :show-inheritance:
+
+CoREMOF.benchmarks module
+-------------------------
+
+.. automodule:: CoREMOF.benchmarks
+   :members:
+   :show-inheritance:
+
 CoREMOF.curate module
 ---------------------
 

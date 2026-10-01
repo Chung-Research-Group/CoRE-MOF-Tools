@@ -1,0 +1,81 @@
+{
+  "schema_version": "1.0",
+  "namespace_policy_id": "coremof-zeopp-probe-namespaces-v2",
+  "legacy_protocol": {
+    "protocol_id": "coremof-zeopp17-0.4.7-candidate-v1",
+    "retention_policy": "PRESERVE_RECORDS_UNCHANGED_AND_NAMESPACE_DURING_METADATA_ASSEMBLY",
+    "intrinsic_props": [
+      "LCD_A",
+      "PLD_A",
+      "LFPD_A",
+      "density_g_cm3"
+    ],
+    "N2_probe_props": {
+      "channel_radius_A": 1.655,
+      "probe_radius_A": 1.655,
+      "fields": [
+        "ASA_A2",
+        "ASA_m2_cm3",
+        "ASA_m2_g",
+        "NASA_A2",
+        "NASA_m2_cm3",
+        "NASA_m2_g"
+      ]
+    },
+    "zero_probe_props": {
+      "channel_radius_A": 0.0,
+      "probe_radius_A": 0.0,
+      "fields": [
+        "NPV_A3",
+        "NPV_cm3_g",
+        "NVF",
+        "PV_A3",
+        "PV_cm3_g",
+        "VF",
+        "dimension"
+      ]
+    },
+    "scientific_warning": "The legacy record is a mixed-probe schema; do not describe the entire 17-field record as zero-probe or N2-probe."
+  },
+  "current_protocol": {
+    "protocol_id": "coremof-zeopp-n2-1p655-he-1p32-0.4.7-v2.1",
+    "intrinsic_props": [
+      "LCD_A",
+      "PLD_A",
+      "LFPD_A",
+      "density_g_cm3"
+    ],
+    "N2_probe_props": {
+      "channel_radius_A": 1.655,
+      "probe_radius_A": 1.655,
+      "fields": [
+        "ASA_A2",
+        "ASA_m2_cm3",
+        "ASA_m2_g",
+        "NASA_A2",
+        "NASA_m2_cm3",
+        "NASA_m2_g",
+        "AV_A3",
+        "AV_cm3_g",
+        "AV_VF",
+        "NAV_A3",
+        "NAV_cm3_g",
+        "NAV_VF",
+        "channel_dimension"
+      ]
+    },
+    "He_probe_props": {
+      "channel_radius_A": 1.32,
+      "probe_radius_A": 1.32,
+      "fields": [
+        "AV_VF"
+      ],
+      "scope": "ADDITIONAL_INFORMATION_ONLY"
+    },
+    "framework_dimension": {
+      "protocol_id": "coremof-zeopp-framework-dimension-0.4.7-v1",
+      "probe_dependent": false,
+      "namespace": "bonded_framework_props"
+    }
+  }
+}

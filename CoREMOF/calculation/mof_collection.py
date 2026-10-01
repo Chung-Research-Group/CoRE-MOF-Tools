@@ -142,9 +142,9 @@ class MofCollection:
             mof_info[mp['name']] = {'Metal Types': all_metal_species,
                                     'Has OMS': has_oms,
                                     'OMS Types': oms_types}
-        self._metal_site_df = pd.DataFrame.from_dict(mof_info,
+        self._mof_oms_df = pd.DataFrame.from_dict(mof_info,
                                                      orient='index')
-        return self._metal_site_df
+        return self._mof_oms_df
 
     @property
     def metal_site_df(self):
@@ -165,7 +165,9 @@ class MofCollection:
                 print('No Metal Found in {}'.format(mp['name']))
             for i, ms in enumerate(metal_sites):
                 key = mp['name'] + '_' + str(i)
-                site_info[key] = ms
+                # Tabular views must not delete detailed scientific results
+                # from the stored per-site dictionaries.
+                site_info[key] = dict(ms)
                 if 'all_dihedrals' in ms:
                     del site_info[key]['all_dihedrals']
                 if 'min_dihedral' in ms:
@@ -206,6 +208,9 @@ class MofCollection:
             overwrite: Controls if the results will be overwritten or not.
             num_batches: Sets the number of batches the structures will be split in and analyzed on a separate process.
             analysis_limit: Analyze only up to the number of MOFs set by analysis_limit, if set to None all MOFs will be analyzed.
+
+        A failed worker is reported after the other workers finish. Completed
+        results are preserved, and sibling workers are not cancelled.
         """
 
         print(self.separator)
@@ -216,11 +221,22 @@ class MofCollection:
 
         self._make_batches(num_batches, overwrite)
 
-        status = Array('i', [0 for i in range(num_batches)])
-        for i, batch in enumerate(self.batches):
-            p = Process(target=self._run_batch,
-                        args=(i, batch, overwrite,status))
-            p.start()
+        # Each worker owns one integer slot. A shared mutex could remain locked
+        # after a worker is killed, preventing the parent from checking exits.
+        status = Array('i', [0 for i in range(num_batches)], lock=False)
+        workers = []
+        try:
+            for i, batch in enumerate(self.batches):
+                p = Process(target=self._run_batch,
+                            args=(i, batch, overwrite,status))
+                p.start()
+                workers.append(p)
+        except BaseException:
+            # Keep already-started workers' output directories alive until they
+            # finish, even if launching a later worker fails.
+            for worker in workers:
+                worker.join()
+            raise
 
         lbs = [len(batch)/100.0 for batch in self.batches]
         wait_time = 0.0
@@ -232,17 +248,38 @@ class MofCollection:
             if all([sp == s for sp, s in zip(status_prev, status_)]):
                 wait_time = min(25, 0.1+wait_time)
                 time.sleep(wait_time)
+            exitcodes = [worker.exitcode for worker in workers]
+            status_ = list(status)
             status_prev = status_
 
-            sout = ["Batch {} Finished.".format(b + 1)
+            sout = ["Batch {} Failed (exit {}; completion status {}).".format(b + 1, exitcodes[b], s)
+                    if exitcodes[b] is not None and (exitcodes[b] != 0 or s >= 0) else
+                    "Batch {} Finished.".format(b + 1)
                     if len(self.batches[b]) == 0 or s < 0 else
                     "Batch {} {:.2f} % : Analysing {:}"
                     "".format(b+1, (s+1)/lbs[b], self.batches[b][s]['mof_name'])
                     for b, s in enumerate(status_)]
             print("|**| ".join(sout) + 100 * " ", end='\r', flush=True)
 
-            if all([s < 0 for s in status_]):
+            if all(code is not None for code in exitcodes):
                 break
+
+        for worker in workers:
+            worker.join()
+        failures = [
+            "batch {} exited with code {}{}".format(
+                index + 1, worker.exitcode,
+                " without a completion status" if status[index] >= 0 else "",
+            )
+            for index, worker in enumerate(workers)
+            if worker.exitcode != 0 or status[index] >= 0
+        ]
+        if failures:
+            raise RuntimeError(
+                "OMS analysis did not complete: {}. Existing results were preserved.".format(
+                    "; ".join(failures)
+                )
+            )
 
         if overwrite:
             for mi in self.mof_coll:

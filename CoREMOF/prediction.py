@@ -1,25 +1,13 @@
-"""ML-predicted features.
+"""ML-predicted features with dependencies loaded by the requested predictor.
+
+Importing this module does not initialize models, start a scientific backend,
+or require the unrelated predictors' optional dependencies.
 """
 
-import cloudpickle
 import os
 from pathlib import Path
 import pickle as pkl
-import shutil
 import tempfile
-import requests
-
-import keras
-import keras.backend as K
-import numpy as np
-import pandas as pd
-from PACMANCharge import pmcharge
-
-from CoREMOF.calculation import Zeopp
-from CoREMOF.calculation.mof_features import RACs, Volume
-from CoREMOF.models.cp_app.descriptors import cv_features
-from CoREMOF.models.cp_app.featurizer import featurize_structure
-from CoREMOF.models.cp_app.predictions import predict_Cv_ensemble_structure_multitemperatures
 
 package_directory = str(Path(__file__).resolve().parent) + os.sep
 
@@ -36,31 +24,30 @@ def get_files_from_github(repo, path):
             -   response of downloading.
     """
         
+    import requests
+
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
     headers = {'Accept': 'application/vnd.github.v3+json'}
     response = requests.get(url, headers=headers, timeout=30)
     response.raise_for_status() 
     return response.json()
 
-def download_file(url, save_path):
+def download_file(url, save_path, *, expected_sha256=None):
 
     """download models from github due to limit of uploading size by PyPi.
 
     Args:
         url (str): link of downloading file.
         save_path (str): the path to save files.
+        expected_sha256: optional separately trusted SHA-256, checked against
+            both new and existing files. No model is deserialized here.
 
     """    
 
-    if not os.path.exists(save_path):
-        response = requests.get(url, timeout=60)
-        response.raise_for_status()
-        os.makedirs(os.path.dirname(save_path), exist_ok=True) 
-        with open(save_path, 'wb') as file:
-            file.write(response.content)
+    from CoREMOF._prediction_download import download_model_file
+
+    if download_model_file(url, save_path, expected_sha256=expected_sha256):
         print(f"Downloaded {save_path}")
-    else:
-        pass
 
 # repo = 'sxm13/CoREMOF_tools'
 # github_paths = [
@@ -104,47 +91,71 @@ def pacman(structure, output_folder="result_pacman", charge_type="DDEC6", digits
         Dictionary & cif:
             -   predicted PBE energy and bandgap of your structure.
             -   CIF with predicted charges.
-    """  
-        
-    results_eb = {}
-    
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder, exist_ok=True)
-    
-    name = os.path.basename(structure).replace(".cif", "")
-    results_eb["Name"] = name
 
+    The predictor receives an isolated copy, never the source CIF. Existing
+    outputs are not overwritten. Predictor failures retain the historical
+    ``None`` return and do not publish a partial output. This generic predictor
+    does not certify the derived CIF for a release or a simulation protocol.
+    """
+    source = Path(structure).resolve(strict=True)
+    if not source.is_file() or source.suffix.lower() != ".cif":
+        raise ValueError("PACMAN input must be a CIF file")
+    destination = Path(output_folder).absolute() / (source.stem + "_pacman.cif")
+    if destination.exists() or destination.is_symlink():
+        raise FileExistsError(destination)
+    if any(parent.is_symlink() for parent in destination.parents):
+        raise ValueError("PACMAN output parents must not be symlinks")
+    # Keep missing-backend errors visible before entering the historical
+    # predictor-failure/None-return path. Unrelated ML backends are not needed.
+    from PACMANCharge import pmcharge
+
+    original_bytes = source.read_bytes()
     try:
-        pmcharge.predict(
-            cif_file=structure,
-            charge_type=charge_type,
-            digits=digits,
-            atom_type=atom_type,
-            neutral=neutral,
-            keep_connect=keep_connect
-        )
-        
-        pbe, bandgap = pmcharge.Energy(cif_file=structure)
-        
-        results_eb["PBE Energy"] = pbe
-        results_eb["Bandgap"] = bandgap
-      
-        shutil.move(structure.replace(".cif","_pacman.cif"),
-                    os.path.join(output_folder,
-                                structure.split("/")[-1].replace(".cif","_pacman.cif")))
+        with tempfile.TemporaryDirectory(prefix="coremof-pacman-") as directory:
+            isolated = Path(directory) / (source.stem + ".cif")
+            isolated.write_bytes(original_bytes)
+            pmcharge.predict(
+                cif_file=str(isolated), charge_type=charge_type, digits=digits,
+                atom_type=atom_type, neutral=neutral, keep_connect=keep_connect,
+            )
+            pbe, bandgap = pmcharge.Energy(cif_file=str(isolated))
+            charged = isolated.with_name(isolated.stem + "_pacman.cif")
+            if charged.is_symlink() or not charged.is_file() or charged.stat().st_size == 0:
+                raise ValueError("PACMAN did not produce a nonempty regular CIF")
+            if source.read_bytes() != original_bytes:
+                raise RuntimeError("The source CIF changed during PACMAN prediction")
+            # Publish only after both model calls succeed. The hard-link step
+            # is atomic and cannot replace a concurrently created destination.
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            descriptor, temporary_name = tempfile.mkstemp(prefix=".coremof-pacman-", dir=destination.parent)
+            temporary_output = Path(temporary_name)
+            try:
+                with os.fdopen(descriptor, "wb") as stream:
+                    stream.write(charged.read_bytes())
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.link(temporary_output, destination)
+            finally:
+                temporary_output.unlink()
+        return {"Name": source.stem, "PBE Energy": pbe, "Bandgap": bandgap}
+    except Exception as exc:
+        print(exc)
+        return None
 
-        return results_eb
+def cp(structure, T=None, *, model_directory=None):
     
-    except Exception as e:
-        print(e)
+    """Predict harmonic constant-volume heat capacity with the supplied ensemble.
 
-def cp(structure, T=None):
-    
-    """predict heat capacity by GBR models at different temperatures: https://doi.org/10.1038/s41563-022-01374-3.
+    Method: https://doi.org/10.1038/s41563-022-01374-3.
+    The historical function name ``cp`` is retained. This is not a separate
+    constant-pressure heat-capacity calculation. The molar value is per mole
+    of atoms, not per mole of framework formula units.
 
     Args:
         structure (str): path to your structure.
         T (list): the temperatures of your system.
+        model_directory: optional trusted local ensemble root with 300, 350
+            and 400 K subdirectories. No models are downloaded automatically.
 
     Returns:
         Dictionary:
@@ -154,32 +165,42 @@ def cp(structure, T=None):
         
     if T is None:
         T = [300, 350, 400]
-    temperatures = list(T)
-    name = Path(structure).stem
-    model_directory = Path(
-        package_directory, "models", "cp_app", "ensemble_models_smallML_120_100"
-    )
-    missing = [temperature for temperature in temperatures if not (model_directory / str(temperature)).is_dir()]
-    if missing:
-        raise FileNotFoundError(
-            "Heat-capacity ensemble models are missing for temperatures "
-            f"{missing}. Install from the full CoRE-MOF-Tools repository."
+    from CoREMOF._heat_capacity import normalize_temperatures, validate_ensemble
+
+    temperatures = normalize_temperatures(T)
+    if model_directory is None:
+        model_directory = Path(
+            package_directory, "models", "cp_app", "ensemble_models_smallML_120_100"
         )
+    validate_ensemble(model_directory, temperatures)
+    source = Path(structure).resolve(strict=True)
+    if not source.is_file() or source.suffix.lower() != ".cif":
+        raise ValueError("Heat-capacity input must be a CIF file")
+    source_bytes = source.read_bytes()
+
+    import pandas as pd
+    from CoREMOF.models.cp_app.descriptors import cv_features
+    from CoREMOF.models.cp_app.featurizer import featurize_structure
+    from CoREMOF.models.cp_app.predictions import predict_Cv_ensemble_structure_multitemperatures
 
     with tempfile.TemporaryDirectory(prefix="coremof_cp_") as directory:
         features_file = Path(directory, "features.csv")
         prediction_file = Path(directory, "cp.csv")
-        featurize_structure(structure, verbose=False, saveto=str(features_file))
+        isolated = Path(directory, source.name)
+        isolated.write_bytes(source_bytes)
+        featurize_structure(str(isolated), verbose=False, saveto=str(features_file))
 
         predict_Cv_ensemble_structure_multitemperatures(
             path_to_models=str(model_directory),
-            structure_name=name + ".cif",
+            structure_name=source.name,
             features_file=str(features_file),
             FEATURES=cv_features,
             temperatures=temperatures,
             save_to=str(prediction_file),
         )
         result_ = pd.read_csv(prediction_file)
+    if source.read_bytes() != source_bytes:
+        raise RuntimeError("The source CIF changed during heat-capacity prediction")
     result_cp = {}
     result_cp["unit"] = "J/g/K", "J/mol/K"
 
@@ -214,9 +235,12 @@ def precision(y_true, y_pred):
         tensor: Precision score (between 0 and 1).
     """
         
+    import keras
+    K = getattr(keras, "ops", keras.backend)
+
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     predicted_positives = K.sum(K.round(K.clip(y_pred, 0, 1)))
-    precision = true_positives / (predicted_positives + K.epsilon())
+    precision = true_positives / (predicted_positives + keras.backend.epsilon())
     return precision
 
 
@@ -242,9 +266,12 @@ def recall(y_true, y_pred):
         tensor: Recall score (between 0 and 1).
     """
 
+    import keras
+    K = getattr(keras, "ops", keras.backend)
+
     true_positives = K.sum(K.round(K.clip(y_true * y_pred, 0, 1)))
     possible_positives = K.sum(K.round(K.clip(y_true, 0, 1)))
-    recall = true_positives / (possible_positives + K.epsilon())
+    recall = true_positives / (possible_positives + keras.backend.epsilon())
     return recall
 
 
@@ -270,24 +297,54 @@ def f1(y_true, y_pred):
         tensor: F1-score (between 0 and 1).
     """
         
+    import keras.backend as K
+
     p = precision(y_true, y_pred)
     r = recall(y_true, y_pred)
     return 2 * ((p * r) / (p + r + K.epsilon()))
 
 
-def stability(structure):
+def stability(structure, *, model_directory=None):
     
     """predict stability of MOFs: https://doi.org/10.1021/jacs.1c07217, https://doi.org/10.1021/jacs.4c05879.
 
     Args:
         structure (str): path to your structure.
+        model_directory: optional directory containing the seven unchanged
+            historical models and scalers. These are checked before loading.
 
     Returns:
         Dictionary:
             -   unit by ["unit"], always "nan, °C, nan".
             -   predicted thermal, solvent and water stabilities.     
-    """  
-        
+    This compatibility entry point uses the bundled historical models, not
+    the later CoRE-MOF-COD multi-seed benchmarking models. Its saved scalers,
+    descriptor order and prediction behavior are retained.
+    """
+    from CoREMOF._historical_stability import copy_verified_models
+
+    source = Path(structure).resolve(strict=True)
+    if not source.is_file():
+        raise ValueError("stability requires one CIF file")
+    models = (Path(model_directory) if model_directory is not None
+              else Path(package_directory) / "models" / "stability")
+    with tempfile.TemporaryDirectory(prefix="coremof_stability_") as directory:
+        private = Path(directory)
+        verified = copy_verified_models(models, private / "models")
+        private_cif = private / source.name
+        private_cif.write_bytes(source.read_bytes())
+        return _stability_prediction(str(private_cif), verified)
+
+
+def _stability_prediction(structure, model_directory):
+    """Original feature ordering, probes, scalers and output precision."""
+    import cloudpickle
+    import keras
+    import numpy as np
+    from CoREMOF.calculation import Zeopp
+    from CoREMOF.calculation.mof_features import RACs, Volume
+    from CoREMOF._historical_stability import validate_values
+
     solvent_feature_names = [
                             'f-chi-0-all', 'f-chi-1-all', 'f-chi-2-all', 'f-chi-3-all', 'f-Z-0-all',
                             'f-Z-1-all', 'f-Z-2-all', 'f-Z-3-all', 'f-I-0-all', 'f-I-1-all', 'f-I-2-all',
@@ -362,18 +419,18 @@ def stability(structure):
     result_stability = {}
     result_stability["unit"] = "nan, °C, nan"
 
-    dependencies = {'precision':precision,'recall':recall,'f1':f1}
-    solvent_model = keras.models.load_model(package_directory+'/models/stability/final_model_flag_few_epochs.h5', custom_objects=dependencies)
-    thermal_model = keras.models.load_model(package_directory+'/models/stability/final_model_T_few_epochs.h5', custom_objects=dependencies)
-    with open(package_directory+'/models/stability/solvent_scaler.pkl', 'rb') as f:
+    # Inference needs weights, not historical optimizer/metric compilation.
+    solvent_model = keras.models.load_model(model_directory / 'final_model_flag_few_epochs.h5', compile=False)
+    thermal_model = keras.models.load_model(model_directory / 'final_model_T_few_epochs.h5', compile=False)
+    with open(model_directory / 'solvent_scaler.pkl', 'rb') as f:
         solvent_scaler = pkl.load(f)
-    with open(package_directory+'/models/stability/thermal_x_scaler.pkl', 'rb') as f:
+    with open(model_directory / 'thermal_x_scaler.pkl', 'rb') as f:
         thermal_x_scaler = pkl.load(f)
-    with open(package_directory+'/models/stability/thermal_y_scaler.pkl', 'rb') as f:
+    with open(model_directory / 'thermal_y_scaler.pkl', 'rb') as f:
         thermal_y_scaler = pkl.load(f)
-    with open(package_directory+'/models/stability/water_model.pkl', 'rb') as f:
+    with open(model_directory / 'water_model.pkl', 'rb') as f:
         water_model = cloudpickle.load(f)
-    with open(package_directory+'/models/stability/water_scaler.pkl', 'rb') as f:
+    with open(model_directory / 'water_scaler.pkl', 'rb') as f:
         water_scaler = pkl.load(f)
 
     results_pd = Zeopp.PoreDiameter(structure)
@@ -428,9 +485,12 @@ def stability(structure):
 
     # X_solvent = np.array(X_solvent).reshape(-1, 1).flatten().reshape(1, -1).tolist()
     
+    validate_values(X_solvent, 148, "Solvent-removal input")
     X_solvent = solvent_scaler.transform([X_solvent])
+    validate_values(np.asarray(X_solvent).flatten(), 148, "Scaled solvent-removal input")
     solvent_model_prob = solvent_model.predict(X_solvent)
     solvent_model_prob = solvent_model_prob.flatten()
+    validate_values(solvent_model_prob, 1, "Solvent-removal output", probability=True)
     result_stability["solvent removal probability"] = float(solvent_model_prob[0])
 
     '''
@@ -478,10 +538,13 @@ def stability(structure):
                 ]:
         
         X_thermal.append(zeo_them)
+    validate_values(X_thermal, 148, "Thermal input")
     X_thermal = thermal_x_scaler.transform([X_thermal])
+    validate_values(np.asarray(X_thermal).flatten(), 148, "Scaled thermal input")
     thermal_model_pred = thermal_y_scaler.inverse_transform(thermal_model.predict(X_thermal))
     thermal_model_pred = np.round(thermal_model_pred, 1)
     thermal_model_pred = thermal_model_pred.flatten()
+    validate_values(thermal_model_pred, 1, "Thermal output")
     result_stability["thermal stability"] = float(thermal_model_pred[0])
 
     X_water = []
@@ -497,9 +560,12 @@ def stability(structure):
                 except:
                     X_water.append(results_sa_1_4[fn_water][2])
 
+    validate_values(X_water, 12, "Water input")
     X_water = water_scaler.transform([X_water])
+    validate_values(np.asarray(X_water).flatten(), 12, "Scaled water input")
 
     water_model_prob = water_model.predict_proba(X_water)[:,1]
+    validate_values(water_model_prob, 1, "Water output", probability=True)
     # water_model_label = water_model.predict(X_water)
     result_stability["water probability"] = float(water_model_prob[0])
 
@@ -507,6 +573,8 @@ def stability(structure):
 
 
 if __name__ == "__main__":
+    import requests
+
     repo = 'sxm13/CoREMOF_tools'
     github_paths = [
         'models/cp_app/ensemble_models_smallML_120_100/300',
