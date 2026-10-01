@@ -1,8 +1,9 @@
 Historical stability predictors
 ===============================
 
-``CoREMOF.prediction.stability`` applies the original bundled solvent-removal
-and thermal neural networks and water-stability random forest. It is **not**
+``CoREMOF.prediction.stability`` applies the original solvent-removal
+and thermal neural networks and water-stability random forest through
+separately obtained, hash-verified model assets. It is **not**
 the later CoREMOF-COD multi-seed MIT benchmark, and does not reproduce those
 benchmark predictions. It does not train a model or replace release metadata.
 The original studies are `Nandy et al. (2021)

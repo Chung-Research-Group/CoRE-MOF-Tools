@@ -1,4 +1,8 @@
-"""Predict with the original bundled models, not the later MIT benchmark."""
+"""Use the historical stability interface with separately supplied model assets.
+
+Their original hashes are verified before loading. These models are separate
+from the later MIT benchmark.
+"""
 import argparse
 import json
 import os

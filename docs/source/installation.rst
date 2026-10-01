@@ -13,16 +13,50 @@ Recommended installation
 
 Version ``0.4.0.dev0`` is not yet the stable PyPI release. Create an isolated
 conda environment and install this checkout to use the lightweight release
-loader, checker classification, and dataset splitter:
+loader, checker classification, and dataset splitter. Use the audited checkout
+supplied with your handoff; a fresh clone must use the exact fork and checkpoint
+named by that handoff. The upstream default branch and an unversioned PyPI
+installation are not a substitute for that checkpoint:
 
 .. code-block:: bash
 
    conda create -n coremof python=3.11
    conda activate coremof
-   git clone https://github.com/Chung-Research-Group/CoRE-MOF-Tools.git
-   cd CoRE-MOF-Tools
+   cd /path/to/audited/CoRE-MOF-Tools
    python -m pip install .
    coremof doctor
+
+Alternatively, install an independently verified wheel supplied by the project:
+
+.. code-block:: bash
+
+   python -m pip install /path/to/coremof_tools-0.4.0.dev0-py3-none-any.whl
+   coremof doctor
+
+The wheel installs the Python API and package resources. The human guides,
+example scripts, companion notebook, and portable agent skill are available in
+the source checkout or an extracted source distribution, not in the wheel's
+installed files. Open ``examples/CoREMOF_dataset_splitting_quickstart.ipynb``
+from that source tree. Agents can use
+``.agents/skills/coremof-release-curation/SKILL.md`` there; it does not provide
+database files, model assets, or original-host operational instructions. Installing
+a source distribution also does not copy those guides into ``site-packages``.
+
+For a fresh clone, the verified public fork API checkpoint is:
+
+.. code-block:: bash
+
+   git clone https://github.com/DrakeChan/CoRE-MOF-Tools.git
+   cd CoRE-MOF-Tools
+   git checkout --detach c66796b77b0e86775f43b9021c6bcb3ebd93abfa
+   python -m pip install .
+   coremof doctor
+
+That commit provides the ``0.4.0.dev0`` API. Later documentation follow-ups in
+a supplied working tree are not part of this commit until separately published;
+use the exact source or wheel hashes recorded by their handoff. The hosted
+Read the Docs site and stable PyPI package describe earlier published versions.
+Read the guides in the source tree matching your installed checkpoint.
 
 Install the historical scientific feature set with the ``full`` extra:
 
@@ -50,15 +84,18 @@ scaling, at most 32 RAC5 principal components, and deterministic
 MiniBatchKMeans strata. Missing dependencies or version drift raise an error;
 the package never silently switches to a different numerical backend.
 
-For repository development or exact environment reproduction:
+For the historical scientific environment recorded in ``env.yaml``:
 
 .. code-block:: bash
 
-   git clone https://github.com/Chung-Research-Group/CoRE-MOF-Tools.git
-   cd CoRE-MOF-Tools
+   cd /path/to/audited/CoRE-MOF-Tools
    conda env create -f env.yaml
    conda activate coremof_tools
+   python -m pip install --no-deps -e .
    coremof doctor
+
+This environment file does not define the pinned ``benchmark`` or predictor
+environments above. Use the extra matching the requested workflow.
 
 Optional software by feature
 ----------------------------
@@ -111,8 +148,9 @@ Historical stability models
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Use ``.[historical-stability]`` in a separate environment for the original
-bundled predictors. It deliberately differs from the ``full``, ``benchmark``
-and ``heat-capacity`` dependencies. Zeo++, the original seven model/scaler
-assets and the pinned external molSimplify source are also required. See
+historical predictor interfaces. It deliberately differs from the ``full``,
+``benchmark`` and ``heat-capacity`` dependencies. Obtain the original seven
+model/scaler assets separately; the API verifies their hashes before loading.
+Zeo++ and the pinned external molSimplify source are also required. See
 :doc:`historical_stability` for feature settings, usage and the limits of
 cross-version reproduction. These models are not the newer MIT benchmark.

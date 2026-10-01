@@ -25,7 +25,7 @@ checks are recorded separately in [verification.json](verification.json).
 ## Count provenance: never merge these denominators
 
 The published-release integration fixture and target aggregate are separate
-evidence sources. A fresh read-only count of the published v26.0.2 metadata
+evidence sources. A fresh read-only count of the published CoREMOF-COD metadata
 on 2026-09-07 reconfirmed 42,574 unique IDs, no duplicates, and the four raw
 five-checker counts below. It was not a CIF/adapter or whole-cohort audit.
 Computation-ready (CR) means all selected checker votes
@@ -48,8 +48,8 @@ label across their complete-release membership.
 
 | Quantity | Value | Denominator / provenance |
 |---|---:|---|
-| v26.0.2 structures | 42,574 | Unique published structure IDs; release integration fixture |
-| v26.0.1 base / additions | 36,628 / 5,946 | Exact membership-preservation integration assertions |
+| CoREMOF-COD structures | 42,574 | Unique published structure IDs; release integration fixture |
+| inherited base cohort / additions | 36,628 / 5,946 | Exact membership-preservation integration assertions |
 | Raw strict five-checker CR / NCR | 6,294 / 2,299 | Full-release integration fixture, before optional grouping eligibility |
 | Raw AMBIGUOUS / UNCHECKED | 7,367 / 26,614 | Same named five-checker full-release fixture |
 | Label-pure eligible CR / NCR | 4,693 / 1,727 | Recorded explanatory-hierarchy configuration above, not arbitrary selected criteria |
@@ -60,8 +60,8 @@ label across their complete-release membership.
 | Simulation-eligible / excluded | 32,988 / 9,586 | Snapshot-specific simulation screening, not strict CR/NCR consensus |
 
 The target source is
-[V2602_COMBINED_TARGET_COVERAGE_20260904.json](../V2602_COMBINED_TARGET_COVERAGE_20260904.json),
-snapshot `v2602_combined_available_targets_20260904_v3`, cutoff
+[CoREMOF-COD_COMBINED_TARGET_COVERAGE_20260904.json](../CoREMOF-COD_COMBINED_TARGET_COVERAGE_20260904.json),
+snapshot `coremof_cod_combined_available_targets_20260904_v3`, cutoff
 `2026-09-04T05:43:23Z`. It explicitly records `campaign_complete=false`,
 `publication_authorized=false`, and `official_split=false`. The new documentation
 does not re-audit private structure-resolved target rows. Source hashes and

@@ -212,12 +212,47 @@ def _load_release(path: Path) -> Dict[str, str]:
     return result
 
 
+def _load_identity_contract(path: Path, expected_sha256: str) -> Tuple[Mapping[str, Any], str, int]:
+    """Require exact externally supplied cohort identities before reading evidence."""
+    contract, data = _read_json(path)
+    digest = hashlib.sha256(data).hexdigest()
+    if (not isinstance(expected_sha256, str) or len(expected_sha256) != 64
+            or any(character not in "0123456789abcdef" for character in expected_sha256)
+            or digest != expected_sha256):
+        raise AuditError("identity contract SHA-256 mismatch or invalid expected hash")
+    if not isinstance(contract, dict) or set(contract) != {"release_version", "base", "additions"}:
+        raise AuditError("identity contract must declare release_version, base and additions")
+    for cohort in ("base", "additions"):
+        value = contract[cohort]
+        if not isinstance(value, dict) or set(value) != {"phase", "version"}:
+            raise AuditError("identity contract cohort must declare phase and version")
+        if any(not isinstance(text, str) or not text or text != text.strip()
+               for text in value.values()):
+            raise AuditError("identity contract requires exact nonblank phase/version strings")
+    version = contract["release_version"]
+    if not isinstance(version, str) or not version or version != version.strip():
+        raise AuditError("identity contract requires an exact nonblank release version")
+    if contract["base"]["phase"] == contract["additions"]["phase"]:
+        raise AuditError("base and additions must declare distinct release phases")
+    if contract["base"]["version"] == contract["additions"]["version"]:
+        raise AuditError("base and additions must declare distinct source versions")
+    if version != contract["additions"]["version"]:
+        raise AuditError("release version must match the additions edition")
+    return contract, digest, len(data)
+
+
+def _current_source_class(version: str) -> str:
+    """Use the recorded edition to name provenance, including legacy inputs."""
+    return "CURRENT_VALIDATED_" + "".join(character for character in version.upper()
+                                        if character.isalnum())
+
+
 def _load_sources(
-    sources: Sequence[Tuple[Path, str]],
+    sources: Sequence[Tuple[Path, str, str]],
     release: Mapping[str, str],
 ) -> Dict[Tuple[str, str], Dict[str, Any]]:
     result: Dict[Tuple[str, str], Dict[str, Any]] = {}
-    for path, expected_phase in sources:
+    for path, expected_phase, expected_version in sources:
         phase_rows: Dict[Tuple[str, str], Dict[str, Any]] = {}
         with path.open("rb") as handle:
             for line_number, raw in enumerate(handle, start=1):
@@ -231,9 +266,6 @@ def _load_sources(
                     raise AuditError("source JSONL row is not an object")
                 if row.get("manifest_schema_version") != "coremof-gcmc-manifest/1.0":
                     raise AuditError("source schema mismatch")
-                expected_version = (
-                    "v26.0.1" if expected_phase == "v26.0.1_base" else "v26.0.2"
-                )
                 if (
                     row.get("release_phase") != expected_phase
                     or row.get("release_version") != expected_version
@@ -319,7 +351,7 @@ def _load_current(
         if key in result or source[key].get("status") != "MISSING":
             raise AuditError("current evidence is duplicate or not fill-only")
         expected_phase = str(source[key].get("release_phase", ""))
-        expected_version = "v26.0.1" if expected_phase == "v26.0.1_base" else "v26.0.2"
+        expected_version = str(source[key]["release_version"])
         if (
             row.get("release_phase") != expected_phase
             or row.get("dataset_version") != expected_version
@@ -463,6 +495,7 @@ def _verify_assignments(
     current: Mapping[Tuple[str, str], Mapping[str, str]],
     release: Mapping[str, str],
     snapshot_id: str,
+    release_version: str,
 ) -> Dict[str, Any]:
     if set(rows) != set(source):
         raise AuditError("output assignment key set mismatch")
@@ -483,7 +516,7 @@ def _verify_assignments(
         if (
             output.get("schema_version") != "coremof-combined-adsorption-targets/1.0"
             or output.get("snapshot_id") != snapshot_id
-            or output.get("release_version") != "v26.0.2"
+            or output.get("release_version") != release_version
             or output.get("release_phase") != source_row.get("release_phase")
         ):
             raise AuditError("output release or snapshot identity mismatch")
@@ -529,10 +562,8 @@ def _verify_assignments(
             expected_source_class = "HISTORICAL_EXISTING"
         elif current_row is None:
             expected_source_class = "NONE"
-        elif current_row.get("dataset_version") == "v26.0.2":
-            expected_source_class = "CURRENT_VALIDATED_V2602"
         else:
-            expected_source_class = "CURRENT_VALIDATED_V2601"
+            expected_source_class = _current_source_class(str(current_row["dataset_version"]))
         if output.get("source_class") != expected_source_class:
             raise AuditError("output source class mismatch")
         if current_row is not None:
@@ -792,8 +823,13 @@ def audit(args: argparse.Namespace) -> Dict[str, Any]:
         raise AuditError("build receipt payload hash mismatch")
     if receipt.get("status") != "PASS_COMBINED_CURRENT_AVAILABLE_TARGET_DATASET":
         raise AuditError("build receipt status is not passing")
+    identity, _, _ = _load_identity_contract(
+        args.identity_contract, args.identity_contract_sha256)
+    base_phase = identity["base"]["phase"]
+    additions_phase = identity["additions"]["phase"]
+    release_version = identity["release_version"]
     if (
-        receipt.get("release_version") != "v26.0.2"
+        receipt.get("release_version") != release_version
         or receipt.get("release_structure_count") != args.expected_release_count
         or not isinstance(receipt.get("snapshot_id"), str)
         or not receipt.get("snapshot_id")
@@ -840,6 +876,11 @@ def audit(args: argparse.Namespace) -> Dict[str, Any]:
     input_bindings = receipt.get("input_bindings")
     if not isinstance(input_bindings, dict):
         raise AuditError("build receipt lacks input bindings")
+    # Legacy immutable receipts have no naming-contract binding. Their
+    # original bytes and hashes stay authoritative; the separately verified
+    # external contract supplies the same expectations without rewriting them.
+    if "identity_contract" in input_bindings:
+        expected_inputs["identity_contract"] = args.identity_contract
     input_hashes = {}
     for name, path in expected_inputs.items():
         digest = _sha256_file(path)
@@ -885,8 +926,8 @@ def audit(args: argparse.Namespace) -> Dict[str, Any]:
         )
     source = _load_sources(
         (
-            (args.base_manifest, "v26.0.1_base"),
-            (args.additions_manifest, "v26.0.2_additions"),
+            (args.base_manifest, base_phase, identity["base"]["version"]),
+            (args.additions_manifest, additions_phase, identity["additions"]["version"]),
         ),
         release,
     )
@@ -917,6 +958,7 @@ def audit(args: argparse.Namespace) -> Dict[str, Any]:
         current,
         release,
         str(receipt["snapshot_id"]),
+        release_version,
     )
     _verify_wide(root, release, long_rows)
     _verify_coverage(root, summary, len(release), receipt)
@@ -1020,6 +1062,10 @@ def audit(args: argparse.Namespace) -> Dict[str, Any]:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, required=True)
+    parser.add_argument("--identity-contract", type=Path, required=True,
+                        help="Trusted JSON naming expectations; legacy receipt bytes remain unchanged.")
+    parser.add_argument("--identity-contract-sha256", required=True,
+                        help="Independently verified SHA-256 of the identity contract.")
     parser.add_argument("--release-manifest", type=Path, required=True)
     parser.add_argument("--base-manifest", type=Path, required=True)
     parser.add_argument("--base-summary", type=Path, required=True)

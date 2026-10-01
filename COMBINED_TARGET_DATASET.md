@@ -1,7 +1,7 @@
-# Combined CoRE-MOF v26.0.2 target dataset
+# Combined CoREMOF-COD target dataset
 
 The canonical ML attachment dataset is a target-only, exact-ID left join over
-all 42,574 published v26.0.2 structures. It combines accepted historical
+all 42,574 published CoREMOF-COD structures. It combines accepted historical
 values with collector-validated current calculations without changing parent
 groups, leakage blocks, cohorts, or train/validation/test assignments.
 
@@ -23,7 +23,7 @@ with at least one finite target, and 28,937 with all three. The independent
 audit verifies 42,574 wide rows, 127,722 long rows, exact source bindings,
 fill-only behavior, native nulls, complete coverage accounting, checksum
 integrity, and byte-identical double builds. The machine-readable public-safe
-counts are in `V2602_COMBINED_TARGET_COVERAGE_20260904.json`.
+counts are in `CoREMOF-COD_COMBINED_TARGET_COVERAGE_20260904.json`.
 
 One accepted historical Widom source record is an explicit scientific null
 with diagnostic `ZERO_DENOMINATOR`. `HISTORICAL_SCIENTIFIC_NULL` means that the
@@ -76,3 +76,27 @@ remain outside Git. They may contain CSD-derived values and require the
 appropriate institutional rights and an approved transfer channel. This
 repository contains the reproducible code, tests, workflow documentation, and
 aggregate coverage only.
+
+## Dataset identity expectations
+
+Both target utilities require `--identity-contract PATH` and
+`--identity-contract-sha256 VERIFIED_SHA256`. Obtain that JSON and its checksum
+from the same trusted source as the input manifest hashes. It declares the
+final `release_version` and the exact `phase` and `version` for `base` and
+`additions`. The final version must match the additions edition; the two
+cohort phases and source versions must be distinct. For example:
+
+```json
+{
+  "release_version": "CoREMOF-COD",
+  "base": {"phase": "CoREMOF-COD-base", "version": "CoREMOF-COD-base"},
+  "additions": {"phase": "CoREMOF-COD-additions", "version": "CoREMOF-COD"}
+}
+```
+
+Use the exact phases recorded by the supplied manifests. Every source row and
+current-evidence row must match its declared cohort identity. New build
+receipts bind the contract hash. Existing immutable receipts can be audited
+with a separately pinned contract naming their original editions, without
+changing those receipts or their hashes. This expectation input replaces the
+former temporary-name whitelist; source names are never inferred from a row.

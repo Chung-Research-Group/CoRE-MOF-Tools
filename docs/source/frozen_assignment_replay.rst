@@ -1,7 +1,7 @@
 Replaying the manuscript's frozen assignments
 =============================================
 
-The common-input experiment ``v2602_common_input_equal_size_20260912_v1``
+The common-input experiment ``coremof_cod_common_input_equal_size_20260912_v1``
 has twelve shared assignments: seeds 912–915 and NCR-pool fractions
 ``q=0, 0.5, 1``. Every assignment has 3,737 training, 466 validation and
 468 test structures. The same pure-CR test is used throughout. Here ``q``
@@ -13,7 +13,7 @@ group sampler. It requires the private September 13 workflow handoff and its
 independently verified archive checksum::
 
     python examples/replay_common_input_benchmark.py \
-      --handoff-archive /private/v2602_workflow_handoff_20260913_v1.tar.gz \
+      --handoff-archive /private/coremof_cod_workflow_handoff_20260913_v1.tar.gz \
       --archive-sha256 VERIFIED_ARCHIVE_SHA256 \
       --output /private/new-assignment-replay
 

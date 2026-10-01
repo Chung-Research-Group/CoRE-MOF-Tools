@@ -117,9 +117,9 @@ and not a claim of fresh checksum verification:
 
 | Recorded artifact | Intended use | Scope warning |
 |---|---|---|
-| `published_v2602_checker_combinations_rt_m2t_parent_v3` (2026-09-02) | All 16 checker views and combined-reference grouping dataset | Explicit optional-evidence eligibility; counts differ from raw pools |
-| `v2602_latest_group_coverage_zeopp_umaps_v8` (2026-09-03) | Source coverage and both frozen Zeo++ spaces | Full-release analysis, not necessarily a target-ready cohort |
-| `v2602_combined_available_targets_20260904_v3` | Canonical historical-plus-current targets at the declared cutoff | Later calculations are absent; private row-level files |
+| `coremof_cod_checker_combinations_rt_m2t_parent_v3` (2026-09-02) | All 16 checker views and combined-reference grouping dataset | Explicit optional-evidence eligibility; counts differ from raw pools |
+| `coremof_cod_latest_group_coverage_zeopp_umaps_v8` (2026-09-03) | Source coverage and both frozen Zeo++ spaces | Full-release analysis, not necessarily a target-ready cohort |
+| `coremof_cod_combined_available_targets_20260904_v3` | Canonical historical-plus-current targets at the declared cutoff | Later calculations are absent; private row-level files |
 | `target_ready_cr_ncr_analysis_v1` (2026-09-06) | Checker composition, distributions, overlays, Sankey and block-purity views of that target snapshot | Plot creation date is not a new target-data cutoff |
 
 The coordinator's local handoff provides exact paths and private integrity

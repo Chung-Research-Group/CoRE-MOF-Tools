@@ -114,7 +114,7 @@ which optional scientific components are available.
 
          conda create -n coremof python=3.11
          conda activate coremof
-         pip install CoREMOF-tools
+         python -m pip install /path/to/audited/CoRE-MOF-Tools
          coremof doctor
 
    .. grid-item::
@@ -167,10 +167,15 @@ which optional scientific components are available.
 
 .. note::
 
-   CSD downloads and MOSAEC require a licensed CSD installation. Zeo++ and
-   MOFid are external programs. Heat-capacity prediction requires ensemble
-   files from the full GitHub repository. :doc:`installation` explains each
-   optional component.
+   Use the audited ``0.4.0.dev0`` source checkpoint or wheel described in
+   :doc:`installation`; the hosted site and stable PyPI package may describe
+   earlier published versions. Follow the guides in the matching source tree.
+   CSD retrieval requires the user's licensed CSD provider.
+   Reading checker results requires no checker engine or CCDC installation;
+   external-checker execution interfaces provide migration notices only. New
+   checker calculations require the original software obtained separately.
+   Zeo++ and MOFid are external programs. Historical predictors require
+   separately obtained, authorized model assets.
 
 .. toctree::
    :maxdepth: 2
@@ -180,6 +185,7 @@ which optional scientific components are available.
    installation
    quickstart
    retrieval
+   database_access
    release_exports
    frozen_assignment_replay
    release_mofid_replay

@@ -14,7 +14,7 @@ comparison.
 Source baseline: `0.4.0.dev0`, commit
 `fad92f7cc8991325aff780da4dbeb6d3b0d537f6`, branch
 `agent/dataset-splitting-api`, inspected on 2026-09-07. The source worktree was
-clean before this documentation work. Database version `v26.0.2` is a separate
+clean before this documentation work. Database version `CoREMOF-COD` is a separate
 identifier from the software version. These documentation additions follow the
 baseline commit; they are not represented as already committed or published.
 

@@ -32,7 +32,7 @@
   "publication_authorized": false,
   "release_structure_count": 42574,
   "schema_version": "coremof-public-safe-combined-target-coverage/1.0",
-  "snapshot_id": "v2602_combined_available_targets_20260904_v3",
+  "snapshot_id": "coremof_cod_combined_available_targets_20260904_v3",
   "structure_resolved_artifact_in_git": false,
   "structures_with_all_three_finite_targets": 28937,
   "structures_with_any_finite_target": 28983,

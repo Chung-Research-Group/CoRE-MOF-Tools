@@ -93,7 +93,7 @@ def _source_row(structure_id, cif_sha256, endpoint, phase, status):
         "cif_sha256": cif_sha256,
         "endpoint": endpoint,
         "release_phase": phase,
-        "release_version": "v26.0.1" if phase == "v26.0.1_base" else "v26.0.2",
+        "release_version": "fixture-base" if phase == "fixture_base" else "fixture-expanded",
         "status": status,
         "alias_conflict": False,
         "exclusion_reasons": [],
@@ -143,7 +143,7 @@ def _source_row(structure_id, cif_sha256, endpoint, phase, status):
 def _current_row(structure_id, cif_sha256, endpoint, phase, status, value=""):
     contract = ENDPOINTS[endpoint]
     return {
-        "dataset_version": "v26.0.1" if phase == "v26.0.1_base" else "v26.0.2",
+        "dataset_version": "fixture-base" if phase == "fixture_base" else "fixture-expanded",
         "release_phase": phase,
         "structure_id": structure_id,
         "cif_sha256": cif_sha256,
@@ -235,15 +235,21 @@ def _write_fixture(root):
     inputs = root / "inputs"
     inputs.mkdir()
     paths = {
+        "identity_contract": inputs / "identity_contract.json",
         "release_manifest": inputs / "cif_manifest.csv",
-        "base_manifest": inputs / "v26.0.1_base.manifest.jsonl",
-        "base_summary": inputs / "v26.0.1_base.summary.json",
-        "additions_manifest": inputs / "v26.0.2_additions.manifest.jsonl",
-        "additions_summary": inputs / "v26.0.2_additions.summary.json",
+        "base_manifest": inputs / "fixture_base.manifest.jsonl",
+        "base_summary": inputs / "fixture_base.summary.json",
+        "additions_manifest": inputs / "fixture_additions.manifest.jsonl",
+        "additions_summary": inputs / "fixture_additions.summary.json",
         "current_evidence": inputs / "target_evidence.csv.gz",
         "current_build_receipt": inputs / "BUILD_RECEIPT.json",
         "current_independent_audit": inputs / "current.independent_audit.json",
     }
+    paths["identity_contract"].write_bytes(_json_bytes({
+        "release_version": "fixture-expanded",
+        "base": {"phase": "fixture_base", "version": "fixture-base"},
+        "additions": {"phase": "fixture_additions", "version": "fixture-expanded"},
+    }))
     structure_ids = (
         "BASE_EXISTING",
         "BASE_MISSING",
@@ -267,12 +273,12 @@ def _write_fixture(root):
     phases = (
         (
             "base",
-            "v26.0.1_base",
+            "fixture_base",
             (("BASE_EXISTING", "EXISTING"), ("BASE_MISSING", "MISSING")),
         ),
         (
             "additions",
-            "v26.0.2_additions",
+            "fixture_additions",
             (("ADD_CURRENT", "MISSING"), ("ADD_EXCLUDED", "EXCLUDED")),
         ),
     )
@@ -329,7 +335,7 @@ def _write_fixture(root):
             "BASE_MISSING",
             cif_hashes["BASE_MISSING"],
             "CH4",
-            "v26.0.1_base",
+            "fixture_base",
             "SUCCESS",
             4.2,
         ),
@@ -337,14 +343,14 @@ def _write_fixture(root):
             "BASE_MISSING",
             cif_hashes["BASE_MISSING"],
             "H2",
-            "v26.0.1_base",
+            "fixture_base",
             "SUCCESS_NULL",
         ),
         _current_row(
             "BASE_MISSING",
             cif_hashes["BASE_MISSING"],
             "WIDOM_CO2_N2",
-            "v26.0.1_base",
+            "fixture_base",
             "ERROR",
         ),
     ]
@@ -354,7 +360,7 @@ def _write_fixture(root):
                 "ADD_CURRENT",
                 cif_hashes["ADD_CURRENT"],
                 endpoint,
-                "v26.0.2_additions",
+                "fixture_additions",
                 "SUCCESS",
                 index + 0.25,
             )
@@ -372,10 +378,14 @@ class CombinedTargetDatasetExampleTests(unittest.TestCase):
     def tearDown(self):
         self.temporary_directory.cleanup()
 
-    def _build(self, output, expected_success=True):
+    def _build(self, output, expected_success=True, identity_sha256=None):
         command = [
             sys.executable,
             str(BUILD_SCRIPT),
+            "--identity-contract",
+            str(self.paths["identity_contract"]),
+            "--identity-contract-sha256",
+            identity_sha256 or _sha256(self.paths["identity_contract"]),
             "--release-manifest",
             str(self.paths["release_manifest"]),
             "--base-manifest",
@@ -424,6 +434,10 @@ class CombinedTargetDatasetExampleTests(unittest.TestCase):
             str(AUDIT_SCRIPT),
             "--dataset",
             str(dataset),
+            "--identity-contract",
+            str(self.paths["identity_contract"]),
+            "--identity-contract-sha256",
+            _sha256(self.paths["identity_contract"]),
             "--release-manifest",
             str(self.paths["release_manifest"]),
             "--base-manifest",
@@ -569,6 +583,97 @@ class CombinedTargetDatasetExampleTests(unittest.TestCase):
         self.assertEqual(audit["counts"]["assignment_count"], 12)
         self.assertEqual(audit["counts"]["finite_endpoint_assignments"], 6)
 
+    def test_identity_contract_requires_its_independently_verified_hash(self):
+        output = self.root / "rejected-unpinned-contract"
+        result = self._build(output, expected_success=False, identity_sha256="0" * 64)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("identity contract SHA-256 mismatch", result.stderr)
+        self.assertFalse(output.exists())
+
+    def test_current_evidence_cannot_claim_an_unrelated_source_edition(self):
+        rows = [dict(row) for row in self.current_rows]
+        rows[0]["dataset_version"] = "unrelated-edition"
+        _write_current_bundle(self.paths, rows)
+        output = self.root / "rejected-current-edition"
+        result = self._build(output, expected_success=False)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("current-evidence release identity mismatch", result.stderr)
+        self.assertFalse(output.exists())
+
+    def test_builder_rejects_swapped_base_and_additions_even_when_counts_match(self):
+        self.paths["base_manifest"], self.paths["additions_manifest"] = (
+            self.paths["additions_manifest"], self.paths["base_manifest"])
+        self.paths["base_summary"], self.paths["additions_summary"] = (
+            self.paths["additions_summary"], self.paths["base_summary"])
+        output = self.root / "rejected-swap"
+        result = self._build(output, expected_success=False)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("wrong release phase", result.stderr)
+        self.assertFalse(output.exists())
+
+    def test_identity_contract_rejects_same_blank_or_unrelated_cohort_identity(self):
+        original = self.paths["identity_contract"].read_bytes()
+        for failure in ("same_phase", "blank_phase", "blank_version", "unrelated_version"):
+            with self.subTest(failure=failure):
+                contract = json.loads(original)
+                if failure == "same_phase":
+                    contract["additions"]["phase"] = contract["base"]["phase"]
+                elif failure == "blank_phase":
+                    contract["base"]["phase"] = " "
+                elif failure == "blank_version":
+                    contract["base"]["version"] = ""
+                else:
+                    contract["release_version"] = "unrelated-edition"
+                    contract["additions"]["version"] = "unrelated-edition"
+                self.paths["identity_contract"].write_bytes(_json_bytes(contract))
+                output = self.root / failure
+                result = self._build(output, expected_success=False)
+                self.assertEqual(result.returncode, 2)
+                self.assertFalse(output.exists())
+        self.paths["identity_contract"].write_bytes(original)
+
+    def test_source_identity_rejects_first_row_and_mixed_row_changes(self):
+        path = self.paths["base_manifest"]
+        original = path.read_bytes()
+        for index, field, changed in ((0, "release_phase", "unrelated_phase"),
+                                      (0, "release_version", "unrelated-version"),
+                                      (1, "release_phase", "fixture_additions"),
+                                      (1, "release_version", "fixture-expanded"),
+                                      (0, "release_phase", ""),
+                                      (0, "release_version", "")):
+            with self.subTest(index=index, field=field, changed=changed):
+                rows = [json.loads(line) for line in original.splitlines()]
+                rows[index][field] = changed
+                path.write_bytes(b"".join((json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n").encode()
+                                          for row in rows))
+                output = self.root / ("rejected-{}-{}-{}".format(index, field, len(changed)))
+                result = self._build(output, expected_success=False)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("wrong release", result.stderr)
+                self.assertFalse(output.exists())
+        path.write_bytes(original)
+
+    def test_independent_auditor_accepts_original_receipt_without_new_contract_field(self):
+        output = self.root / "legacy-schema"
+        self._build(output)
+        receipt_path = output / "BUILD_RECEIPT.json"
+        receipt = json.loads(receipt_path.read_bytes())
+        receipt["input_bindings"].pop("identity_contract")
+        receipt.pop("receipt_payload_sha256")
+        canonical = (json.dumps(receipt, ensure_ascii=False, sort_keys=True,
+                                separators=(",", ":"), allow_nan=False) + "\n").encode()
+        receipt["receipt_payload_sha256"] = hashlib.sha256(canonical).hexdigest()
+        receipt_path.write_bytes(_json_bytes(receipt))
+        ledger = output / "SHA256SUMS"
+        lines = ledger.read_text().splitlines()
+        ledger.write_text("\n".join(_sha256(receipt_path) + "  BUILD_RECEIPT.json"
+                                     if line.endswith("  BUILD_RECEIPT.json") else line
+                                     for line in lines) + "\n")
+        audit_output = self.root / "legacy-schema.audit.json"
+        result = self._audit(output, audit_output)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(audit_output.exists())
+
     def test_builder_refuses_to_fill_an_existing_assignment(self):
         rows = list(self.current_rows)
         rows.append(
@@ -576,7 +681,7 @@ class CombinedTargetDatasetExampleTests(unittest.TestCase):
                 "BASE_EXISTING",
                 self.cif_hashes["BASE_EXISTING"],
                 "CH4",
-                "v26.0.1_base",
+                "fixture_base",
                 "SUCCESS",
                 123.0,
             )

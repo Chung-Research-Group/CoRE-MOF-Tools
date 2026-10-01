@@ -184,7 +184,7 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
             "identity_size",
             "transitive connected component",
             "not a count of edges or identifiers",
-            "does not import or seed an earlier v26.0.1 component",
+            "does not import or seed an earlier inherited base cohort component",
             "no precedence or conflict rule",
             "Missing identifiers and non-success MOFid statuses add no edge",
             "uses no RAC5",
@@ -268,13 +268,13 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
     def test_notebook_executes_portable_workflow_on_a_small_release(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            release = root / "coremof_vtest"
+            release = root / "fixture_release"
             output = root / "outputs"
             release.mkdir()
             _make_release(release)
             environment = {
                 "COREMOF_RELEASE": str(release),
-                "COREMOF_V2602_RELEASE": str(release),
+                "COREMOF_COD_RELEASE": str(release),
                 "COREMOF_NOTEBOOK_OUTPUT": str(output),
             }
             namespace = {"__name__": "__main__"}
@@ -311,7 +311,7 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
     def test_guarded_rosenbluth_workflow_prints_a_path_sanitized_receipt_summary(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            release = root / "coremof_vtest"
+            release = root / "fixture_release"
             output = root / "outputs"
             release.mkdir()
             _make_release(release)
@@ -392,7 +392,7 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
 
             environment = {
                 "COREMOF_RELEASE": str(release),
-                "COREMOF_V2602_RELEASE": str(release),
+                "COREMOF_COD_RELEASE": str(release),
                 "COREMOF_NOTEBOOK_OUTPUT": str(output),
                 "COREMOF_ROSENBLUTH_TARGET_CONFIG": str(config_path),
             }
@@ -459,7 +459,7 @@ class DatasetSplittingNotebookTests(unittest.TestCase):
         for path in public_paths:
             text = path.read_text(encoding="utf-8")
             self.assertNotIn("/home/yuc", text)
-            self.assertNotIn("CoREMOF-COD", text)
+            self.assertNotRegex(text, r"\bv[0-9]{2}\.[0-9]\.[0-9]\b")
 
 
 if __name__ == "__main__":

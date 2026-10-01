@@ -217,8 +217,9 @@ class ParentResolverTests(unittest.TestCase):
             definition["display_name"],
             "provisional source-ID/MOFid transitive groups",
         )
-        self.assertIn("v26.0.1", definition["release_construction"])
-        self.assertIn("v26.0.2", definition["release_construction"])
+        base_key, current_key = (key for key, value in definition["release_construction"].items()
+                                 if isinstance(value, str) and value.startswith("freshly recompute"))
+        self.assertNotEqual(base_key, current_key)
         self.assertFalse(
             definition["release_construction"]["earlier_component_or_edge_import"]
         )
@@ -232,10 +233,10 @@ class ParentResolverTests(unittest.TestCase):
             ),
         )
         self.assertIn(
-            "freshly recompute", definition["release_construction"]["v26.0.1"]
+            "freshly recompute", definition["release_construction"][base_key]
         )
         self.assertIn(
-            "do not seed", definition["release_construction"]["v26.0.2"]
+            "do not seed", definition["release_construction"][current_key]
         )
         self.assertIn("no precedence", definition["algorithm"])
         self.assertIn("common_nulls_never_match", definition["missing_behavior"])
@@ -282,7 +283,7 @@ class ParentResolverTests(unittest.TestCase):
             ]
         )
         self.assertFalse(canonical["mofid_key"]["fuzzy_or_partial_string_matching"])
-        self.assertNotIn("inherited_v2601_identity_component_cleanup", canonical)
+        self.assertNotIn("inherited_identity_component_cleanup", canonical)
         self.assertIn("freshly_recomputed", canonical["source_key"]["scope"])
         self.assertIn("no_prior_component", canonical["source_key"]["scope"])
         self.assertIn(

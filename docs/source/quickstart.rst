@@ -14,6 +14,11 @@ features from working.
 Query database metadata
 -----------------------
 
+This historical ``information()`` lookup requires separately obtained authorized
+``CoREMOF/data/CR.json`` and ``NCR.json`` assets, which are absent from the
+code-only export. For current versioned release metadata, use
+:doc:`database_access` and ``examples/read_release_metadata.py`` instead.
+
 .. code-block:: python
 
    from CoREMOF.structure import information

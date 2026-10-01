@@ -201,7 +201,7 @@ for a newly selected criterion tuple.
 Equivalent one-stage CLI, after inspecting the definitions above:
 
 ```bash
-coremof benchmark-cr-ncr /secure/release/coremof_v26.0.2 \
+coremof benchmark-cr-ncr /secure/release/CoREMOF-COD \
   --group-criteria RT M2T \
   --cohort-eligibility complete_release_label_pure_effective_blocks \
   --ncr-pool-fractions 0.0 0.2 0.4 0.6 0.8 1.0 \
@@ -243,7 +243,7 @@ rebalance, or resplit. Store original and attached outputs separately.
 For an already saved suite, this CLI attaches **one run** at a time:
 
 ```bash
-coremof attach-targets /secure/release/coremof_v26.0.2 \
+coremof attach-targets /secure/release/CoREMOF-COD \
   --manifest /secure/work/benchmark/coremof_cr_ncr_benchmark/runs/seed42_q0p0.csv \
   --receipt /secure/work/benchmark/coremof_cr_ncr_benchmark/receipt.json \
   --config /secure/targets/targets.json --missing keep \

@@ -15,11 +15,11 @@ from CoREMOF.benchmarks import (
 )
 
 
-V2601 = os.environ.get("COREMOF_V2601_RELEASE")
-V2602 = os.environ.get("COREMOF_V2602_RELEASE")
+INHERITED_BASE = os.environ.get("COREMOF_INHERITED_BASE_RELEASE")
+CURRENT_RELEASE = os.environ.get("COREMOF_COD_RELEASE")
 
 
-@unittest.skipUnless(V2601 and V2602, "set both COREMOF_V2601_RELEASE and COREMOF_V2602_RELEASE")
+@unittest.skipUnless(INHERITED_BASE and CURRENT_RELEASE, "set both COREMOF_INHERITED_BASE_RELEASE and COREMOF_COD_RELEASE")
 class ReleaseIntegrationTests(unittest.TestCase):
     @staticmethod
     def _csv_digests(path, relative_path):
@@ -36,9 +36,9 @@ class ReleaseIntegrationTests(unittest.TestCase):
         return result
 
     def test_release_membership_and_shared_metadata(self):
-        base = self._csv_digests(Path(V2601), "metadata/metadata.csv")
+        base = self._csv_digests(Path(INHERITED_BASE), "metadata/metadata.csv")
         self.assertEqual(len(base), 36628)
-        superset = self._csv_digests(Path(V2602), "metadata/metadata.csv")
+        superset = self._csv_digests(Path(CURRENT_RELEASE), "metadata/metadata.csv")
         self.assertEqual(len(superset), 42574)
         self.assertTrue(set(base).issubset(superset))
         self.assertEqual(
@@ -46,10 +46,10 @@ class ReleaseIntegrationTests(unittest.TestCase):
             {structure_id: superset[structure_id] for structure_id in base},
         )
         base_manifest = self._csv_digests(
-            Path(V2601), "manifests/cif_manifest.csv"
+            Path(INHERITED_BASE), "manifests/cif_manifest.csv"
         )
         superset_manifest = self._csv_digests(
-            Path(V2602), "manifests/cif_manifest.csv"
+            Path(CURRENT_RELEASE), "manifests/cif_manifest.csv"
         )
         self.assertEqual(set(base_manifest), set(base))
         self.assertEqual(
@@ -61,7 +61,7 @@ class ReleaseIntegrationTests(unittest.TestCase):
         )
 
     def test_every_official_checker_view_recomputes_declared_counts(self):
-        superset = CoREMOFDataset.from_release(Path(V2602))
+        superset = CoREMOFDataset.from_release(Path(CURRENT_RELEASE))
         declared = superset.dataset_info["label_counts"]
         for view in ("3checker", "4checker", "5checker"):
             classified = superset.classify(checkers=view)
@@ -70,8 +70,8 @@ class ReleaseIntegrationTests(unittest.TestCase):
             del classified
             gc.collect()
 
-    def test_v2602_published_strict_and_label_pure_block_pools(self):
-        superset = CoREMOFDataset.from_release(Path(V2602))
+    def test_coremof_cod_published_strict_and_label_pure_block_pools(self):
+        superset = CoREMOFDataset.from_release(Path(CURRENT_RELEASE))
         classified = superset.classify(checkers="5checker")
         counts = dict(classified.label_counts())
         self.assertEqual(counts["CR"], 6294)
@@ -99,7 +99,7 @@ class ReleaseIntegrationTests(unittest.TestCase):
         )
 
     def test_open_scope_priority_split_is_complete_deterministic_and_leakage_free(self):
-        superset = CoREMOFDataset.from_release(Path(V2602))
+        superset = CoREMOFDataset.from_release(Path(CURRENT_RELEASE))
         classified = superset.classify(checkers="5checker")
         parameters = {
             "parent_method": "priority_main",

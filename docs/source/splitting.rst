@@ -12,7 +12,7 @@ group graph and leaves existing split defaults unchanged.
 
 .. warning::
 
-   This is an initial development API. Splits made from the current v26 parent
+   This is an initial development API. Splits made from the current CoREMOF-COD parent
    tables are reproducible exploratory splits, not an official CoRE MOF
    benchmark. The current null-unresolved MOFid projection is explicitly
    ``STAGE_ONLY``: parent relations built from it are non-published candidates
@@ -105,7 +105,7 @@ Load a release and build a COD/SI CR-versus-NCR split:
 
    from CoREMOF.dataset import CoREMOFDataset
 
-   ds = CoREMOFDataset.from_release("/path/to/coremof_v26.0.2")
+   ds = CoREMOFDataset.from_release("/path/to/CoREMOF-COD")
    classified = ds.classify(checkers="5checker")
 
    # Direct CR/NCR membership for screening or export:
@@ -152,7 +152,7 @@ A compact one-call form is also available:
    from CoREMOF.splitters import split_release
 
    split = split_release(
-       "/path/to/coremof_v26.0.2",
+       "/path/to/CoREMOF-COD",
        checkers="3checker",
        parent_method="rac5",
        fractions=(0.8, 0.1, 0.1),
@@ -261,7 +261,7 @@ when its release status is ``SUCCESS``, ``SUCCESS_TOPOLOGY_UNKNOWN``,
 
 The release builder freshly recomputes the equality edges and connected
 components over every current row of each named release: 36,628 rows for
-v26.0.1 and, independently, all 42,574 superset rows for v26.0.2. It does not
+inherited base cohort and, independently, all 42,574 superset rows for CoREMOF-COD. It does not
 seed the superset from a previous base component or import an earlier
 source-ID/MOFid edge. Missing, null, placeholder, unresolved-reconciliation,
 ambiguous-node, timeout, error, no-MOF, unmatched-node, and
@@ -321,7 +321,7 @@ edge; this is exact fingerprint equality, not a topology-similarity tolerance.
      - Exact equality of every validated depth-5 RAC descriptor
    * - ``mofid_v2``
      - Main/direct
-     - Exact equality of complete canonicalized release-authorized MOFid v2 text; missing values never match; current v26 input remains provisional until pinned-result promotion
+     - Exact equality of complete canonicalized release-authorized MOFid v2 text; missing values never match; current CoREMOF-COD input remains provisional until pinned-result promotion
    * - ``mofid_v1``
      - Main/direct
      - Exact equality of complete canonicalized MOFid v1 text; missing values never match
@@ -348,7 +348,7 @@ edge; this is exact fingerprint equality, not a topology-similarity tolerance.
      - Exact NFKC/whitespace/case-folded common name; sparse and non-unique
    * - ``identity_union``
      - Reference
-     - Provisional source-ID/MOFid transitive groups: freshly recompute v26.0.1 over its 36,628 current rows and v26.0.2 independently over its 42,574 current rows from exact canonicalized namespaced source-ID and eligible complete MOFid-v2/MOFid-v1 edges, then take connected-component closure; no earlier component or MOFid edge is imported, and no structural descriptor is used
+     - Provisional source-ID/MOFid transitive groups: freshly recompute the inherited base cohort over its 36,628 current rows and CoREMOF-COD independently over its 42,574 current rows from exact canonicalized namespaced source-ID and eligible complete MOFid-v2/MOFid-v1 edges, then take connected-component closure; no earlier component or MOFid edge is imported, and no structural descriptor is used
    * - ``none``
      - Control
      - One independent singleton per structure
@@ -383,7 +383,7 @@ only a group label, not a topology name, MOFid, RMSD, or similarity score.
 The release builder hashes the criterion name and its complete comparison key
 with length-delimited UTF-8 SHA-256, starts with eight uppercase hexadecimal
 characters after the prefix, and extends every actually colliding prefix one
-character at a time until unique in the v26.0.2 superset.
+character at a time until unique in the CoREMOF-COD superset.
 Missing or failed RAC5/CrystalNets/MOFid input creates no ``RT-`` or ``M2T-``
 evidence. Directional fit disagreement or an unresolved pair creates no
 strict edge; an incomplete strict component is projected to structure-specific
@@ -515,7 +515,7 @@ them.
    from CoREMOF.dataset import CoREMOFDataset
    from CoREMOF.targets import AliasRegistry, TargetSource
 
-   ds = CoREMOFDataset.from_release("/path/to/coremof_v26.0.2")
+   ds = CoREMOFDataset.from_release("/path/to/CoREMOF-COD")
    sources = (
        TargetSource(
            "/path/to/uptake.csv",
@@ -583,11 +583,11 @@ optional alias registry, and requested feature tables in a JSON configuration:
 
 .. code-block:: bash
 
-   coremof merge-targets /path/to/coremof_v26.0.2 \
+   coremof merge-targets /path/to/CoREMOF-COD \
      --config targets.json \
      --output-directory model_inputs
 
-   coremof split /path/to/coremof_v26.0.2 \
+   coremof split /path/to/CoREMOF-COD \
      --target-config targets.json \
      --require-target xe_uptake \
      --require-target selectivity \
@@ -601,7 +601,7 @@ target-merged table in one unattended command:
 
 .. code-block:: bash
 
-   python examples/screen_candidates.py /path/to/coremof_v26.0.2 \
+   python examples/screen_candidates.py /path/to/CoREMOF-COD \
      --target-config targets.json \
      --rank-by xe_uptake \
      --require-target xe_uptake \
@@ -804,7 +804,7 @@ size test from whole effective blocks whose complete-release members are all
 strict CR. The test is identical across ratios/seeds and has zero block overlap
 with train or validation.
 
-The v26.0.2 raw strict pools cross blocks that also contain another checker
+The CoREMOF-COD raw strict pools cross blocks that also contain another checker
 label, so the default fails closed rather than selecting a partial block. The
 audited sensitivity ladder must explicitly use
 ``cohort_eligibility="complete_release_label_pure_effective_blocks"``. This
@@ -835,7 +835,7 @@ the complete raw strict-CR pool, including rows excluded by the label-pure
 sensitivity policy, and reports
 exact-ID/same-block overlap with training; it is not the independent paper
 test. Construction reports exact counts and fails closed when ``M>C`` or
-``M>C-test_count``. The checksum-bound published v26.0.2 integration has raw
+``M>C-test_count``. The checksum-bound published CoREMOF-COD integration has raw
 counts C_raw=6,294 and M_raw=2,299. With ``priority_main`` and the explicit
 label-pure policy, 1,601 CR and 572 NCR rows are excluded with non-label-pure
 blocks, leaving eligible C=4,693 and M=1,727. Thus q=1 uses 1,727 NCR plus
@@ -865,7 +865,7 @@ and base input hashes; equal IDs alone do not establish that binding.
 
 The persisted CLI form verifies both files before attachment::
 
-   coremof attach-targets /path/to/coremof_v26.0.2 \
+   coremof attach-targets /path/to/CoREMOF-COD \
      --manifest model_split.csv --receipt model_split.json \
      --config targets.json --output-directory attached_targets
 
@@ -874,7 +874,7 @@ Without ``--receipt``, the command looks for ``model_split.json`` beside
 
 The target-free benchmark CLI requires the same explicit sensitivity policy::
 
-   coremof benchmark-cr-ncr /secure/path/to/coremof_v26.0.2 \
+   coremof benchmark-cr-ncr /secure/path/to/CoREMOF-COD \
      --group-criteria priority_main \
      --cohort-eligibility complete_release_label_pure_effective_blocks \
      --output-directory benchmark_outputs
@@ -913,10 +913,10 @@ frozen in different partitions, the addition is reported as
 ``SPLIT_BRIDGE_CONFLICT`` and excluded from the modelling partitions while the
 scientific relation is preserved. This frozen-extension logic is not yet
 implemented. In the current independent exploratory runs, 124 of 8,593 shared
-5-checker CR/NCR IDs moved between separately generated v26.0.1 and v26.0.2
+5-checker CR/NCR IDs moved between separately generated inherited base cohort and CoREMOF-COD
 splits; that is acceptable only because both are explicitly provisional.
 
-The current public v26.0.2 parent table also authorizes fewer RAC parent edges
+The current public CoREMOF-COD parent table also authorizes fewer RAC parent edges
 than the RAC feature table contains: 25,618 rows have an available RAC parent
 status, while 29,891 rows have complete RAC features. This is intentional at
 the package boundary. The splitter trusts parent statuses in the loaded release and never

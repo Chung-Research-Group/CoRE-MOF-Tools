@@ -294,7 +294,7 @@ def run_v2(structure, nodes_dataset, refname):
         RuntimeError: fragment extraction or MOFid-v1 evidence is unavailable.
 
     This generic compatibility method retains ``ltol=0.3`` and ``stol=2``.
-    It is not the pinned v26 release calculation (``ltol=0.25``, ``stol=1.5``).
+    It is not the pinned CoREMOF-COD release calculation (``ltol=0.25``, ``stol=1.5``).
     Unavailable nodes never produce invented Type identifiers. Intermediate
     files use one private temporary directory; the caller's ``Output`` and
     the reference node library are never deleted or modified.

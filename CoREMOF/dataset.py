@@ -207,7 +207,7 @@ _M2T_RELEASE_STATE = (
 )
 _ALLOWED_PUBLIC_AUTHORITY_STATE_DECLARATIONS = {
     ("dataset_info", "release_status"): _STAGED_RELEASE_STATUS,
-    # The atomically installed v26.0.2 release repeats the same exact staged
+    # The atomically installed CoREMOF-COD release repeats the same exact staged
     # status in its parent-method registry.  Accept that one value at that one
     # path; all other authority-shaped declarations remain closed.
     ("parent_group_methods", "release_status"): _STAGED_RELEASE_STATUS,

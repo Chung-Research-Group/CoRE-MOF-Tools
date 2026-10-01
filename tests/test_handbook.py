@@ -276,7 +276,7 @@ class HandbookTests(unittest.TestCase):
                     "identity_size",
                     "transitive connected component",
                     "not a count of edges or identifiers",
-                    "v26.0.1",
+                    "inherited base cohort",
                     "independently",
                     "no earlier component",
                     "MOFid-v2",

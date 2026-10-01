@@ -12,11 +12,12 @@ include ML_BENCHMARK_HANDOFF.md
 include ruff.toml
 recursive-include CoREMOF/_topology_profile *.jl *.toml
 include README_DATASET_SPLITTING.md
+include README_DATABASE_ACCESS.md
 recursive-include examples *.py
 include examples/README.md
 include examples/CoREMOF_dataset_splitting_quickstart.ipynb
 include COMBINED_TARGET_DATASET.md
-include V2602_COMBINED_TARGET_COVERAGE_20260904.json
+include CoREMOF-COD_COMBINED_TARGET_COVERAGE_20260904.json
 include .github/workflows/tests.yml
 recursive-include docs/source *.rst
 include docs/Makefile

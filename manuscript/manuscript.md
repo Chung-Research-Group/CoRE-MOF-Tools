@@ -23,7 +23,7 @@ over the complete release before experiment-specific filtering. A paired
 benchmark constructor varies the fraction of the eligible non-computation-ready
 pool while preserving cohort size and a common computation-ready test set,
 subject to indivisible-block feasibility. An application snapshot over 42,574
-CoRE-MOF v26.0.2 structures contains finite methane, hydrogen, and raw Widom
+CoREMOF-COD structures contains finite methane, hydrogen, and raw Widom
 ratio targets for 28,979, 28,974, and 28,944 structures, respectively, as of
 4 September 2026. These counts describe available targets, not completed
 model benchmarks. Machine-readable receipts separate frozen assignments from
@@ -39,7 +39,7 @@ The CoRE MOF database supports computational screening of experimentally
 reported metal–organic frameworks. The 2025 database study combined curation,
 calculated and machine-learned properties, and material–process screening.
 That study is the scientific context for the software described here; it is
-not a publication of the present v26.0.2 snapshot.
+not a publication of the present CoREMOF-COD snapshot.
 [CoRE MOF DB, Matter (2025)](https://doi.org/10.1016/j.matt.2025.102140).
 
 A reusable software workflow must make several distinctions explicit. A
@@ -99,8 +99,8 @@ Slurm exit status as proof of scientific target availability.
 
 ### 3.1 Release universe and strict checker views
 
-The published v26.0.2 membership used by the application contains 42,574
-unique structure IDs: the 36,628-member v26.0.1 base and 5,946 additions.
+The published CoREMOF-COD membership used by the application contains 42,574
+unique structure IDs: the 36,628-member inherited base cohort and 5,946 additions.
 These are released structures, not unique hypothetical chemical parents;
 different released solvent-removal variants retain their own IDs. Joins use
 `structure_id`, never row position or a filename guessed from an alias.
@@ -273,12 +273,12 @@ an adversarial security boundary.
 
 ### 4.1 Denominator-controlled target coverage
 
-The combined snapshot `v2602_combined_available_targets_20260904_v3` merges
+The combined snapshot `coremof_cod_combined_available_targets_20260904_v3` merges
 accepted historical results with validated new results at cutoff
 `2026-09-04T05:43:23Z`. The denominator below is the complete 42,574-structure
 published release, not only eligible simulations or strict checker labels.
 Counts are reproduced from the repository's
-[public-safe aggregate record](../V2602_COMBINED_TARGET_COVERAGE_20260904.json).
+[public-safe aggregate record](../CoREMOF-COD_COMBINED_TARGET_COVERAGE_20260904.json).
 
 | Endpoint | Finite unique structure IDs | Full-release coverage |
 |---|---:|---:|

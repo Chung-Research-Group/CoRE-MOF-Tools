@@ -18,7 +18,7 @@ class CliTests(unittest.TestCase):
         dataset = SimpleNamespace(classify=lambda checker: classified)
 
         class Suite:
-            dataset_version = "v26.test"
+            dataset_version = "fixture-release"
             checker_view = "5checker"
             runs = tuple(range(30))
             fixed_test_ids = ("A", "B")
@@ -359,7 +359,7 @@ class CliTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary_directory:
             output_directory = Path(temporary_directory) / "split"
             result = SimpleNamespace(
-                dataset_version="v26.test",
+                dataset_version="fixture-release",
                 checker_view="5checker",
                 parent_method="priority_main",
                 requested_leakage_guard="auto",
@@ -421,7 +421,7 @@ class CliTests(unittest.TestCase):
 
     def test_split_cli_accepts_optional_reference_parent_methods(self):
         result = SimpleNamespace(
-            dataset_version="v26.test",
+            dataset_version="fixture-release",
             checker_view="5checker",
             parent_method="structure_matcher_strict",
             leakage_guard="parent_only",
@@ -479,7 +479,7 @@ class CliTests(unittest.TestCase):
     def test_target_config_is_merged_before_required_target_split(self):
         target_dataset = object()
         result = SimpleNamespace(
-            dataset_version="v26.test",
+            dataset_version="fixture-release",
             checker_view="5checker",
             parent_method="priority_main",
             leakage_guard="main_union",
@@ -542,7 +542,7 @@ class CliTests(unittest.TestCase):
 
     def test_merge_targets_subcommand_writes_three_outputs(self):
         class Merged:
-            dataset_version = "v26.test"
+            dataset_version = "fixture-release"
             target_columns = ("uptake", "selectivity")
             feature_columns = ("rac_a",)
 

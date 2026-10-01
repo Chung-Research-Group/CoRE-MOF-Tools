@@ -88,8 +88,9 @@ Each predictor loads only its own optional dependencies. Importing
 featurizer. Missing packages still prevent the corresponding calculation,
 and no alternative model is substituted.
 
-``stability()`` is the compatibility interface to the bundled historical
-models and their original scalers. It does not load the later CoREMOF-COD
+``stability()`` is the compatibility interface to the historical
+models and their original scalers, obtained separately and hash-verified before
+use. It does not load the later CoREMOF-COD
 multi-seed benchmarking models. Reproducing those experiments requires their
 separately recorded inputs, assignments, fitted models and environments.
 Use the separate ``historical-stability`` extra and the original hash-verified
@@ -123,4 +124,5 @@ Frozen manuscript workflows
 
 For the exact common-input benchmark assignment replay, see
 :doc:`frozen_assignment_replay`. This is separate from recomputing descriptors
-or running the bundled historical property predictors.
+or running the historical property predictors with separately obtained,
+hash-verified model assets.

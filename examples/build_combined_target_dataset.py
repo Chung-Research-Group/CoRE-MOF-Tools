@@ -298,10 +298,46 @@ def _load_release_manifest(path: Path) -> Tuple[Dict[str, Dict[str, str]], str, 
     return rows, _sha256(data), len(data)
 
 
+def _load_identity_contract(path: Path, expected_sha256: str) -> Tuple[Mapping[str, Any], str, int]:
+    """Require exact externally supplied cohort identities before reading evidence."""
+    contract, data = _read_json(path)
+    digest = hashlib.sha256(data).hexdigest()
+    if (not isinstance(expected_sha256, str) or len(expected_sha256) != 64
+            or any(character not in "0123456789abcdef" for character in expected_sha256)
+            or digest != expected_sha256):
+        raise BuildError("identity contract SHA-256 mismatch or invalid expected hash")
+    if not isinstance(contract, dict) or set(contract) != {"release_version", "base", "additions"}:
+        raise BuildError("identity contract must declare release_version, base and additions")
+    for cohort in ("base", "additions"):
+        value = contract[cohort]
+        if not isinstance(value, dict) or set(value) != {"phase", "version"}:
+            raise BuildError("identity contract cohort must declare phase and version")
+        if any(not isinstance(text, str) or not text or text != text.strip()
+               for text in value.values()):
+            raise BuildError("identity contract requires exact nonblank phase/version strings")
+    version = contract["release_version"]
+    if not isinstance(version, str) or not version or version != version.strip():
+        raise BuildError("identity contract requires an exact nonblank release version")
+    if contract["base"]["phase"] == contract["additions"]["phase"]:
+        raise BuildError("base and additions must declare distinct release phases")
+    if contract["base"]["version"] == contract["additions"]["version"]:
+        raise BuildError("base and additions must declare distinct source versions")
+    if version != contract["additions"]["version"]:
+        raise BuildError("release version must match the additions edition")
+    return contract, digest, len(data)
+
+
+def _current_source_class(version: str) -> str:
+    """Use the recorded edition to name provenance, including legacy inputs."""
+    return "CURRENT_VALIDATED_" + "".join(character for character in version.upper()
+                                        if character.isalnum())
+
+
 def _load_source_manifest(
     path: Path,
     release_ids: Mapping[str, Mapping[str, str]],
     expected_phase: str,
+    expected_release_version: str,
 ) -> Tuple[Dict[Tuple[str, str], Dict[str, Any]], str, int, Counter]:
     digest = hashlib.sha256()
     output: Dict[Tuple[str, str], Dict[str, Any]] = {}
@@ -330,9 +366,6 @@ def _load_source_manifest(
                 raise BuildError("wrong source schema at {}:{}".format(path.name, line_number))
             if row.get("release_phase") != expected_phase:
                 raise BuildError("wrong release phase at {}:{}".format(path.name, line_number))
-            expected_release_version = (
-                "v26.0.1" if expected_phase == "v26.0.1_base" else "v26.0.2"
-            )
             if row.get("release_version") != expected_release_version:
                 raise BuildError("wrong release version at {}:{}".format(path.name, line_number))
             if not isinstance(row.get("alias_conflict"), bool):
@@ -540,7 +573,7 @@ def _load_current_evidence(
         if source is None or source.get("status") != "MISSING":
             raise BuildError("current result is not fill-only for {} {}".format(*key))
         expected_phase = str(source.get("release_phase", ""))
-        expected_version = "v26.0.1" if expected_phase == "v26.0.1_base" else "v26.0.2"
+        expected_version = str(source["release_version"])
         if row["release_phase"] != expected_phase or row["dataset_version"] != expected_version:
             raise BuildError(
                 "current-evidence release identity mismatch at line {}".format(line_number)
@@ -607,6 +640,7 @@ def _build_assignment(
     release_row: Mapping[str, str],
     source: Mapping[str, Any],
     current: Optional[Mapping[str, str]],
+    release_version: Optional[str] = None,
 ) -> Dict[str, Any]:
     contract = ENDPOINTS[endpoint]
     source_status = str(source["status"])
@@ -617,7 +651,7 @@ def _build_assignment(
     row: Dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "snapshot_id": snapshot_id,
-        "release_version": "v26.0.2",
+        "release_version": release_version or str(source["release_version"]),
         "release_phase": str(source.get("release_phase", "")),
         "structure_id": structure_id,
         "cif_sha256": str(release_row["sha256"]).lower(),
@@ -668,7 +702,7 @@ def _build_assignment(
         row.update(
             {
                 "source_class": "HISTORICAL_EXISTING",
-                "source_dataset_version": str(source.get("release_version", "v26.0.1")),
+                "source_dataset_version": str(source["release_version"]),
                 "source_logical_name": _logical_source_name(source.get("selected_source_file")),
                 "source_sha256": str(source.get("selected_source_sha256", "")),
                 "source_record_id": str(source.get("selected_legacy_id", "")),
@@ -698,11 +732,7 @@ def _build_assignment(
         return row
 
     status = str(current["status"])
-    source_class = (
-        "CURRENT_VALIDATED_V2602"
-        if current.get("dataset_version") == "v26.0.2"
-        else "CURRENT_VALIDATED_V2601"
-    )
+    source_class = _current_source_class(str(current["dataset_version"]))
     row.update(
         {
             "assignment_status": status,
@@ -916,15 +946,22 @@ def build(args: argparse.Namespace) -> Path:
             "release count {} != {}".format(len(release), args.expected_release_count)
         )
 
+    identity, identity_sha, identity_size = _load_identity_contract(
+        args.identity_contract, args.identity_contract_sha256)
+    base_phase = identity["base"]["phase"]
+    additions_phase = identity["additions"]["phase"]
+    release_version = identity["release_version"]
     base_rows, base_sha, base_size, base_status = _load_source_manifest(
         args.base_manifest,
         release,
-        "v26.0.1_base",
+        base_phase,
+        identity["base"]["version"],
     )
     additions_rows, additions_sha, additions_size, additions_status = _load_source_manifest(
         args.additions_manifest,
         release,
-        "v26.0.2_additions",
+        additions_phase,
+        identity["additions"]["version"],
     )
     base_summary, base_summary_sha, base_summary_size = _verify_source_summary(
         args.base_summary,
@@ -1021,6 +1058,7 @@ def build(args: argparse.Namespace) -> Path:
         raise BuildError("current receipt endpoint count mismatch")
 
     actual_input_hashes = {
+        "identity_contract": identity_sha,
         "release_manifest": release_sha,
         "base_manifest": base_sha,
         "base_summary": base_summary_sha,
@@ -1049,6 +1087,7 @@ def build(args: argparse.Namespace) -> Path:
                 release[structure_id],
                 source_rows[key],
                 current.get(key),
+                release_version,
             )
             assignments.append(assignment)
             assignments_by_key[key] = assignment
@@ -1084,7 +1123,7 @@ def build(args: argparse.Namespace) -> Path:
             }
         )
         _write_json(staging / "coverage_summary.json", coverage)
-        readme = """# Combined current-available CoRE-MOF v26.0.2 adsorption targets
+        readme = """# Combined current-available CoREMOF-COD adsorption targets
 
 In this dataset, **final as of the recorded cutoff** means an immutable,
 fill-only union of every accepted input bound by this receipt at that cutoff.
@@ -1093,7 +1132,7 @@ published structure has a target, or that publication/redistribution is
 authorized.
 
 The canonical attachment table has one row for each of the 42,574 published
-v26.0.2 structure identifiers.  It combines reusable historical values marked
+CoREMOF-COD structure identifiers.  It combines reusable historical values marked
 `EXISTING` by the frozen completion manifests with collector-validated results
 for keys those same manifests marked `MISSING`.  A current result may fill only
 its corresponding missing key; it cannot overwrite an existing value.
@@ -1160,7 +1199,7 @@ values and is not cleared for a public Git repository.
                 "Immutable fill-only union of all accepted inputs bound by this receipt "
                 "at the cutoff; not campaign completion or publication authorization."
             ),
-            "release_version": "v26.0.2",
+            "release_version": release_version,
             "release_structure_count": len(release),
             "merge_policy": {
                 "historical_existing_reused": True,
@@ -1179,6 +1218,11 @@ values and is not cleared for a public Git repository.
             },
             "endpoint_contracts": {key: dict(value) for key, value in ENDPOINTS.items()},
             "input_bindings": {
+                "identity_contract": {
+                    "logical_name": args.identity_contract.name,
+                    "sha256": identity_sha,
+                    "size_bytes": identity_size,
+                },
                 "release_manifest": {
                     "logical_name": args.release_manifest.name,
                     "sha256": release_sha,
@@ -1283,6 +1327,10 @@ values and is not cleared for a public Git repository.
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--identity-contract", type=Path, required=True,
+                        help="Trusted JSON naming expectations for base/additions and the final release.")
+    parser.add_argument("--identity-contract-sha256", required=True,
+                        help="Independently verified SHA-256 of the identity contract.")
     parser.add_argument("--release-manifest", type=Path, required=True)
     parser.add_argument("--base-manifest", type=Path, required=True)
     parser.add_argument("--base-summary", type=Path, required=True)

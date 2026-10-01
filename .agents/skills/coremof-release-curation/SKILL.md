@@ -1,6 +1,6 @@
 ---
 name: coremof-release-curation
-description: Prepare or reproduce CoRE-MOF-Tools CR/NCR benchmarks from versioned releases and target tables. Use for target-first or historical deferred-target workflows and their restricted data handoffs.
+description: Read saved CoREMOF-COD checker results or prepare and replay grouped CR/NCR benchmarks from an explicitly versioned release.
 ---
 
 # CoRE-MOF CR/NCR benchmark workflows
@@ -8,6 +8,14 @@ description: Prepare or reproduce CoRE-MOF-Tools CR/NCR benchmarks from versione
 This repository-scoped skill is deliberately limited to the portable ML
 benchmark. It contains no original-host paths, scheduler state, licensed-node
 configuration, or release-production instructions.
+
+For a read-only metadata request, use `examples/read_release_metadata.py` or
+`examples/read_checker_results.py` and the matching
+[database access guide](../../../README_DATABASE_ACCESS.md). Reading recorded
+checker outcomes does not run the checkers and needs no checker engines or
+CCDC installation. This route does not require the historical handoff below.
+Keep archive publication catalogues distinct from the file-level catalogue
+accepted by `CoREMOF.retrieval.fetch_release`.
 
 ## Choose the requested workflow
 
@@ -85,7 +93,7 @@ parent or identity claim. The benchmark adds the requested criterion edges and
 takes connected-component closure; every resulting effective leakage block is
 indivisible across train, validation, and test.
 
-The checksum-bound v26.0.2 integration has 6,294 raw strict CR and 2,299 raw
+The checksum-bound CoREMOF-COD integration has 6,294 raw strict CR and 2,299 raw
 strict NCR rows. Some share an effective block with another checker label, so
 the default must fail closed. Explicitly request
 `complete_release_label_pure_effective_blocks`: it excludes 1,601 CR and 572
@@ -118,11 +126,14 @@ audited combined as-of-cutoff snapshot, not the completion-only current-results
 view. Build it with `examples/build_combined_target_dataset.py`, require exact
 release/source hashes and expected counts, rebuild independently, and audit it
 with `examples/audit_combined_target_dataset.py --comparison-dataset` before
-promotion. Read `COMBINED_TARGET_DATASET.md` for the current count and null
+promotion.
+Both utilities require the externally supplied dataset identity contract and
+its independently verified SHA-256; see `COMBINED_TARGET_DATASET.md` for the
+exact base/additions phase and version expectations. Read `COMBINED_TARGET_DATASET.md` for the current count and null
 contract.
 
 At cutoff `2026-09-04T05:43:23Z`, the combined exact-ID left join spans all
-42,574 published structures and has 28,979 finite CH4, 28,974 finite H2, and
+42,574 recorded structures and has 28,979 finite CH4, 28,974 finite H2, and
 28,944 finite raw CO2/N2 Widom-ratio labels. The earlier 2,335 / 3,744 / 14,167
 counts are new current-finished evidence only, not total target availability.
 `HISTORICAL_SCIENTIFIC_NULL` means the frozen source status is `EXISTING` with
@@ -158,6 +169,8 @@ receipt, and every derived output keeps `official_split=false`.
   asset-specific redistribution terms before moving CSD, SI, MOSAEC, or other
   licensed-derived content.
 - Report raw, excluded, eligible, missing/null/error, and endpoint coverage
-  separately. Do not describe the current target snapshot, sensitivity cohort,
-  exploratory assignment, or full-CR diagnostic as complete, official, or a
-  publication benchmark.
+  separately. The historical snapshot and sensitivity cohort described above
+  are not a replacement for the frozen paper experiment. Exploratory
+  assignments are not official release splits, and a full-CR diagnostic with
+  training overlap is not an independent test. Report completion only for the
+  exact experiment and endpoint matrix supported by its verified records.

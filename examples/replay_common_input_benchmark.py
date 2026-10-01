@@ -24,9 +24,9 @@ from CoREMOF import benchmarks as algorithm
 from CoREMOF._transactions import publish_directory
 
 
-DATASET_ID = 'v2602_common_input_equal_size_20260912_v1'
+DATASET_ID = 'coremof_cod_common_input_equal_size_20260912_v1'
 ASSIGNMENT_SHA256 = '9e72992970518d039f9631b1f45b516f4ff3603f7945bdcb82dbad283529dcbd'
-PREFIX = 'v2602_workflow_handoff_20260913_v1/'
+PREFIX = 'coremof_cod_workflow_handoff_20260913_v1/'
 BASE = 'workstation_files/CoREMOF-COD_benchmark_transfer_20260912_v1/dataset/'
 DERIVED = 'workstation_files/' + DATASET_ID + '/'
 FILES = {
@@ -54,40 +54,73 @@ def canonical(value):
 
 
 def load_inputs(path, expected_sha256):
+    """Read one hash-bound handoff by its file roles, independent of edition names.
+
+    Require one top-level directory, one source dataset and one derived dataset.
+    Canonical paths, sizes, unique regular members and the original checksum
+    ledger remain authoritative; no members are extracted or executed.
+    """
     if not re.fullmatch('[0-9a-f]{64}', expected_sha256):
         raise ValueError('Supply the independently verified archive SHA-256')
     if sha(path) != expected_sha256:
         raise ValueError('Archive SHA-256 differs')
-    wanted = {PREFIX + name for name in FILES.values()} | {PREFIX + 'SHA256SUMS'}
+    source_suffixes = {key: value[len(BASE):] for key, value in FILES.items()
+                       if value.startswith(BASE)}
+    derived_suffixes = {key: value[len(DERIVED):] for key, value in FILES.items()
+                        if value.startswith(DERIVED)}
     payloads = {}
     total = 0
     with tarfile.open(path, 'r:gz') as archive:
         for member in archive:
-            if member.name not in wanted:
+            parts = Path(member.name).parts
+            if not parts or parts[0] in ('.', '..'):
                 continue
-            if member.name in payloads or not member.isfile():
-                raise ValueError('Duplicate or non-regular replay input: ' + member.name)
+            source_match = (len(parts) >= 5 and parts[1] == 'workstation_files'
+                            and parts[3] == 'dataset'
+                            and '/'.join(parts[4:]) in source_suffixes.values())
+            derived_match = (len(parts) == 4 and parts[1] == 'workstation_files'
+                             and parts[3] in derived_suffixes.values())
+            ledger_match = len(parts) == 2 and parts[1] == 'SHA256SUMS'
+            if not (source_match or derived_match or ledger_match):
+                continue
+            if (Path(member.name).is_absolute() or '..' in parts
+                    or Path(member.name).as_posix() != member.name
+                    or member.name in payloads or not member.isfile()):
+                raise ValueError('Duplicate, unsafe or non-regular replay input: ' + member.name)
             total += member.size
             if member.size > 40 * 1024**2 or total > 100 * 1024**2:
                 raise ValueError('Replay input exceeds its bounded size contract')
             payloads[member.name] = archive.extractfile(member).read()
+    candidates = [name for name in payloads if name.endswith('/dataset/full_release_grouping.csv.gz')]
+    statuses = [name for name in payloads if name.endswith('/source_population_model_status.csv')]
+    if len(candidates) != 1 or len(statuses) != 1:
+        raise ValueError('Required replay inputs are absent or ambiguous')
+    source_root = candidates[0][:-len('full_release_grouping.csv.gz')]
+    derived_root = statuses[0][:-len('source_population_model_status.csv')]
+    prefix = source_root.split('workstation_files/', 1)[0]
+    if derived_root.split('workstation_files/', 1)[0] != prefix:
+        raise ValueError('Replay source and derived inputs have different archive roots')
+    actual_files = {key: source_root + suffix for key, suffix in source_suffixes.items()}
+    actual_files.update({key: derived_root + suffix for key, suffix in derived_suffixes.items()})
+    wanted = set(actual_files.values()) | {prefix + 'SHA256SUMS'}
     if set(payloads) != wanted:
-        raise ValueError('Required replay inputs are absent')
+        raise ValueError('Required replay inputs are absent or ambiguous')
     ledger = {}
-    for line in payloads[PREFIX + 'SHA256SUMS'].decode().splitlines():
+    for line in payloads[prefix + 'SHA256SUMS'].decode().splitlines():
         expected, name = line.split('  ', 1)
         if name in ledger:
             raise ValueError('Duplicate archive ledger entry')
         ledger[name] = expected
     hashes = {}
-    for name in FILES.values():
-        value = hashlib.sha256(payloads[PREFIX + name]).hexdigest()
-        if ledger.get(name) != value:
+    for name in actual_files.values():
+        logical_name = name[len(prefix):]
+        value = hashlib.sha256(payloads[name]).hexdigest()
+        if ledger.get(logical_name) != value:
             raise ValueError('Replay input fails its package ledger: ' + name)
-        hashes[name] = value
+        hashes[logical_name] = value
     if sha(path) != expected_sha256:
         raise ValueError('Archive changed during the replay-input read')
-    return {key: payloads[PREFIX + name] for key, name in FILES.items()}, hashes
+    return {key: payloads[name] for key, name in actual_files.items()}, hashes
 
 
 def rows(data, compressed=False):
@@ -165,7 +198,8 @@ def replay(path, expected_sha256, output):
     code_hashes = {str(p): sha(p) for p in code_paths}
     payloads, hashes = load_inputs(path, expected_sha256)
     receipt = json.loads(payloads['expected_receipt'])
-    if receipt['dataset_id'] != DATASET_ID or receipt['suite_assignment_sha256'] != ASSIGNMENT_SHA256:
+    if receipt['dataset_id'] != next(Path(name).parent.name for name in hashes
+            if name.endswith('/source_population_model_status.csv')) or receipt['suite_assignment_sha256'] != ASSIGNMENT_SHA256:
         raise ValueError('This example only replays the declared frozen experiment')
     groups = indexed(rows(payloads['groups'], compressed=True))
     topology = indexed(rows(payloads['topology']))
@@ -217,7 +251,7 @@ def replay(path, expected_sha256, output):
         if any(len(parts) > 1 for parts in by_group.values()):
             raise ValueError('A related-structure group crosses partitions')
         run_counts[key] = dict(Counter(row['partition'] for row in run))
-    report = dict(status='PASS_FROZEN_ASSIGNMENT_REPLAY', dataset_id=DATASET_ID,
+    report = dict(status='PASS_FROZEN_ASSIGNMENT_REPLAY', dataset_id=receipt['dataset_id'],
         assignment_sha256=actual_digest, assignment_rows=len(assignments), runs=run_counts,
         eligible_CR=4671, eligible_NCR=1153, common_test_structures=468,
         input_archive_sha256=expected_sha256, input_file_sha256=hashes, code_sha256=code_hashes,

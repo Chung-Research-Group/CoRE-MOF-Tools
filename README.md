@@ -8,13 +8,23 @@ precomputed checker results without bundling external checker engines.
 See [UPLOAD_GUIDE.md](UPLOAD_GUIDE.md) for code-only contribution checks and
 the assets that must remain outside Git.
 
+Database files are distributed separately from the Python package. See
+[README_DATABASE_ACCESS.md](README_DATABASE_ACCESS.md) for metadata-only loading,
+source-projection contracts, versioned data access and frozen-benchmark handling.
+Large archives and restricted CIFs are not part of this code contribution.
+
 [![Documentation](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs)](https://core-mof-tools.readthedocs.io/)
 [![PyPI](https://img.shields.io/pypi/v/CoREMOF-tools?logo=pypi)](https://pypi.org/project/CoREMOF-tools/)
 [![Python](https://img.shields.io/badge/Python-3.9--3.11-blue.svg?logo=python)](https://python.org/downloads/)
 [![License](https://img.shields.io/github/license/Chung-Research-Group/CoRE-MOF-Tools)](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/blob/main/LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15055758.svg)](https://doi.org/10.5281/zenodo.15055758)
 
-CoRE MOF Tools is the Python interface accompanying the CoRE MOF database. It provides database lookup and structure download, CIF curation and validation, geometric and chemical descriptors, and pretrained property models.
+The hosted documentation and PyPI badges refer to earlier published versions.
+For the `0.4.0.dev0` API, use the guides in the matching audited source
+checkout, including [installation](docs/source/installation.rst), rather than
+assuming that the live documentation already contains these workflows.
+
+CoRE MOF Tools is the Python interface accompanying the CoRE MOF database. It provides database lookup and structure-download interfaces, CIF curation and validation, geometric and chemical descriptors, and optional pretrained-property interfaces with separately supplied assets.
 
 ## Checker results and distribution policy
 
@@ -107,6 +117,7 @@ the new API:
 ```bash
 conda create -n coremof python=3.11
 conda activate coremof
+cd /path/to/audited/CoRE-MOF-Tools
 python -m pip install .
 coremof doctor
 ```
@@ -115,6 +126,14 @@ Run the last two commands from this updated checkout. To install on another
 machine, clone the fork and branch containing these changes first. The older
 PyPI package or an upstream branch without this update does not provide the
 new API. No database release is downloaded by `pip install .`.
+
+The verified fork API checkpoint is
+`c66796b77b0e86775f43b9021c6bcb3ebd93abfa` at
+[DrakeChan/CoRE-MOF-Tools](https://github.com/DrakeChan/CoRE-MOF-Tools).
+See the source installation guide for a pinned clone command and the distinction
+between that API checkpoint and any later documentation follow-up. A wheel
+installs the API; the human guides, example notebook and portable agent skill
+are source-tree resources, also included in the source distribution.
 
 Install the historical scientific feature set with the `full` extra. A clean
 conda environment is recommended because several of these dependencies contain
@@ -190,7 +209,7 @@ licensing, and troubleshooting, see
 For a complete executable walkthrough, open
 [the companion notebook](examples/CoREMOF_dataset_splitting_quickstart.ipynb).
 
-Current v26 candidate files remain non-published and retain their explicit `STAGE_ONLY` status.
+Current CoREMOF-COD candidate files remain non-published and retain their explicit `STAGE_ONLY` status.
 The missing-MOFid handling policy above is approved, but public-release
 validation and publication remain separate steps. Splits remain exploratory
 rather than official benchmark assignments.
@@ -262,7 +281,7 @@ structures in the same partition:
 ```python
 from CoREMOF.dataset import CoREMOFDataset
 
-dataset = CoREMOFDataset.from_release("/path/to/coremof_v26.0.2")
+dataset = CoREMOFDataset.from_release("/path/to/CoREMOF-COD")
 classified = dataset.classify(checkers="5checker")
 print(len(classified.cr_ids), len(classified.ncr_ids))
 split = classified.train_valid_test_split(
@@ -346,7 +365,7 @@ CSD-mediated bridges without exposing CSD rows.
 The same workflow is available from the command line:
 
 ```bash
-coremof split /path/to/coremof_v26.0.2 \
+coremof split /path/to/CoREMOF-COD \
   --checkers 5checker \
   --sources COD SI \
   --output-directory my_split
@@ -405,7 +424,7 @@ same validated release or target configuration into a deterministic ranked
 CSV and hash-bound receipt:
 
 ```bash
-python examples/screen_candidates.py /path/to/coremof_v26.0.2 \
+python examples/screen_candidates.py /path/to/CoREMOF-COD \
   --target-config targets.json \
   --rank-by xe_uptake \
   --require-target xe_uptake \
@@ -494,7 +513,7 @@ chosen_depth_racs = RACs("my_mof.cif", depth=5)     # 264 values
 `depth` must be a non-Boolean integer greater than or equal to zero. Output
 keeps the historical `Metal`, `Linker`, and `Function-group` order and rounds
 values to four decimal places. Therefore `depth=5` selects a 264-value public
-calculation but is not the sealed CoRE-MOF v26 release RAC5 method, which also
+calculation but is not the sealed CoREMOF-COD release RAC5 method, which also
 requires the pinned molSimplify 1.7.3 environment and unrounded validated
 values.
 

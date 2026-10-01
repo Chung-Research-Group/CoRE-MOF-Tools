@@ -4,6 +4,7 @@ import contextlib
 import importlib
 import io
 import json
+import runpy
 from pathlib import Path
 import subprocess
 import sys
@@ -102,6 +103,31 @@ for name in ('ccdc', 'mofchecker', 'torch', 'numpy', 'CoREMOF._release_setc_prot
             result = json.loads(output.getvalue())
             self.assertEqual(result['structure']['label'], 'CR')
             self.assertEqual(len(result['structure']['checkers']), 5)
+
+    def test_historical_example_migrates_to_read_only_release_input(self):
+        example = ROOT / 'examples/checker/test.py'
+        with tempfile.TemporaryDirectory() as tmp:
+            help_run = subprocess.run(
+                [sys.executable, '-B', '-S', str(example), '--help'],
+                cwd=tmp, capture_output=True, text=True,
+            )
+            self.assertEqual(help_run.returncode, 0, help_run.stderr)
+            self.assertIn('release_root', help_run.stdout)
+            self.assertIn('not distributed or launched', help_run.stdout)
+            root = Path(tmp) / 'release'
+            root.mkdir()
+            _make_release(root)
+            before = (root / 'metadata/metadata.csv').read_bytes()
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output), patch('subprocess.Popen') as process:
+                self.assertEqual(runpy.run_path(str(example))['main']([
+                    str(root), '--structure-id', 'ASR-COD-2026-0001',
+                    '--checkers', 'MOFChecker', 'MOSAEC',
+                ]), 0)
+                process.assert_not_called()
+            result = json.loads(output.getvalue())
+            self.assertEqual(result['structure']['label'], 'CR')
+            self.assertEqual((root / 'metadata/metadata.csv').read_bytes(), before)
 
 
 if __name__ == '__main__':

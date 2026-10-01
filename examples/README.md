@@ -2,6 +2,16 @@
 
 Run `coremof doctor` before using an example. The notebooks are grouped by the external requirements they need.
 
+For an authorized metadata-only release, use
+[`read_release_metadata.py`](read_release_metadata.py) with an explicit
+`--expected-version`, after verifying the transferred archive. It reads saved
+checker results without CIFs or scientific calculations. The optional trusted
+ledger hash verifies all listed metadata files. Source-only input needs both
+`--projection-contract` and its independently received `--projection-sha256`.
+See [separate database access](../README_DATABASE_ACCESS.md). The existing
+`fetch_release.py` consumes the package's file-level catalogue, not the new
+database repository's archive publication catalogue.
+
 The recorded COD-workstation curation has a separate entry point,
 [`replay_cod_curation.py`](replay_cod_curation.py). It requires its frozen
 external scripts/tables/models and pinned Python environment, uses private
@@ -20,7 +30,7 @@ The dataset tools include four standard-library-only entry points:
   ranking, excludes null, non-numeric, and non-finite ranking values, and
   writes a ranked CSV plus a hash-bound JSON receipt.
 - [`build_combined_target_dataset.py`](build_combined_target_dataset.py)
-  creates the immutable, fill-only v26.0.2 target attachment snapshot from
+  creates the immutable, fill-only CoREMOF-COD target attachment snapshot from
   frozen historical evidence plus independently audited current results. It
   retains every published ID and native null, requires exact endpoint and
   release contracts, and supports explicit source-hash and count gates.
@@ -43,7 +53,7 @@ untyped or declare it as `"string"`; declaring it as `"float"` intentionally
 uses normal binary64 parsing. Booleans, nulls, NaN, and infinities are never
 ranked.
 
-Current v26 status: the null-unresolved MOFid projection is explicitly
+Current CoREMOF-COD status: the null-unresolved MOFid projection is explicitly
 `STAGE_ONLY`. Parent relations built from it are non-published candidates and
 cannot be promoted by the publication command; screening and splits from
 current live or staged inputs remain exploratory.
@@ -126,7 +136,7 @@ StructureMatcher relations.
 Rank a numeric release-metadata field directly:
 
 ```bash
-python examples/screen_candidates.py /path/to/coremof_v26.0.2 \
+python examples/screen_candidates.py /path/to/CoREMOF-COD \
   --rank-by cell_volume_A3 \
   --source COD \
   --metal Cu \
@@ -138,7 +148,7 @@ used by the notebook. Required-target filtering happens before ranking and,
 when requested, before split assignment:
 
 ```bash
-python examples/screen_candidates.py /path/to/coremof_v26.0.2 \
+python examples/screen_candidates.py /path/to/CoREMOF-COD \
   --target-config targets.json \
   --rank-by xe_uptake \
   --require-target xe_uptake \
@@ -180,21 +190,26 @@ The historical local files named `henry.txt` contain dimensionless average
 Rosenbluth weights. They are not Henry coefficients, uptake, or selectivity;
 ranking them in descending order is a workflow demonstration only.
 
-| Directory | Purpose | Main requirements |
+| Example | Purpose | Main requirements |
 |---|---|---|
 | `read_checker_results.py` | Read existing checker results and select CR/NCR | Standard library and an existing release |
-| `curation/` | Database download, lookup, and CIF curation | ASE, pymatgen, gemmi; CSD API for CSD downloads |
-| `features/` | Geometric, topology, OMS, RAC, and heat-capacity features | Zeo++, juliacall/CrystalNets, molSimplify as applicable |
-| `ion_pacman/` | PACMAN charge-based ion-preserving curation | PACMAN-charge |
+| `retrieve_legacy_structures.py` | Retrieve structures through the historical API | Applicable source permissions and authorized SI archives/provider; licensed CSD API for CSD retrieval |
+| `calculate_basic_properties.py` | Read cell mass/volume, atom count and symmetry | ASE/pymatgen and a supplied CIF |
+| `replay_release_racs.py`, `replay_release_zeopp.py`, `replay_release_topology.py`, `replay_release_oms.py` | Optional release descriptor interfaces | Authorized release/CIF inputs and the separately installed backend documented for each interface |
+| `predict_heat_capacity.py` | Run the historical heat-capacity ensemble | Separate heat-capacity environment and verified authorized ensemble assets |
+| `ion_pacman/test_example.py` | Commented historical PACMAN notes; no active calculation | A runnable adaptation needs PACMAN-charge and separately supplied CIFs; its relative CIF paths are absent from the code-only export |
 
 The old `replay_release_checkers.py`, `replay_release_mosaec.py` and
 `replay_release_setc.py` paths now provide migration notices only. They cannot
 run calculations. Third-party checker code and reference tables are not
-distributed. Historical output examples under `checker/` are not the current
-release's evidence and must not replace its checker records.
+distributed. `checker/test.py` is a result-reading migration example requiring
+an explicit release directory; it does not run checker engines. Historical
+checker records must not replace the current release's evidence.
 
-`predict_historical_stability.py` runs the original bundled predictors on one
-CIF with a private input copy and verified model assets. Use a separate
+`predict_historical_stability.py` runs the original historical predictors on one
+CIF with a private input copy and separately supplied, verified model assets.
+The seven original model/scaler files are absent from the code-only export.
+Use a separate
 `historical-stability` environment plus the external Zeo++ and pinned
 molSimplify source. These are not the later MIT multi-seed benchmark models.
 See `docs/source/historical_stability.rst` for the exact probes, feature order

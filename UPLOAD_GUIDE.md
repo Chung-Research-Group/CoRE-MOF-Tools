@@ -15,7 +15,7 @@ The optional own-group MOFClassifier integration remains separate.
 ```bash
 python -m pip install .
 python -m CoREMOF doctor
-python examples/read_checker_results.py /authorized/path/coremof_v26.0.2
+python examples/read_checker_results.py /authorized/path/CoREMOF-COD
 python examples/build_target_first_benchmark.py --help
 python examples/replay_common_input_benchmark.py --help
 ```

@@ -55,15 +55,19 @@ class CommonInputReplayTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'invalid label'):
             example.reconstruct(metadata, groups, topology, fixed)
 
-    def make_archive(self, root, corrupt=False, duplicate=False, link=False):
+    def make_archive(self, root, corrupt=False, duplicate=False, link=False,
+                     prefix=None, dataset_id=None):
         archive = root / 'handoff.tar.gz'
+        prefix = example.PREFIX if prefix is None else prefix
+        files = {key: name.replace(example.DATASET_ID, dataset_id or example.DATASET_ID)
+                 for key, name in example.FILES.items()}
         data = b'private input fixture\n'
         expected = hashlib.sha256(data).hexdigest()
-        ledger = ''.join(expected + '  ' + name + '\n' for name in example.FILES.values()).encode()
+        ledger = ''.join(expected + '  ' + name + '\n' for name in files.values()).encode()
         with tarfile.open(archive, 'w:gz') as bundle:
-            for index, name in enumerate(example.FILES.values()):
+            for index, name in enumerate(files.values()):
                 contents = b'altered' if corrupt and index == 0 else data
-                item = tarfile.TarInfo(example.PREFIX + name)
+                item = tarfile.TarInfo(prefix + name)
                 item.size = len(contents)
                 if link and index == 0:
                     item.type = tarfile.SYMTYPE
@@ -74,7 +78,7 @@ class CommonInputReplayTests(unittest.TestCase):
                     bundle.addfile(item, io.BytesIO(contents))
                     if duplicate and index == 0:
                         bundle.addfile(item, io.BytesIO(contents))
-            item = tarfile.TarInfo(example.PREFIX + 'SHA256SUMS')
+            item = tarfile.TarInfo(prefix + 'SHA256SUMS')
             item.size = len(ledger)
             bundle.addfile(item, io.BytesIO(ledger))
         return archive, example.sha(archive)
@@ -89,6 +93,15 @@ class CommonInputReplayTests(unittest.TestCase):
             self.assertEqual(list(root.iterdir()), [archive])
             with self.assertRaisesRegex(ValueError, 'Archive SHA-256 differs'):
                 example.load_inputs(archive, '0' * 64)
+
+    def test_archive_roles_accept_renamed_handoff_and_dataset_directories(self):
+        with tempfile.TemporaryDirectory() as directory:
+            archive, digest = self.make_archive(Path(directory), prefix='fixture-handoff/',
+                                                dataset_id='fixture-common-input')
+            inputs, hashes = example.load_inputs(archive, digest)
+            self.assertEqual(set(inputs), set(example.FILES))
+            self.assertTrue(any('/fixture-common-input/' in name for name in hashes))
+            self.assertFalse(any(example.DATASET_ID in name for name in hashes))
 
     def test_corrupt_duplicate_or_linked_input_fails_closed(self):
         for fault in ('corrupt', 'duplicate', 'link'):

@@ -9,7 +9,7 @@ This handbook explains how to use the lightweight CoREMOF-tools API to:
 - inspect criterion-specific parent groups; and
 - create deterministic, parent-aware train/validation/test splits.
 
-The examples target CoREMOF-tools `0.4.0.dev0` and the v26 release layout.
+The examples target CoREMOF-tools `0.4.0.dev0` and the CoREMOF-COD release layout.
 The API uses only the Python standard library. It reads completed release
 metadata; it does not run crystallographic checkers or calculate descriptors.
 Supported Python versions are 3.9, 3.10, and 3.11 (`>=3.9,<3.12`).
@@ -232,7 +232,7 @@ directory that merely contains the extracted release. A normal release tree
 looks like:
 
 ```text
-coremof_v26.0.2/
+CoREMOF-COD/
 ├── dataset_info.json
 ├── cifs/
 │   ├── ASR-COD-2000-0001.cif
@@ -268,7 +268,7 @@ release contract is inconsistent.
 ```python
 from CoREMOF.dataset import CoREMOFDataset
 
-release = "/path/to/coremof_v26.0.2"
+release = "/path/to/CoREMOF-COD"
 
 # Load and validate release tables.
 dataset = CoREMOFDataset.from_release(release)
@@ -310,14 +310,14 @@ The CSV is the assignment table. The JSON is the reproducibility receipt.
 Set the variables to the extracted release directories on your machine:
 
 ```bash
-export COREMOF_V2601_RELEASE=/path/to/coremof_v26.0.1
-export COREMOF_V2602_RELEASE=/path/to/coremof_v26.0.2
+export COREMOF_INHERITED_BASE_RELEASE=/path/to/coremof_inherited_base
+export COREMOF_COD_RELEASE=/path/to/CoREMOF-COD
 ```
 
 Then run, for example:
 
 ```bash
-coremof split "$COREMOF_V2602_RELEASE" \
+coremof split "$COREMOF_COD_RELEASE" \
   --checkers 5checker \
   --sources COD SI \
   --output-directory "$HOME/coremof_splits" \
@@ -331,7 +331,7 @@ coremof split "$COREMOF_V2602_RELEASE" \
 ```python
 from CoREMOF.dataset import CoREMOFDataset
 
-dataset = CoREMOFDataset.from_release("/path/to/coremof_v26.0.2")
+dataset = CoREMOFDataset.from_release("/path/to/CoREMOF-COD")
 ```
 
 Normal loading verifies table contents and manifest declarations, but it does
@@ -347,7 +347,7 @@ release:
 
 ```python
 dataset = CoREMOFDataset.from_release(
-    "/path/to/coremof_v26.0.2",
+    "/path/to/CoREMOF-COD",
     verify_cif_files=True,
 )
 assert dataset.cif_files_verified
@@ -622,9 +622,9 @@ its release status is `SUCCESS`, `SUCCESS_TOPOLOGY_UNKNOWN`,
 `SUCCESS_TOPOLOGY_ERROR`, or `SUCCESS_TOPOLOGY_TIMEOUT`.
 
 The release builder recomputes these keys and their connected components
-freshly over every current row of each named release. v26.0.1 is recomputed
-over its 36,628 rows; v26.0.2 is recomputed independently over all 42,574
-superset rows. It does not seed v26.0.2 with a prior v26.0.1 component or
+freshly over every current row of each named release. The inherited base cohort is recomputed
+over its 36,628 rows; CoREMOF-COD is recomputed independently over all 42,574
+superset rows. It does not seed CoREMOF-COD with a prior base-cohort component or
 import an earlier source-ID/MOFid edge. Missing, null, placeholder,
 unresolved-reconciliation, ambiguous-node, timeout, error, no-MOF,
 unmatched-node, and decomposition-error MOFid values add no edge and never
@@ -682,7 +682,7 @@ edge; this is exact fingerprint equality, not a topology-similarity tolerance.
 | `zeo` | Reference | Exact selected Zeo++ fingerprint |
 | `source_id` | Reference | Exact canonicalized `(source_database, source_id)` sibling key; no cross-database match |
 | `common_name` | Reference | Exact NFKC/whitespace/case-folded common-name match; sparse and non-unique |
-| `identity_union` | Reference | Provisional source-ID/MOFid transitive groups: freshly recompute v26.0.1 over its 36,628 current rows and v26.0.2 independently over its 42,574 current rows from exact canonicalized database-namespaced source-ID, eligible complete MOFid-v2, or eligible complete MOFid-v1 edges, then take connected-component closure; no prior component import and no RAC5, Zeo++, topology, CIF hash, common name, or StructureMatcher input |
+| `identity_union` | Reference | Provisional source-ID/MOFid transitive groups: freshly recompute the inherited base cohort over its 36,628 current rows and CoREMOF-COD independently over its 42,574 current rows from exact canonicalized database-namespaced source-ID, eligible complete MOFid-v2, or eligible complete MOFid-v1 edges, then take connected-component closure; no prior component import and no RAC5, Zeo++, topology, CIF hash, common name, or StructureMatcher input |
 | `none` | Control | Treat every structure as an independent singleton |
 
 RAC/Zeo equality is fingerprint equivalence, not proof of a common synthetic
@@ -709,7 +709,7 @@ compact deterministic group digest; it is not a topology name, MOFid, RMSD,
 or similarity score. The release builder hashes the criterion name and its
 complete comparison key with length-delimited UTF-8 SHA-256, starts with eight
 uppercase hexadecimal characters after the prefix, and extends every actually
-colliding prefix one character at a time until unique in the v26.0.2 superset.
+colliding prefix one character at a time until unique in the CoREMOF-COD superset.
 
 The optional criteria are accepted only when the release declares and
 validates their columns. They are sensitivity relations and do not alter
@@ -929,7 +929,7 @@ It can combine multiple files with different target columns:
 from CoREMOF.dataset import CoREMOFDataset
 from CoREMOF.targets import AliasRegistry, TargetSource
 
-dataset = CoREMOFDataset.from_release("/path/to/coremof_v26.0.2")
+dataset = CoREMOFDataset.from_release("/path/to/CoREMOF-COD")
 
 uptake = TargetSource(
     "/path/to/uptake.csv",
@@ -1097,7 +1097,7 @@ The standard-library example
 validated screen without changing checker labels or filling missing values:
 
 ```bash
-python examples/screen_candidates.py /path/to/coremof_v26.0.2 \
+python examples/screen_candidates.py /path/to/CoREMOF-COD \
   --target-config targets.json \
   --rank-by xe_uptake \
   --require-target xe_uptake \
@@ -1163,7 +1163,7 @@ split = classified.train_valid_test_split(
 from CoREMOF.splitters import split_release
 
 split = split_release(
-    "/path/to/coremof_v26.0.2",
+    "/path/to/CoREMOF-COD",
     checkers="5checker",
     parent_method="priority_main",
     leakage_guard="auto",
@@ -1466,7 +1466,7 @@ coremof split --help
 ### 15.2 Recommended COD+SI split
 
 ```bash
-coremof split /path/to/coremof_v26.0.2 \
+coremof split /path/to/CoREMOF-COD \
   --checkers 5checker \
   --parent-method priority_main \
   --leakage-guard auto \
@@ -1484,7 +1484,7 @@ assignment CSV and receipt JSON.
 ### 15.3 Strict CIF verification from the CLI
 
 ```bash
-coremof split /path/to/coremof_v26.0.2 \
+coremof split /path/to/CoREMOF-COD \
   --verify-cifs \
   --output-directory verified_split
 ```
@@ -1492,7 +1492,7 @@ coremof split /path/to/coremof_v26.0.2 \
 ### 15.4 Other useful CLI filters
 
 ```bash
-coremof split /path/to/coremof_v26.0.2 \
+coremof split /path/to/CoREMOF-COD \
   --checkers 3checker \
   --parent-method rac5 \
   --leakage-guard parent_only \
@@ -1552,7 +1552,7 @@ are resolved beside the configuration file:
 Create the joined modelling table:
 
 ```bash
-coremof merge-targets /path/to/coremof_v26.0.2 \
+coremof merge-targets /path/to/CoREMOF-COD \
   --config targets.json \
   --output-directory model_inputs \
   --stem xe_kr_targets
@@ -1561,7 +1561,7 @@ coremof merge-targets /path/to/coremof_v26.0.2 \
 Or merge and split in one command:
 
 ```bash
-coremof split /path/to/coremof_v26.0.2 \
+coremof split /path/to/CoREMOF-COD \
   --target-config targets.json \
   --require-target xe_uptake \
   --require-target xe_kr_selectivity \
@@ -1621,7 +1621,7 @@ value; list all four explicitly:
 from pathlib import Path
 from CoREMOF.dataset import CoREMOFDataset
 
-dataset = CoREMOFDataset.from_release("/path/to/coremof_v26.0.2")
+dataset = CoREMOFDataset.from_release("/path/to/CoREMOF-COD")
 classified = dataset.classify("5checker", sources=("COD",))
 
 Path("cod_cr_ids.txt").write_text("\n".join(classified.cr_ids) + "\n")
@@ -1738,10 +1738,10 @@ Current package outputs are reproducible exploratory splits. They contain:
 official_split = false
 ```
 
-Passing `official=True` raises `OfficialSplitUnavailableError` because the v26
+Passing `official=True` raises `OfficialSplitUnavailableError` because the CoREMOF-COD
 release currently contains no audited assignment manifest.
 
-An official future v26.0.2 split must freeze v26.0.1 assignments. If a new
+An official future CoREMOF-COD split must freeze inherited base cohort assignments. If a new
 structure connects base groups already frozen in different partitions, the new
 row must be reported as a bridge conflict rather than moving old rows silently.
 That frozen-extension feature is not yet implemented.
@@ -1755,7 +1755,7 @@ closed RT/M2T contract is staged, non-decisive, and explicitly
 `publication_authorized=false`; an arbitrary `FINAL` or `FINAL_CANDIDATE`
 token is rejected rather than treated as authority.
 
-Current v26 parent tables remain provisional pending the final approved MOFid
+Current CoREMOF-COD parent tables remain provisional pending the final approved MOFid
 evidence and parent rebuild. The package is usable now for exploratory work,
 but every MOFid-dependent or `priority_main` result must retain that caveat.
 
@@ -1913,7 +1913,7 @@ one CR order; any structure present at two levels retains its partition.
 Indivisible blocks can move train/validation counts away from their requested
 integers, and every deviation is reported.
 
-The published v26.0.2 raw pools do not satisfy the whole-block requirement:
+The published CoREMOF-COD raw pools do not satisfy the whole-block requirement:
 some strict rows share an effective leakage block with AMBIGUOUS, UNCHECKED, or
 the opposite strict label. The default therefore fails closed. The audited
 sensitivity ladder must explicitly set
@@ -1965,7 +1965,7 @@ benchmark; the common `fixed_pure_cr` test is.
 
 Construction fails closed with exact counts and the maximum feasible NCR-pool
 fraction if `M>C` or, after reserving the test, `M>C-test_count`. It never caps,
-duplicates, or silently resizes a cohort. The checksum-bound published v26.0.2
+duplicates, or silently resizes a cohort. The checksum-bound published CoREMOF-COD
 integration has raw counts `C_raw=6,294` and `M_raw=2,299`. With
 `group_criteria="priority_main"` and the explicit
 `complete_release_label_pure_effective_blocks` policy, 1,601 CR and 572 NCR
@@ -2018,12 +2018,12 @@ simply not selected by a narrower attached view.
 The thin command-line forms are:
 
 ```bash
-coremof benchmark-cr-ncr /path/to/coremof_v26.0.2 \
+coremof benchmark-cr-ncr /path/to/CoREMOF-COD \
   --group-criteria priority_main \
   --cohort-eligibility complete_release_label_pure_effective_blocks \
   --output-directory benchmark_outputs
 
-coremof attach-targets /path/to/coremof_v26.0.2 \
+coremof attach-targets /path/to/CoREMOF-COD \
   --manifest model_split.csv \
   --receipt model_split.json \
   --config targets.json \
@@ -2123,7 +2123,7 @@ immutable validation receipt produced for that freeze; this handbook avoids
 embedding counts that become stale whenever a fail-closed regression is added.
 The validation also includes:
 
-- exact loading of 36,628 v26.0.1 and 42,574 v26.0.2 structures from the
+- exact loading of 36,628 inherited base structures and 42,574 CoREMOF-COD structures from the
   terminal staged pair;
 - strict byte-level CIF-manifest verification;
 - the full target/feature join, all notebook code cells, and deterministic
@@ -2141,7 +2141,7 @@ The validation also includes:
 
 The following 2026-08-03 numbers are superseded historical validation evidence,
 not the terminal staged counts used by section 18. For that earlier local
-v26.0.2 provisional audited snapshot, a
+CoREMOF-COD provisional audited snapshot, a
 five-checker COD+SI CR/NCR run has 5,902 eligible structures and produced
 4,722/590/590 train/validation/test rows with zero crossed leakage blocks.
 These counts are dated validation evidence, not permanent API constants.
@@ -2227,8 +2227,8 @@ python -m unittest \
 Run opt-in real-release tests by supplying both roots:
 
 ```bash
-COREMOF_V2601_RELEASE=/path/to/coremof_v26.0.1 \
-COREMOF_V2602_RELEASE=/path/to/coremof_v26.0.2 \
+COREMOF_INHERITED_BASE_RELEASE=/path/to/coremof_inherited_base \
+COREMOF_COD_RELEASE=/path/to/CoREMOF-COD \
 python -m unittest tests.test_split_release_integration
 ```
 
