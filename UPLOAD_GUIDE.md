@@ -10,6 +10,37 @@ It does not distribute the third-party checker algorithms, reference tables or
 execution workers. Compatibility entry points report the removal explicitly.
 The optional own-group MOFClassifier integration remains separate.
 
+## Separate software and database releases
+
+This repository is the **code-only Python tools** contribution. Its package
+version is `0.4.0.dev0`; a local source/wheel build is not a published PyPI or
+Zenodo release. Database archives and the manuscript/plot-input transfer do not
+belong inside the Python package.
+
+The database publication uses full metadata for 42,574 structures, without CIF
+bytes, and separate COD/SI CIF archives for 19,598/5,727 structures on Zenodo.
+The separate modified CSD and unmodified CSD local packages have been built
+with 13,001 and 4,248 structures, respectively, for later CCDC handoff. Their
+archive names are `CoREMOF-COD_CSD_modified_cifs_20261001.zip` and
+`CoREMOF-COD_CSD_unmodified_cifs_20261001.zip`. Neither CSD package may be added to this repository,
+GitHub Release assets or Zenodo. Use each package's manifest and confirmed
+access terms, not ASR/FSR/ION or CR/NCR labels, to identify its category.
+
+The authors will fill these deliberately blank release links and DOIs later.
+Existing historical DOI citations are not replacements for the current links.
+
+| Current release resource | Link | DOI |
+| --- | --- | --- |
+| CoRE-MOF-Tools software archive on Zenodo | | |
+| CoREMOF-COD metadata and COD/SI CIF deposit on Zenodo | | |
+| Modified CSD CIF collection at CCDC | | |
+| Unmodified CSD CIF collection at CCDC | | |
+
+Keep all scientific admission, licence and upload checks in effect. Preparing
+the local packages does not claim that any collection is deposited, published
+or authorized for wider distribution. See `README_DATABASE_ACCESS.md` for the
+metadata-only loader, source-projection and separate catalogue contracts.
+
 ## Installation and examples
 
 ```bash

@@ -2,9 +2,48 @@
 
 CoRE-MOF-Tools contains the API and examples. The separate **CoREMOF-COD**
 database repository contains release documentation, schemas and versioned data
-catalogues. Large metadata/JSON/CIF bundles belong in approved Zenodo deposits
-and, optionally, matching GitHub Release assets, not in this Python source tree.
-The repository URL and data DOI will be linked when confirmed.
+catalogues. Full metadata and the COD/SI CIF archives are prepared for a
+Zenodo deposit, not this Python source tree. All CSD CIFs stay out
+of GitHub, GitHub Release assets and Zenodo. Modified and unmodified CSD CIFs
+have been built as separate local packages for review and subsequent CCDC handoff.
+
+## Release files and links
+
+| Resource | Structure records | Distribution route |
+| --- | ---: | --- |
+| Full metadata/JSON archive, without CIF bytes | 42,574 | Zenodo |
+| COD CIF archive | 19,598 | Zenodo |
+| SI CIF archive | 5,727 | Zenodo |
+| Modified CSD CIF package | 13,001 | Local review, then CCDC |
+| Unmodified CSD CIF package | 4,248 | Local review, then licensed CCDC access |
+
+The two CSD categories together account for the 17,249 CSD-derived structures.
+They preserve the release-recorded modified/unmodified classification, not a
+new source-CIF comparison or permission grant. Category counts and package
+hashes come from their verified manifests, not ASR/FSR/ION labels. Each local CSD
+package has its own membership manifest, checksum ledger and access/licensing
+document. It must not be presented as a
+COD/SI overlay or a complete loader-ready release.
+
+The local archives are `CoREMOF-COD_CSD_modified_cifs_20261001.zip` and
+`CoREMOF-COD_CSD_unmodified_cifs_20261001.zip`. Their private membership records
+are `manifests/ccdc_package_manifest.json` and
+`manifests/classification_manifest.csv` inside each archive. The public catalogue
+records aggregate package counts and hashes, not structure-resolved CSD membership.
+
+Current release links and DOIs below are intentionally blank for the authors to
+fill after release. A local package is not an uploaded or published collection.
+
+| Current release resource | Link | DOI |
+| --- | --- | --- |
+| CoREMOF-COD Zenodo deposit | | |
+| CoRE-MOF-Tools Zenodo software archive | | |
+| Modified CSD collection at CCDC | | |
+| Unmodified CSD collection at CCDC | | |
+
+Publication still requires the existing scientific admission and
+asset-specific permissions checks. A blank URL is not permission to guess a
+provider endpoint or promote a prepared catalogue to a published release.
 
 ## Metadata-only use
 
@@ -81,12 +120,17 @@ New grouping/cohort outputs remain exploratory (`official_split=false`).
 
 ## Structure permissions
 
-COD, SI, previously licensed modified-CSD packages and newly processed CSD
-structures need separate permission records. Neither ASR/FSR/ION nor the OA
-scientific category proves redistribution permission. Unmodified CSD CIFs are
-not publicly bundled. Curation/descriptor calculations need the actual CIFs
-and the user's applicable software/source permissions. Reading precomputed
-checker results needs neither checker engines nor a CCDC installation.
+COD, SI, modified CSD and unmodified CSD structures need separate permission
+records. A modified CSD classification records a supported curation change,
+such as solvent removal under the agreed classification, but is not itself a
+redistribution licence. Unmodified CSD access requires the applicable valid CSD
+licence. The access terms for the modified collection must be confirmed for
+that collection, rather than inherited from an earlier collection. Neither
+ASR/FSR/ION nor CR/NCR nor the scientific OA category proves redistribution
+permission. Both CSD categories are excluded from the GitHub/Zenodo CIF
+archives. Curation/descriptor calculations need the actual CIFs and the user's
+applicable software/source permissions. Reading precomputed checker results
+needs neither checker engines nor a CCDC installation.
 
 This explanation belongs in access/repository documentation, not as an
 implementation-status discussion in the manuscript.

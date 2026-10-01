@@ -12,6 +12,16 @@ See [separate database access](../README_DATABASE_ACCESS.md). The existing
 `fetch_release.py` consumes the package's file-level catalogue, not the new
 database repository's archive publication catalogue.
 
+Current database access is separated by file type and source: the planned Zenodo
+distribution includes the full 42,574-record metadata archive and COD/SI CIF
+archives only. Separate modified CSD and unmodified CSD local packages have
+been built with 13,001 and 4,248 structures, respectively, for later CCDC handoff
+and remain outside this code repository and Zenodo.
+Release links and DOIs are intentionally blank in
+[`README_DATABASE_ACCESS.md`](../README_DATABASE_ACCESS.md) until the authors
+fill the confirmed locations. Do not replace historical download endpoints or
+frozen experiment inputs with an assumed current-release URL.
+
 The recorded COD-workstation curation has a separate entry point,
 [`replay_cod_curation.py`](replay_cod_curation.py). It requires its frozen
 external scripts/tables/models and pinned Python environment, uses private

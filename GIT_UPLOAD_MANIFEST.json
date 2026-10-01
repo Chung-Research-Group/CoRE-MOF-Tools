@@ -443,13 +443,13 @@
     },
     {
       "path": "README.md",
-      "bytes": 29210,
-      "sha256": "a5f234d49870da20f579407580801bd4fee19dded015f49502f37d8e1e66052c"
+      "bytes": 30398,
+      "sha256": "3d601329e0bfd63f39b698af2eca4994cca8b5f456ef2c5ec590acbca0b13abf"
     },
     {
       "path": "README_DATABASE_ACCESS.md",
-      "bytes": 4336,
-      "sha256": "d9b45fdd147ea044d8481e9ca34587b759b458e83abda6d64131c1ecc686fda9"
+      "bytes": 6627,
+      "sha256": "9065091a56e13c79f645c2b0e29d47d9903b59eb45491251670b73c03fa27b5b"
     },
     {
       "path": "README_DATASET_SPLITTING.md",
@@ -463,8 +463,8 @@
     },
     {
       "path": "UPLOAD_GUIDE.md",
-      "bytes": 4342,
-      "sha256": "017f30d7cfd51d5e3c386a73e38710cfbc7bc761701441abb7e7624b66c6f377"
+      "bytes": 6016,
+      "sha256": "93ce54043051afd28da5fdb5ae5026aef1f2948547eaa05f0c086b27dd13368b"
     },
     {
       "path": "docs/Makefile",
@@ -528,8 +528,8 @@
     },
     {
       "path": "docs/source/database_access.rst",
-      "bytes": 2786,
-      "sha256": "a253c59e2b1c567c6160b7d1cdfc13133d71ff6ac33d53df1abf99a6411a0ac5"
+      "bytes": 5236,
+      "sha256": "66af89899d7c7334c380c07b2e7596c9c97ce54eebf79350bbb27cbe9267e377"
     },
     {
       "path": "docs/source/features.rst",
@@ -658,8 +658,8 @@
     },
     {
       "path": "examples/README.md",
-      "bytes": 13243,
-      "sha256": "086e7ac73539e4d0964530b2d908e3fb89376ea7ef11d6a43562ed55822c6e5d"
+      "bytes": 13880,
+      "sha256": "2fa335c0bd122850446f413df4fad222a5e25356e85ec575d6784be07b2c3ef3"
     },
     {
       "path": "examples/audit_combined_target_dataset.py",
@@ -1143,7 +1143,7 @@
     }
   ],
   "file_count": 228,
-  "bytes": 3418786,
+  "bytes": 3427026,
   "errors": [],
   "publication_authorized": false,
   "scope": "Local code surface only. Not a software or data licence decision."

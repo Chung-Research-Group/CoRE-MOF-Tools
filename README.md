@@ -13,6 +13,29 @@ Database files are distributed separately from the Python package. See
 source-projection contracts, versioned data access and frozen-benchmark handling.
 Large archives and restricted CIFs are not part of this code contribution.
 
+The CoREMOF-COD distribution separates **full metadata** from **CIF access**.
+The planned Zenodo distribution includes metadata for 42,574 structures and
+CIF archives for COD and SI only, together comprising 25,325 structures. The
+modified CSD and unmodified CSD CIF packages have been built locally with
+13,001 and 4,248 structures, respectively, for review and subsequent CCDC
+handoff, not GitHub or Zenodo. Their classification and access terms are
+distinct from ASR/FSR/ION variants and CR/NCR labels.
+
+The following current-release links and DOIs are intentionally blank for the
+authors to fill after the corresponding releases are available. The historical
+software DOI badge below remains a citation to its own earlier release.
+
+| Current release resource | Link | DOI |
+| --- | --- | --- |
+| CoREMOF-COD full metadata and COD/SI CIF deposit on Zenodo | | |
+| CoRE-MOF-Tools software archive on Zenodo | | |
+| Modified CSD CIF collection at CCDC | | |
+| Unmodified CSD CIF collection at CCDC | | |
+
+Packaging does not by itself authorize publication. See the
+[database access guide](README_DATABASE_ACCESS.md) for the separate sources,
+licensing requirements and package layouts.
+
 [![Documentation](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs)](https://core-mof-tools.readthedocs.io/)
 [![PyPI](https://img.shields.io/pypi/v/CoREMOF-tools?logo=pypi)](https://pypi.org/project/CoREMOF-tools/)
 [![Python](https://img.shields.io/badge/Python-3.9--3.11-blue.svg?logo=python)](https://python.org/downloads/)
