@@ -2,14 +2,9 @@
   "status": "PASS_CODE_SURFACE",
   "files": [
     {
-      "path": ".agents/skills/coremof-release-curation/SKILL.md",
-      "bytes": 11283,
-      "sha256": "2d87446f31e989dcf92534f3d024889d4570bb4cc8aac3969e88650acb175977"
-    },
-    {
-      "path": ".agents/skills/coremof-release-curation/references/dataset-splitting-ml-benchmark.md",
-      "bytes": 1762,
-      "sha256": "bdfdd305b235da1052562598865e086d3569c74f4745979eba53c0ab0db551dd"
+      "path": ".agents/skills/coremof-dataset-use/SKILL.md",
+      "bytes": 2827,
+      "sha256": "e9c006f692f5d0c87c5bb85e42849efe2e56c53e14409864fcd9933c5dd7b613"
     },
     {
       "path": ".gitattributes",
@@ -438,13 +433,13 @@
     },
     {
       "path": "MANIFEST.in",
-      "bytes": 1667,
-      "sha256": "110c9730b5a454706657e9e2c2fe72c367f60d740f79c10634655b0225912d05"
+      "bytes": 1779,
+      "sha256": "ef0e368520a01339a22a8aff1e11f4818edc774ee57d6ee37fa05be634356b0c"
     },
     {
       "path": "ML_BENCHMARK_HANDOFF.md",
-      "bytes": 9830,
-      "sha256": "a3e4038b4140c8b776c3ef688ea078cbb1766633ea842d089099e04f098ce85b"
+      "bytes": 1872,
+      "sha256": "dd9e47fab8f7b62111590d4955d54ad892dba1796355b312e315a781b2c5a42e"
     },
     {
       "path": "README.md",
@@ -468,8 +463,8 @@
     },
     {
       "path": "UPLOAD_GUIDE.md",
-      "bytes": 6020,
-      "sha256": "2dcb3e0a8fe7e0b3fc01fd06249f57678b5835caa77efbc9314d9444407c386f"
+      "bytes": 6722,
+      "sha256": "b75e177d92df8971530fac491160af0eac816bee1dc310bc0242b580b78f2f19"
     },
     {
       "path": "docs/Makefile",
@@ -558,8 +553,8 @@
     },
     {
       "path": "docs/source/installation.rst",
-      "bytes": 6017,
-      "sha256": "7cad0501b2f0b66f4e2ab24e4b0c5cbb206ee2a62cb9ba7db081eacfe626499b"
+      "bytes": 6070,
+      "sha256": "08dd75dd0b95ca15d577896e2e9d99fb2ad4b031aad0ee49a0525e82a4407a06"
     },
     {
       "path": "docs/source/quickstart.rst",
@@ -938,8 +933,8 @@
     },
     {
       "path": "tests/test_distributions.py",
-      "bytes": 5696,
-      "sha256": "bde026ee4053f32b6a938b391b089dea0ea52fac85135794f16bc38baf8664f1"
+      "bytes": 6152,
+      "sha256": "7b815e4c9ae8f0bfd8020476d7f47b2b2dfd5f6c3a04bb0069e05d35e0537afc"
     },
     {
       "path": "tests/test_handbook.py",
@@ -978,8 +973,8 @@
     },
     {
       "path": "tests/test_manuscript_workflows.py",
-      "bytes": 9698,
-      "sha256": "a33a04015e75724809cfbfa01f560cfd51e3d6f2732c91147e6d84d5282c7be4"
+      "bytes": 10276,
+      "sha256": "863af3b093fee2caf5dc7f10336a92e8c6f97db4a7421b1ff9457795c0a4a544"
     },
     {
       "path": "tests/test_mofclassifier_isolation.py",
@@ -1138,8 +1133,8 @@
     },
     {
       "path": "tests/test_upload_verification.py",
-      "bytes": 4613,
-      "sha256": "69773b30102bf02ab5919fdd3462dc0153208c85487914367d4a11a0d90097b3"
+      "bytes": 6209,
+      "sha256": "722e44a2851a466a863f8d92c71621db4169afe88a6124d39436466423b38d1d"
     },
     {
       "path": "tests/test_zeopp.py",
@@ -1148,12 +1143,12 @@
     },
     {
       "path": "verify_upload.py",
-      "bytes": 6305,
-      "sha256": "2e60068573e645551ada8fbb331b09c6e6ac7e213d617cd3f43ae18bb5e2b173"
+      "bytes": 7587,
+      "sha256": "a6952c95477895953d3876aecf7e288b2e2c08e76232bc783e5768d2a8a592de"
     }
   ],
-  "file_count": 230,
-  "bytes": 3444662,
+  "file_count": 229,
+  "bytes": 3431265,
   "errors": [],
   "publication_authorized": false,
   "scope": "Local code surface only. Not a software or data licence decision."

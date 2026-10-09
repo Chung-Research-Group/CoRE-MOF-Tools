@@ -70,6 +70,34 @@ class UploadVerificationTests(unittest.TestCase):
         self.assertTrue(any('removed checker implementation' in e
                             for e in inspect(self.root)['errors']))
 
+    def test_unlisted_agent_documents_are_rejected(self):
+        for name in ('skills/internal/SKILL.md', '.agents/skills/private/notes.md',
+                     'docs/AGENTS.md', 'docs/copied/SKILL.md', '.codex/prompts/task.md'):
+            with self.subTest(name=name):
+                path = self.write(name, '# Internal instructions\n')
+                self.assertTrue(any('consumer-document allowlist' in e
+                                    for e in inspect(self.root)['errors']))
+                path.unlink()
+
+    def test_private_instructions_in_renamed_document_are_rejected(self):
+        for name in ('docs/usage.md', 'README.rst', 'example.ipynb'):
+            with self.subTest(name=name):
+                path = self.write(name, 'Read /home/yuc/private/INSTRUCTIONS.md\n')
+                self.assertTrue(any('private development instructions' in e
+                                    for e in inspect(self.root)['errors']))
+                path.unlink()
+
+    def test_consumer_skill_is_allowed(self):
+        self.write('.agents/skills/coremof-dataset-use/SKILL.md',
+                   '# Read released metadata using the existing API\n')
+        self.assertEqual(inspect(self.root)['status'], 'PASS_CODE_SURFACE')
+
+    def test_allowed_skill_path_does_not_allow_private_content(self):
+        self.write('.agents/skills/coremof-dataset-use/SKILL.md',
+                   'Read latest_evidence_registry.json before release construction.\n')
+        self.assertTrue(any('private development instructions' in e
+                            for e in inspect(self.root)['errors']))
+
     def test_credentials_are_rejected(self):
         self.write('token.txt', 'ghp_' + 'a' * 40)
         self.assertTrue(any('credential' in e for e in inspect(self.root)['errors']))

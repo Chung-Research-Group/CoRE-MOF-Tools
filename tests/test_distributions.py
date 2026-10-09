@@ -7,6 +7,8 @@ import tarfile
 import unittest
 import zipfile
 
+from verify_upload import PUBLIC_AGENT_DOCS, public_instruction_errors
+
 
 ROOT = Path(__file__).resolve().parents[1]
 ARTIFACTS = os.environ.get("COREMOF_DISTRIBUTION_DIR")
@@ -58,8 +60,7 @@ class DistributionTests(unittest.TestCase):
             ".github/workflows/tests.yml",
             "docs/source/target_first_benchmark.rst",
             "manuscript/workflows.md",
-            ".agents/skills/coremof-release-curation/SKILL.md",
-            ".agents/skills/coremof-release-curation/references/dataset-splitting-ml-benchmark.md",
+            ".agents/skills/coremof-dataset-use/SKILL.md",
         ):
             with self.subTest(file=relative):
                 self.assertIn(relative, self.source)
@@ -95,6 +96,14 @@ class DistributionTests(unittest.TestCase):
             with self.subTest(file=relative):
                 self.assertIn(relative, self.source)
                 self.assertEqual(self.source[relative], path.read_bytes())
+
+    def test_only_reviewed_consumer_agent_documents_are_distributed(self):
+        instructions = {name for name in self.source if name.startswith('.agents/')}
+        self.assertEqual(instructions, PUBLIC_AGENT_DOCS)
+        for artifact, files in (("wheel", self.wheel), ("sdist", self.source)):
+            for name, data in files.items():
+                with self.subTest(artifact=artifact, file=name):
+                    self.assertEqual(public_instruction_errors(name, data), [])
 
     def test_no_restricted_archives_or_build_caches(self):
         for name, archive in (("wheel", self.wheel), ("sdist", self.source)):

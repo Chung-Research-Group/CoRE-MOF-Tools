@@ -189,6 +189,17 @@ class ManuscriptWorkflowTests(unittest.TestCase):
         with (WORKSPACE / "figures" / "workflow.pdf").open("rb") as handle:
             self.assertEqual(handle.read(5), b"%PDF-")
 
+    def test_portable_skill_relative_links_resolve(self):
+        skill = ROOT / ".agents" / "skills" / "coremof-dataset-use"
+        self.assertTrue((skill / "SKILL.md").is_file())
+        for path in sorted(skill.rglob("*.md")):
+            text = path.read_text(encoding="utf-8")
+            for target in re.findall(r"\]\(([^\s)]+)\)", text):
+                if "://" in target or target.startswith("#"):
+                    continue
+                candidate = path.parent / target.split("#", 1)[0]
+                self.assertTrue(candidate.is_file(), msg=str(candidate))
+
 
 if __name__ == "__main__":
     unittest.main()

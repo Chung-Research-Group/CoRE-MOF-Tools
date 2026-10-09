@@ -37,8 +37,13 @@ include manuscript/verification.json
 include manuscript/figures/workflow.svg
 include manuscript/figures/workflow.pdf
 include manuscript/figures/workflow.png
-# Retain the portable benchmark skill, not original-host operational runbooks.
-recursive-include .agents/skills/coremof-release-curation *.md
+# Only the reviewed consumer guide belongs in the source distribution.
+# Prune first so stale egg-info cannot restore other agent instructions.
+prune .agents
+prune .codex
+prune skills
+exclude AGENTS.md
+include .agents/skills/coremof-dataset-use/SKILL.md
 include UPLOAD_GUIDE.md
 include LOCAL_ASSETS.json
 include verify_upload.py

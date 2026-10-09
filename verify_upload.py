@@ -11,6 +11,30 @@ import subprocess
 import tempfile
 
 
+PUBLIC_AGENT_DOCS = frozenset({'.agents/skills/coremof-dataset-use/SKILL.md'})
+_INSTRUCTION_DIRS = frozenset({'.agents', '.codex', 'skills', 'private_skills',
+                              'internal_skills'})
+_PRIVATE_DOC_TEXT = re.compile(
+    r'/home/(?:yuc|mtap)/|V26_RELEASE_WORK_TRACKER|HPC_LOGIN_NFS|'
+    r'coremof-release-curation|sciwrite-main|coremof-peer-review|'
+    r'latest_evidence_registry\.json|loaderfix_production|CCDC_SG15', re.I)
+
+
+def public_instruction_errors(name, data):
+    """Allow reviewed consumer instructions, never an exported private skill tree."""
+    rel = Path(name)
+    parts = {part.casefold() for part in rel.parts}
+    instruction_file = (bool(parts & _INSTRUCTION_DIRS)
+                        or rel.name.casefold() in {'skill.md', 'agents.md'})
+    errors = []
+    if instruction_file and name not in PUBLIC_AGENT_DOCS:
+        errors.append(name + ': agent instructions are not on the consumer-document allowlist')
+    if rel.suffix.lower() in {'.md', '.rst', '.txt', '.ipynb'}:
+        if _PRIVATE_DOC_TEXT.search(data.decode('utf-8', errors='replace')):
+            errors.append(name + ': private development instructions or host paths in documentation')
+    return errors
+
+
 def digest(path):
     h = hashlib.sha256()
     with path.open('rb') as stream:
@@ -72,6 +96,7 @@ def inspect(root):
                                 name.startswith('2026-CoRE-MOF-COD/si/')):
             errors.append(name + ': private plot input visible to Git')
         data = path.read_bytes()
+        errors.extend(public_instruction_errors(name, data))
         if secret_pattern.search(data):
             errors.append(name + ': possible credential/private key')
         if path.suffix == '.py':
@@ -122,4 +147,3 @@ def main():
 
 if __name__ == '__main__':
     raise SystemExit(main())
-

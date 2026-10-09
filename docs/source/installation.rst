@@ -38,8 +38,9 @@ example scripts, companion notebook, and portable agent skill are available in
 the source checkout or an extracted source distribution, not in the wheel's
 installed files. Open ``examples/CoREMOF_dataset_splitting_quickstart.ipynb``
 from that source tree. Agents can use
-``.agents/skills/coremof-release-curation/SKILL.md`` there; it does not provide
-database files, model assets, or original-host operational instructions. Installing
+``.agents/skills/coremof-dataset-use/SKILL.md`` there. This consumer guide links
+to the existing metadata, checker-result and dataset examples. Internal
+development and curation skills are not distributed. Installing
 a source distribution also does not copy those guides into ``site-packages``.
 
 For a fresh clone, the verified public fork API checkpoint is:

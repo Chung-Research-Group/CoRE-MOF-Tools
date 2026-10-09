@@ -102,6 +102,18 @@ manifest with `python3 verify_upload.py --write-manifest` and rerun the default
 check. Do not refresh it to bypass a reported private-data or checker-code
 violation. Temporary environments, build outputs and local assets stay out of
 the contribution.
-The existing portable benchmark skill is retained under
-`.agents/skills/coremof-release-curation/`, with its local-asset note aligned
-to this layout. It does not carry scheduler or licensed-node instructions.
+## Public agent documentation
+
+The only distributed agent skill is
+`.agents/skills/coremof-dataset-use/SKILL.md`. It helps consumers use released
+metadata, saved checker results, optional targets and the existing API examples.
+Internal project-development skills, curation recipes, recovery runbooks,
+calculation-campaign instructions, reviewer prompts and working histories are
+not release material. Keep private originals outside repository exports.
+
+Agent instructions are included by an explicit file allowlist, not a recursive
+copy of a local skills folder. The upload verifier rejects unlisted instruction
+files and recognizable private instructions in documentation. Distribution tests
+check the wheel and source archive too. Review the content of any proposed new
+consumer guide before adding it to the allowlist. Automated checks do not replace
+that review or remove material from earlier Git commits.
