@@ -1,5 +1,11 @@
-Target-enriched release exports
-========================================
+Core metadata and explicit target exports
+============================================================
+
+Current core releases are target-free. For the separately versioned optional
+target supplement and explicit attachment, see :doc:`target_supplements`.
+The enrichment examples below remain available for deliberate private analysis
+and historical experiment reproduction. Their combined output is not the
+current core metadata layout and must not replace a target-free release.
 
 The source distribution includes two executable examples for collecting
 existing accepted targets and adding them to a new private metadata copy.
@@ -65,7 +71,7 @@ The new directory contains:
 * the extended ``coremof-structure-record/1.1`` schema;
 * updated manifests, an input-checksum record, and ``SHA256SUMS``.
 
-Schema 1.1 adds a ``targets`` object to the unchanged scientific fields of
+Historical schema 1.1 adds a ``targets`` object to the unchanged scientific fields of
 schema 1.0. This is an explicit schema revision, not an in-place modification
 of an older release. Existing files and frozen experiments remain intact.
 On failure, the destination is not published. A private temporary staging

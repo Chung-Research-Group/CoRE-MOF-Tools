@@ -49,8 +49,15 @@ The dataset tools include four standard-library-only entry points:
   configuration, receipts, and checksums. Its optional `--comparison-dataset`
   gate requires two builds to be byte-identical.
 
-The validated as-of-cutoff aggregate counts and restricted-data boundary are
-documented in [`COMBINED_TARGET_DATASET.md`](../COMBINED_TARGET_DATASET.md).
+The construction contract and distribution boundary are documented in
+[`COMBINED_TARGET_DATASET.md`](../COMBINED_TARGET_DATASET.md). Read coverage
+from the selected target package's receipt. Core metadata never loads targets
+automatically. Use [`attach_target_supplement.py`](attach_target_supplement.py)
+for explicit supplement attachment, [`build_target_first_benchmark.py`](build_target_first_benchmark.py)
+for a new target-complete benchmark, or
+[`replay_common_input_benchmark.py`](replay_common_input_benchmark.py) for the
+paper's frozen assignments. General target-independent API usage is shown in
+[`grouped_workflow_recipes.md`](grouped_workflow_recipes.md).
 
 Ranking is precision-safe: integer inputs remain exact integers, and numeric
 text is compared as an exact decimal rather than being converted through a

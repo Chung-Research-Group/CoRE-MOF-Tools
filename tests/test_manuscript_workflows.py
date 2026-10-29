@@ -3,16 +3,12 @@
 import ast
 import csv
 from decimal import Decimal, ROUND_HALF_UP
-import json
 from pathlib import Path
 import re
 import shlex
-import struct
 import tempfile
 import unittest
-import xml.etree.ElementTree as ET
 
-from CoREMOF import __version__
 from CoREMOF.benchmarks import normalize_group_criteria
 from CoREMOF.cli import build_parser
 from CoREMOF.targets import TargetSource
@@ -20,11 +16,12 @@ from test_benchmarks import _authenticated_classified
 
 
 ROOT = Path(__file__).resolve().parents[1]
-WORKSPACE = ROOT / "manuscript"
+WORKSPACE = ROOT / "examples"
+RECIPES = WORKSPACE / "grouped_workflow_recipes.md"
 
 
 def _workflow_blocks():
-    text = (WORKSPACE / "workflows.md").read_text(encoding="utf-8")
+    text = RECIPES.read_text(encoding="utf-8")
     blocks = re.findall(r"```python\n(.*?)\n```", text, flags=re.DOTALL)
     result = {}
     for block in blocks:
@@ -42,7 +39,7 @@ class ManuscriptWorkflowTests(unittest.TestCase):
             "checker_views", "general_split", "frozen_benchmark", "attach_frozen"
         })
         for name, code in blocks.items():
-            ast.parse(code, filename="workflows.md:" + name)
+            ast.parse(code, filename=RECIPES.name + ":" + name)
         self.assertEqual(
             normalize_group_criteria(("RT", "M2T")),
             ("rac5_crystalnets", "mofid_v2_crystalnets"),
@@ -51,7 +48,7 @@ class ManuscriptWorkflowTests(unittest.TestCase):
     def test_documented_workflow_executes_with_explicit_nonnumerical_profile(self):
         namespace = {}
         for name, code in _workflow_blocks().items():
-            exec(compile(code, "workflows.md:" + name, "exec"), namespace)
+            exec(compile(code, RECIPES.name + ":" + name, "exec"), namespace)
         with tempfile.TemporaryDirectory(prefix="coremof-manuscript-test-") as tmp:
             root = Path(tmp)
             dataset, _ = _authenticated_classified(
@@ -84,7 +81,7 @@ class ManuscriptWorkflowTests(unittest.TestCase):
                 diversity="none",
             )
             self.assertEqual(dict(cohorts.pool_counts), {"CR": 20, "NCR": 8})
-            self.assertEqual(len(suite.runs), 30)
+            self.assertEqual(len(suite.runs), 12)
             self.assertFalse(suite.official_split)
             fixed = set(suite.fixed_test_ids)
             for run in suite.runs:
@@ -117,7 +114,7 @@ class ManuscriptWorkflowTests(unittest.TestCase):
                 suite, (source,), root / "attached"
             )
             self.assertEqual(attached.original_assignment_digest, before)
-            self.assertEqual(len(attached.run_views), 30)
+            self.assertEqual(len(attached.run_views), 12)
             for run in suite.runs:
                 view = attached.run_views[run.run_key]
                 self.assertEqual(dict(view.assignments), dict(run.assignments))
@@ -125,7 +122,7 @@ class ManuscriptWorkflowTests(unittest.TestCase):
                              / "SHA256SUMS").is_file())
 
     def test_cli_examples_parse_with_current_parser(self):
-        text = (WORKSPACE / "workflows.md").read_text(encoding="utf-8")
+        text = RECIPES.read_text(encoding="utf-8")
         commands = []
         for block in re.findall(r"```bash\n(.*?)\n```", text, flags=re.DOTALL):
             command = block.replace("\\\n", " ").strip()
@@ -137,7 +134,8 @@ class ManuscriptWorkflowTests(unittest.TestCase):
         self.assertEqual(commands[1].missing, "keep")
 
     def test_local_links_and_sphinx_downloads_resolve(self):
-        for path in sorted(WORKSPACE.glob("*.md")):
+        for path in (RECIPES, ROOT / "COMBINED_TARGET_DATASET.md",
+                     ROOT / "ML_BENCHMARK_HANDOFF.md"):
             text = path.read_text(encoding="utf-8")
             for target in re.findall(r"\]\(([^\s)]+)\)", text):
                 if "://" in target or target.startswith("#"):
@@ -150,44 +148,6 @@ class ManuscriptWorkflowTests(unittest.TestCase):
             self.assertTrue((landing.parent / target).is_file(), msg=target)
         self.assertIn("   research_workflows\n",
                       (landing.parent / "index.rst").read_text(encoding="utf-8"))
-
-    def test_snapshot_counts_and_development_status_are_explicit(self):
-        coverage = json.loads((ROOT / "CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json")
-                              .read_text(encoding="utf-8"))
-        manuscript = (WORKSPACE / "manuscript.md").read_text(encoding="utf-8")
-        self.assertIn(__version__, manuscript)
-        self.assertIn(coverage["data_cutoff_utc"], manuscript)
-        self.assertIn(coverage["snapshot_id"], manuscript)
-        for endpoint in coverage["endpoint"].values():
-            self.assertIn(format(endpoint["finite_unique_structures"], ","), manuscript)
-            percent = 100 * endpoint["finite_unique_structures"] / coverage["release_structure_count"]
-            self.assertIn("{:.4f}%".format(percent), manuscript)
-        self.assertIn("official_split=false", manuscript)
-        self.assertFalse(coverage["campaign_complete"])
-        verification = json.loads((WORKSPACE / "verification.json").read_text(encoding="utf-8"))
-        self.assertEqual(verification["software_version"], __version__)
-        self.assertEqual(verification["scope"], "documentation_and_workflow_smoke_tests")
-        self.assertFalse(verification["scientific_campaign_complete_claimed"])
-
-    def test_workflow_is_accessible_separate_editable_svg(self):
-        root = ET.parse(WORKSPACE / "figures" / "workflow.svg").getroot()
-        self.assertEqual(root.attrib["width"], "6.9in")
-        self.assertEqual(root.attrib["height"], "4.25in")
-        self.assertEqual(root.attrib["role"], "img")
-        self.assertIsNotNone(root.find("{http://www.w3.org/2000/svg}title"))
-        self.assertIsNotNone(root.find("{http://www.w3.org/2000/svg}desc"))
-        sizes = [float(el.attrib["font-size"]) for el in root.iter()
-                 if "font-size" in el.attrib]
-        # Viewbox is 100 units per inch, so 14 units are 10.08 points.
-        self.assertGreaterEqual(min(sizes) * 72 / 100, 9)
-        self.assertGreater(len(root.findall(".//{http://www.w3.org/2000/svg}text")), 10)
-        self.assertIsNone(root.find(".//{http://www.w3.org/2000/svg}image"))
-        with (WORKSPACE / "figures" / "workflow.png").open("rb") as handle:
-            header = handle.read(24)
-        self.assertEqual(header[:8], b"\x89PNG\r\n\x1a\n")
-        self.assertEqual(struct.unpack(">II", header[16:24]), (2208, 1360))
-        with (WORKSPACE / "figures" / "workflow.pdf").open("rb") as handle:
-            self.assertEqual(handle.read(5), b"%PDF-")
 
     def test_portable_skill_relative_links_resolve(self):
         skill = ROOT / ".agents" / "skills" / "coremof-dataset-use"

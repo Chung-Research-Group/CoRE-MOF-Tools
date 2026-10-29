@@ -17,7 +17,10 @@ recursive-include examples *.py
 include examples/README.md
 include examples/CoREMOF_dataset_splitting_quickstart.ipynb
 include COMBINED_TARGET_DATASET.md
-include CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json
+include examples/grouped_workflow_recipes.md
+# Keep superseded draft and snapshot artifacts outside release distributions.
+prune manuscript
+exclude CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json
 include .github/workflows/tests.yml
 recursive-include docs/source *.rst
 include docs/Makefile
@@ -26,17 +29,6 @@ include docs/requirements.txt
 include docs/source/conf.py
 include docs/source/_static/custom.css
 include docs/source/_static/coremof-logo.png
-include manuscript/workflows.md
-include manuscript/README.md
-include manuscript/manuscript.md
-include manuscript/evidence.md
-include manuscript/figures_and_tables.md
-include manuscript/references.md
-include manuscript/references.bib
-include manuscript/verification.json
-include manuscript/figures/workflow.svg
-include manuscript/figures/workflow.pdf
-include manuscript/figures/workflow.png
 # Only the reviewed consumer guide belongs in the source distribution.
 # Prune first so stale egg-info cannot restore other agent instructions.
 prune .agents

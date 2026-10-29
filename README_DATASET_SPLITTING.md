@@ -1965,16 +1965,13 @@ benchmark; the common `fixed_pure_cr` test is.
 
 Construction fails closed with exact counts and the maximum feasible NCR-pool
 fraction if `M>C` or, after reserving the test, `M>C-test_count`. It never caps,
-duplicates, or silently resizes a cohort. The checksum-bound published CoRE-MOF-COD
-integration has raw counts `C_raw=6,294` and `M_raw=2,299`. With
-`group_criteria="priority_main"` and the explicit
-`complete_release_label_pure_effective_blocks` policy, 1,601 CR and 572 NCR
-rows are excluded with non-label-pure blocks, leaving eligible `C=4,693` and
-`M=1,727`. Consequently `q=1` uses 1,727 NCR plus 2,966 CR rows. Every real
-run recomputes and records raw, excluded, and eligible counts. The separate
-staged checker overlay has 9,143 CR and 9,769 NCR structures and remains an
-explicitly non-default, infeasible diagnostic input rather than authority for
-the published benchmark.
+duplicates, or silently resizes a cohort. Every run computes and records raw,
+excluded and eligible counts from the exact selected release, grouping criteria,
+checker view and target-eligibility rule. Counts from a different configuration
+are not transferable. To reproduce the paper's fixed assignments, use the
+[frozen replay](docs/source/frozen_assignment_replay.rst), not a new sampling
+run. For new target-complete datasets, follow the
+[target-first guide](docs/source/target_first_benchmark.rst).
 
 The suite writer publishes one transactional directory containing a suite
 index, complete membership manifest, a companion four-label accounting manifest

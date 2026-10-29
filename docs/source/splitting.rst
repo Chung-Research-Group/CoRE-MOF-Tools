@@ -835,18 +835,15 @@ the complete raw strict-CR pool, including rows excluded by the label-pure
 sensitivity policy, and reports
 exact-ID/same-block overlap with training; it is not the independent paper
 test. Construction reports exact counts and fails closed when ``M>C`` or
-``M>C-test_count``. The checksum-bound published CoRE-MOF-COD integration has raw
-counts C_raw=6,294 and M_raw=2,299. With ``priority_main`` and the explicit
-label-pure policy, 1,601 CR and 572 NCR rows are excluded with non-label-pure
-blocks, leaving eligible C=4,693 and M=1,727. Thus q=1 uses 1,727 NCR plus
-2,966 CR rows. Every real run recomputes and records raw, excluded, and
-eligible counts. The separate staged checker overlay has C=9,143 and M=9,769
-and is an explicitly non-default infeasible diagnostic, not the published
-benchmark authority. The writer also emits a companion four-label accounting
+``M>C-test_count``. Every run computes raw, excluded and eligible counts from
+its exact release, criteria, checker view and eligibility rule. A different
+configuration's counts are not transferable. Use :doc:`frozen_assignment_replay`
+for the paper assignments and :doc:`target_first_benchmark` for a new
+target-complete dataset. The writer also emits a companion four-label accounting
 manifest for AMBIGUOUS and UNCHECKED rows. Every new output remains exploratory
 with ``official_split=false``.
 
-Targets attach only after assignment. ``keep`` is a left join preserving every
+For this target-independent route, targets attach after assignment. ``keep`` is a left join preserving every
 selected ID and null; ``error`` requires all declared targets; ``drop`` creates
 only a filtered derived view without refill, rebalance, or resplit. The
 existing typed CSV/JSON/JSONL, exact-ID/explicit-alias, units, conditions, and

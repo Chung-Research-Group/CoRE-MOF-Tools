@@ -2,8 +2,8 @@
 
 # CoRE MOF Tools
 
-The development version `0.4.0.dev0` adds release loading, user-selected CR/NCR
-classification, leakage-safe splitting and target-data workflows. It reads
+CoRE-MOF-Tools `0.4.0.dev0` supports release loading, user-selected CR/NCR
+classification, leakage-safe splitting and explicit target-data attachment. It reads
 precomputed checker results without bundling external checker engines.
 See [UPLOAD_GUIDE.md](UPLOAD_GUIDE.md) for code-only contribution checks and
 the assets that must remain outside Git.
@@ -12,6 +12,10 @@ Database files are distributed separately from the Python package. See
 [README_DATABASE_ACCESS.md](README_DATABASE_ACCESS.md) for metadata-only loading,
 source-projection contracts, versioned data access and frozen-benchmark handling.
 Large archives and restricted CIFs are not part of this code contribution.
+Current core metadata is target-free. Simulation responses are an optional,
+separately versioned supplement attached only by explicit request. See
+[the target guide](docs/source/target_supplements.rst). Historical combined
+release tables require explicit `include_legacy_targets=True` for reproduction.
 
 The CoRE-MOF-COD distribution separates **full metadata** from **CIF access**.
 The planned Zenodo distribution includes metadata for 42,574 structures and
@@ -33,7 +37,7 @@ software DOI badge below remains a citation to its own earlier release.
 
 | Current release resource | Link | DOI |
 | --- | --- | --- |
-| CoRE-MOF-COD full metadata and COD/SI CIF deposit on Zenodo | | |
+| CoRE-MOF-COD core metadata, optional targets and COD/SI CIF deposit | | |
 | CoRE-MOF-Tools software archive on Zenodo | | |
 | Modified CSD CIF collection at CCDC | | |
 | Unmodified CSD CIF collection at CCDC | | |
@@ -42,11 +46,16 @@ Packaging does not by itself authorize publication. See the
 [database access guide](README_DATABASE_ACCESS.md) for the separate sources,
 licensing requirements and package layouts.
 
+Use the release catalogue for each asset's availability, licence and scientific
+release status. A working API does not authorize redistribution or change a
+dataset's recorded admission status. CoRE-ID updates do not alter frozen labels,
+targets, groups or splits.
+
 [![Documentation](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs)](https://core-mof-tools.readthedocs.io/)
 [![PyPI](https://img.shields.io/pypi/v/CoREMOF-tools?logo=pypi)](https://pypi.org/project/CoREMOF-tools/)
 [![Python](https://img.shields.io/badge/Python-3.9--3.11-blue.svg?logo=python)](https://python.org/downloads/)
 [![License](https://img.shields.io/github/license/Chung-Research-Group/CoRE-MOF-Tools)](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/blob/main/LICENSE)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15055758.svg)](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs0)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15055758.svg)](https://doi.org/10.5281/zenodo.15055758)
 
 The hosted documentation and PyPI badges refer to earlier published versions.
 For the `0.4.0.dev0` API, use the guides in the matching audited source
@@ -91,27 +100,19 @@ example. Cite the original checker methods when using their results.
 
 ### Missing MOFid results
 
-The release policy adopted on 26 September 2026 retains structures whose
-MOFid calculations cannot be reconciled reliably. Their MOFid values remain
-missing, with an explicit reason, instead of selecting an inconsistent result
-or requiring a successful identifier for every structure.
-
-In the recorded 453-case reconciliation, 24 replacements passed deterministic
-checks and 429 cases remained unresolved. The latter have null MOFid-v1 and
-MOFid-v2 values and status `NOT_AVAILABLE_UNRESOLVED_RECONCILIATION`. The
-separate ambiguous-node rule for MOFid-v2 is retained. Missing MOFid does not
-mean that a structure is not a MOF, failed a checker, or is NCR.
+Unreconciled MOFid calculations retain null values with status
+`NOT_AVAILABLE_UNRESOLVED_RECONCILIATION`. Ambiguous MOFid-v2 node assignments
+also retain null identifiers with their specific diagnostic. Missing MOFid does
+not mean that a structure is not a MOF, failed a checker, or is NCR.
 
 Missing identifiers never match each other and add no MOFid grouping edge.
 Other available grouping evidence remains usable. Original calculation records
 are preserved, and the frozen benchmark groups and train/validation/test
 assignments are not revised by this policy decision.
 
-This is an approved **scientific handling policy**, not a claim that a public
-release has been published. Existing candidates still carry their recorded
-`STAGE_ONLY` status. A separately versioned public release must validate the
-missing-value handling, grouping and complete release before changing that
-status. No controller check is disabled by editing this README.
+This missing-value policy is distinct from scientific release admission.
+Datasets marked `STAGE_ONLY` are not approved public releases. Release
+validation must check missing-value handling and grouping before admission.
 
 ### Code and data permissions are separate
 
@@ -123,11 +124,6 @@ licence does not replace third-party terms. Remaining non-checker components
 are described in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). These
 distribution decisions belong in the repository documentation, not in the
 manuscript's scientific discussion.
-
-The [software-draft workspace](manuscript/README.md) preserves the September 7
-draft, dated evidence map and historical workflow diagram. It is not the final
-database paper or the current benchmark specification. Use the linked API
-guides and examples for current workflows.
 
 The package combines pure-Python functions with optional external software. Run the installation check before starting:
 
@@ -158,7 +154,7 @@ new API. No database release is downloaded by `pip install .`.
 
 The verified fork API checkpoint is
 `c66796b77b0e86775f43b9021c6bcb3ebd93abfa` at
-[DrakeChan/CoRE-MOF-Tools](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs1).
+[DrakeChan/CoRE-MOF-Tools](https://github.com/DrakeChan/CoRE-MOF-Tools).
 See the source installation guide for a pinned clone command and the distinction
 between that API checkpoint and any later documentation follow-up. A wheel
 installs the API; the human guides, example notebook and portable agent skill
@@ -196,15 +192,9 @@ and their non-path runtime identity is recorded. Cross-architecture bit
 identity is not promised. The historical
 `train_valid_test_split()` API remains standard-library-only and unchanged.
 
-For the **older target-independent experiment**, see the
-[ML benchmark handoff guide](ML_BENCHMARK_HANDOFF.md). The audited published
-five-checker view contains 6,294 raw strict-CR and 2,299 raw strict-NCR rows.
-Whole complete-release leakage blocks leave 4,693 CR and 1,727 NCR rows in the
-label-pure sensitivity cohort, which must be requested explicitly with
-`cohort_eligibility="complete_release_label_pure_effective_blocks"`. Every
-result remains exploratory with `official_split=false`, and targets are joined
-only after the assignment is frozen. These are dated experiment counts, not
-the latest descriptive metadata view. For new target-complete cohorts use
+Choose the requested workflow with the
+[ML benchmark handoff guide](ML_BENCHMARK_HANDOFF.md). New generated assignments
+remain exploratory with `official_split=false`. For new target-complete cohorts use
 [`examples/build_target_first_benchmark.py`](examples/build_target_first_benchmark.py).
 To reproduce the paper's current 3,737/466/468 train/val/test assignments, use
 [`examples/replay_common_input_benchmark.py`](examples/replay_common_input_benchmark.py)
@@ -225,7 +215,7 @@ Some features require additional software:
 | Zeo++ pore geometry | `conda install -c conda-forge zeopp-lsmo` |
 | CSD structure download | Licensed CSD software and CSD Python API |
 | Reading checker results and selecting CR/NCR | No external checker software required |
-| MOFid v1/v2 | [MOFid installation](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs2) and Open Babel |
+| MOFid v1/v2 | [MOFid installation](docs/source/installation.rst) and Open Babel |
 | Crystal topology | Julia/CrystalNets through `juliacall`; the first call may install Julia packages |
 | Heat-capacity prediction | Separately obtained, verified ensemble model assets; not included in the code-only clone |
 
@@ -585,18 +575,18 @@ stability_result = stability("my_mof.cif")
 | Dataset classification and splitting | `CoREMOF.dataset`, `CoREMOF.splitters` | `CoREMOFDataset`, `split_release()` |
 | Feature/target joining | `CoREMOF.targets` | `TargetSource`, `AliasRegistry`, `merge_targets()` |
 
-Full guides and API documentation are available on [Read the Docs](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs3). Executable notebooks and CIF examples are in [`examples/`](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs4).
+Full guides and API documentation are available on [Read the Docs](https://core-mof-tools.readthedocs.io/). Executable notebooks and CIF examples are in [`examples/`](examples/).
 
 ## Citation
 
 If you use the database or toolkit, cite:
 
-> Zhao G., Brabson L., Chheda S., Huang J., Kim H., Liu K., et al. “CoRE MOF DB: a curated experimental metal–organic framework database with machine-learned properties for integrated material-process screening.” *Matter* 8 (2025), 102140. [https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs5)
+> Zhao G., Brabson L., Chheda S., Huang J., Kim H., Liu K., et al. “CoRE MOF DB: a curated experimental metal–organic framework database with machine-learned properties for integrated material-process screening.” *Matter* 8 (2025), 102140. [DOI: 10.1016/j.matt.2025.102140](https://doi.org/10.1016/j.matt.2025.102140).
 
-Also cite the underlying method used in your workflow (for example Zeo++, PACMAN-charge, MOFClassifier, MOFChecker, MOSAEC, CrystalNets, or the relevant stability model). A method-by-method list is provided in the [documentation](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs6).
+Also cite the underlying method used in your workflow (for example Zeo++, PACMAN-charge, MOFClassifier, MOFChecker, MOSAEC, CrystalNets, or the relevant stability model). A method-by-method list is provided in the [documentation](https://core-mof-tools.readthedocs.io/).
 
 ## Support and development
 
-- Report reproducible bugs through [GitHub Issues](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs7).
+- Report reproducible bugs through [GitHub Issues](https://github.com/Chung-Research-Group/CoRE-MOF-Tools/issues).
 - Include `coremof doctor` output, Python version, operating system, a minimal code example, and—when shareable—the failing CIF.
-- Developed by [Guobin Zhao](https://img.shields.io/badge/docs-Read_the_Docs-blue?logo=readthedocs8) at MTAP, Pusan National University.
+- Developed by Guobin Zhao at MTAP, Pusan National University.

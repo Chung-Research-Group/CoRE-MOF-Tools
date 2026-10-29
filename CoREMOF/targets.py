@@ -156,7 +156,9 @@ _IMPORTED_IMPLEMENTATION_HASHES = MappingProxyType(
 )
 
 
-def _implementation_hashes() -> Mapping[str, str]:
+def _implementation_hashes(
+    *, include_target_supplement: bool = False,
+) -> Mapping[str, str]:
     """Return import-bound sources, failing if their paths have since drifted."""
 
     current = _current_implementation_hashes()
@@ -171,6 +173,12 @@ def _implementation_hashes() -> Mapping[str, str]:
                 ", ".join(changed)
             )
         )
+    if include_target_supplement:
+        from .target_supplements import _implementation_hashes as supplement_hashes
+
+        combined = dict(_IMPORTED_IMPLEMENTATION_HASHES)
+        combined.update(supplement_hashes())
+        return MappingProxyType(combined)
     return _IMPORTED_IMPLEMENTATION_HASHES
 
 
@@ -951,7 +959,11 @@ class TargetMergedDataset(CoREMOFDataset):
             or implementation.get("package_version") != __version__
             or implementation.get("target_api_version") != TARGET_API_VERSION
             or dict(implementation.get("source_sha256", {}))
-            != dict(_implementation_hashes())
+            != dict(_implementation_hashes(
+                include_target_supplement=(
+                    "target_supplements.py" in implementation.get("source_sha256", {})
+                )
+            ))
         ):
             raise TargetDataError(
                 "target merge receipt implementation does not match executing sources"
@@ -986,6 +998,14 @@ class TargetMergedDataset(CoREMOFDataset):
         """Return the hash-bound target/feature merge receipt."""
 
         _validate_dataset_generation_if_present(self)
+        source_hashes = self.target_input_receipt["implementation"]["source_sha256"]
+        if "target_supplements.py" in source_hashes:
+            if dict(source_hashes) != dict(_implementation_hashes(
+                include_target_supplement=True
+            )):
+                raise TargetDataError(
+                    "target merge receipt implementation does not match executing sources"
+                )
         return _jsonable(self.target_input_receipt)  # type: ignore[return-value]
 
     @staticmethod
@@ -1165,6 +1185,7 @@ def merge_targets(
     *,
     _config_receipt: Optional[Mapping[str, object]] = None,
     _config_factory_token: object = None,
+    _supplement_factory_token: object = None,
 ) -> TargetMergedDataset:
     """Join one or more target files to a complete release universe.
 
@@ -1175,6 +1196,15 @@ def merge_targets(
 
     if type(verify_cif_files) is not bool:
         raise TypeError("verify_cif_files must be a boolean")
+    include_target_supplement = _supplement_factory_token is not None
+    if include_target_supplement:
+        from .target_supplements import _SUPPLEMENT_FACTORY_TOKEN
+
+        if _supplement_factory_token is not _SUPPLEMENT_FACTORY_TOKEN:
+            raise TargetDataError(
+                "target supplement implementation can be attached only by "
+                "attach_target_supplement()"
+            )
     if isinstance(dataset, (str, Path)):
         base = CoREMOFDataset.from_release(dataset, verify_cif_files=verify_cif_files)
     elif isinstance(dataset, CoREMOFDataset):
@@ -1455,7 +1485,9 @@ def merge_targets(
             "package": "CoREMOF-tools",
             "package_version": __version__,
             "target_api_version": TARGET_API_VERSION,
-            "source_sha256": dict(_implementation_hashes()),
+            "source_sha256": dict(_implementation_hashes(
+                include_target_supplement=include_target_supplement
+            )),
         },
         "dataset_version": base.dataset_version,
         "release_structure_count": len(base),

@@ -1,9 +1,9 @@
 # Local code-review and upload guide
 
-This source snapshot contains the updated CoRE-MOF-Tools `0.4.0.dev0` code,
-examples, tests and documentation from the verified September 26 results-only
-checkpoint. Its scientific source files were compared with the maintained
-checkout. Original edits, Git history and prior artifacts remain untouched.
+This contribution contains CoRE-MOF-Tools `0.4.0.dev0` code, examples, tests
+and documentation. It excludes database payloads, manuscript drafts and
+private operational records. Use the exact build identity supplied with a
+release, rather than the development version string alone.
 
 The package reads the five checker results and combines user-selected votes.
 It does not distribute the third-party checker algorithms, reference tables or
@@ -17,12 +17,13 @@ version is `0.4.0.dev0`; a local source/wheel build is not a published PyPI or
 Zenodo release. Database archives and the manuscript/plot-input transfer do not
 belong inside the Python package.
 
-The database publication uses full metadata for 42,574 structures, without CIF
-bytes, and separate COD/SI CIF archives for 19,598/5,727 structures on Zenodo.
+The database publication uses target-free core metadata for 42,574 structures,
+without CIF bytes, a separately versioned optional target supplement, and
+separate COD/SI CIF archives for 19,598/5,727 structures on Zenodo.
 The separate modified CSD and unmodified CSD local packages have been built
 with 13,001 and 4,248 structures, respectively, for later CCDC handoff. Their
-archive names are `CoRE-MOF-COD_CSD_modified_cifs_20261001.zip` and
-`CoRE-MOF-COD_CSD_unmodified_cifs_20261001.zip`. Neither CSD package may be added to this repository,
+archive names are `CoRE-MOF-COD_CSD_modified_cifs_20261001_topology_v2.zip` and
+`CoRE-MOF-COD_CSD_unmodified_cifs_20261001_topology_v2.zip`. Neither CSD package may be added to this repository,
 GitHub Release assets or Zenodo. Use each package's manifest and confirmed
 access terms, not ASR/FSR/ION or CR/NCR labels, to identify its category.
 
@@ -32,7 +33,7 @@ Existing historical DOI citations are not replacements for the current links.
 | Current release resource | Link | DOI |
 | --- | --- | --- |
 | CoRE-MOF-Tools software archive on Zenodo | | |
-| CoRE-MOF-COD metadata and COD/SI CIF deposit on Zenodo | | |
+| CoRE-MOF-COD core metadata, optional targets and COD/SI CIF deposit | | |
 | Modified CSD CIF collection at CCDC | | |
 | Unmodified CSD CIF collection at CCDC | | |
 

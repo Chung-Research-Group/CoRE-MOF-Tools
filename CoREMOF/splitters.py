@@ -139,14 +139,17 @@ def _target_receipt_implementation_hashes(
     if not isinstance(source_hashes, Mapping):
         raise ValueError("target merge receipt has no source_sha256 mapping")
     observed = {str(filename) for filename in source_hashes}
-    if observed != set(_TARGET_IMPLEMENTATION_FILES):
+    expected_files = _TARGET_IMPLEMENTATION_FILES
+    if "target_supplements.py" in source_hashes:
+        expected_files += ("target_supplements.py",)
+    if observed != set(expected_files):
         raise ValueError(
             "target merge implementation closure must contain exactly {}".format(
-                ", ".join(_TARGET_IMPLEMENTATION_FILES)
+                ", ".join(expected_files)
             )
         )
     result = {}
-    for filename in _TARGET_IMPLEMENTATION_FILES:
+    for filename in expected_files:
         digest = source_hashes.get(filename)
         if (
             not isinstance(digest, str)
@@ -195,6 +198,15 @@ def _implementation_hashes(
                 "{} changed between target merge and split import".format(filename)
             )
     result["targets.py"] = target_hashes["targets.py"]
+    if "target_supplements.py" in target_hashes:
+        from .target_supplements import _implementation_hashes as supplement_hashes
+
+        validator_hashes = supplement_hashes()
+        if target_hashes["target_supplements.py"] != validator_hashes["target_supplements.py"]:
+            raise ValueError(
+                "target_supplements.py changed between target merge and split import"
+            )
+        result["target_supplements.py"] = validator_hashes["target_supplements.py"]
     return result
 
 

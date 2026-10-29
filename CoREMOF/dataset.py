@@ -98,6 +98,75 @@ from .identifiers import parse_core_id, validate_source_database
 
 
 PARENT_STATUSES = frozenset({"MATCHED", "UNMATCHED", "NOT_AVAILABLE"})
+
+# These response variables belong to an explicitly attached target supplement,
+# not the ordinary structural metadata view. Historical combined releases keep
+# their original byte hashes, even when the loader hides these columns.
+_LEGACY_TARGET_VALUE_COLUMNS = (
+    "ch4_loading_298K_65bar_mol_kg_framework",
+    "co2_n2_henry_selectivity_298K",
+    "h2_loading_77K_100bar_mol_kg_framework",
+)
+_LEGACY_TARGET_COLUMNS = frozenset(
+    _LEGACY_TARGET_VALUE_COLUMNS
+    + tuple(name + "__status" for name in _LEGACY_TARGET_VALUE_COLUMNS)
+)
+
+
+def _without_legacy_target_information(info: Mapping[str, object]) -> Dict[str, object]:
+    """Hide response-specific declarations without changing release identity."""
+    result = dict(info)
+    result.pop("target_metadata", None)
+    result.pop("targets", None)
+    tables = result.get("tabular_files")
+    if isinstance(tables, Mapping):
+        core_tables = {}
+        for name, declaration in tables.items():
+            basename = str(name).rsplit("/", 1)[-1].lower()
+            if basename.startswith("targets") or basename.startswith("target_"):
+                continue
+            if isinstance(declaration, Mapping):
+                declaration = dict(declaration)
+                columns = declaration.get("columns")
+                if isinstance(columns, (list, tuple)):
+                    declaration["columns"] = [
+                        column for column in columns
+                        if not isinstance(column, str) or column not in _LEGACY_TARGET_COLUMNS
+                    ]
+            core_tables[name] = declaration
+        # The sizes still describe captured source bytes. A compatibility view
+        # does not pretend that historical files have been physically rebuilt.
+        result["tabular_files"] = core_tables
+    revision = result.get("metadata_revision")
+    if isinstance(revision, Mapping):
+        result["metadata_revision"] = {
+            name: value
+            for name, value in revision.items()
+            if not str(name).lower().startswith("target")
+        }
+        if "target_metadata" in str(revision.get("revision_id", "")):
+            result["metadata_revision"]["revision_id"] = "legacy_core_view"
+    return result
+
+
+def _validate_target_free_layout(info: Mapping[str, object], columns: Sequence[str]) -> None:
+    """Fail closed for a declared target-free core or source projection."""
+    if info.get("metadata_layout") != "target_free_core/1.0":
+        return
+    embedded = _LEGACY_TARGET_COLUMNS.intersection(columns)
+    if embedded or "targets" in columns:
+        raise ReleaseValidationError(
+            "target_free_core/1.0 contains embedded target columns: {}".format(
+                ", ".join(sorted(embedded or {"targets"}))
+            )
+        )
+    if _without_legacy_target_information(info) != info:
+        raise ReleaseValidationError(
+            "target_free_core/1.0 contains embedded target information "
+            "or target-specific file/column/revision declarations"
+        )
+
+
 PUBLIC_CHECKER_STATUSES = frozenset({"PASS", "FAIL", "NOT_AVAILABLE"})
 M2T_ELIGIBLE_MOFID_V2_STATUSES = frozenset(
     {
@@ -1804,6 +1873,7 @@ class CoREMOFDataset:
         *,
         expected_sha256: str,
         verify_cif_files: bool = False,
+        include_legacy_targets: bool = False,
     ) -> "CoREMOFDataset":
         """Load a source subset using a separately hash-bound full-release projection.
 
@@ -1811,12 +1881,15 @@ class CoREMOFDataset:
         authenticated complete release. Obtain its expected checksum from the
         trusted delivery record. This is not a publication permission or a
         replacement for the unchanged strict ``from_release`` loader.
+        Historical combined projection tables hide their response columns by
+        default. Set ``include_legacy_targets=True`` only for reproduction.
         """
         from .projections import load_source_projection
 
         return load_source_projection(
             source_root, contract, expected_sha256=expected_sha256,
             verify_cif_files=verify_cif_files, dataset_class=cls,
+            include_legacy_targets=include_legacy_targets,
         )
 
     @classmethod
@@ -1824,6 +1897,8 @@ class CoREMOFDataset:
         cls,
         release_root: Union[str, Path],
         verify_cif_files: bool = False,
+        *,
+        include_legacy_targets: bool = False,
     ) -> "CoREMOFDataset":
         """Load and validate a release directory.
 
@@ -1834,10 +1909,19 @@ class CoREMOFDataset:
         against the same exact identifier set. A release declaring optional
         ``sm_*`` parent columns must also provide the exact, hash-bound
         StructureMatcher method contract and release-adapter receipt.
+
+        Historical combined releases are loaded without their response columns
+        by default. ``include_legacy_targets=True`` explicitly retains their old
+        layout for reproduction. A release declaring ``target_free_core/1.0``
+        must physically omit those columns, regardless of this compatibility
+        option. Response values can instead be added with
+        :meth:`attach_target_supplement`.
         """
 
         if type(verify_cif_files) is not bool:
             raise TypeError("verify_cif_files must be a boolean")
+        if type(include_legacy_targets) is not bool:
+            raise TypeError("include_legacy_targets must be a boolean")
 
         root = Path(release_root).expanduser()
         if not root.is_dir():
@@ -1918,6 +2002,13 @@ class CoREMOFDataset:
         _reject_retired_or_reserved_keys(
             parent_methods, "parent_group_methods"
         )
+
+        embedded_targets = _LEGACY_TARGET_COLUMNS.intersection(metadata_fields)
+        _validate_target_free_layout(dataset_info, metadata_fields)
+        if not include_legacy_targets and embedded_targets:
+            for row in metadata_rows:
+                for column in embedded_targets:
+                    row.pop(column, None)
 
         metadata_ids = set(metadata_by_id)
         _require_exact_id_set(
@@ -2012,7 +2103,10 @@ class CoREMOFDataset:
         result = cls(
             release_root=root,
             records=records,
-            dataset_info=_deep_freeze(dataset_info),
+            dataset_info=_deep_freeze(
+                dataset_info if include_legacy_targets
+                else _without_legacy_target_information(dataset_info)
+            ),
             parent_group_methods=_deep_freeze(parent_methods),
             parent_by_id=immutable_parent_by_id,
             input_hashes=input_hashes,
@@ -2124,6 +2218,24 @@ class CoREMOFDataset:
             sources,
             alias_registry=alias_registry,
             feature_tables=feature_tables,
+        )
+
+    def attach_target_supplement(
+        self,
+        supplement_root: Union[str, Path],
+        *,
+        expected_sha256: str,
+    ) -> object:
+        """Explicitly attach a hash-bound supplement compatible with this core.
+
+        Obtain the expected checksum of ``manifest.json`` from the trusted
+        delivery record. Missing response values remain null. Execution/status
+        fields stay in the supplement and are never treated as model targets.
+        """
+        from .target_supplements import attach_target_supplement
+
+        return attach_target_supplement(
+            self, supplement_root, expected_sha256=expected_sha256
         )
 
 

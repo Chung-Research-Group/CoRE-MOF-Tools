@@ -1,71 +1,39 @@
-Manuscript and research workflows
-=================================
+Research workflows
+==================
 
-The source checkout includes a journal-neutral software manuscript and a
-practical workflow workspace. It covers the whole toolkit: database access,
-curation, checks, descriptors, pretrained prediction interfaces, reproducible
-dataset preparation, and later target attachment. It can also supply methods
-text for the main CoRE-MOF database paper.
+The examples connect target-free structure metadata, saved checker results,
+related-structure grouping and explicit target attachment. They do not submit
+calculations or train models.
 
-These are development-version documents, not an announcement of a stable
-release, an official assignment manifest, or completed predictive benchmarks.
-The source baseline, data cutoff, evidence provenance, and remaining author
-decisions are explicit. Current benchmark assignments have
-``official_split=false``.
+Choose the analysis
+-------------------
 
-.. note::
+* Read metadata and recorded checker outcomes with :doc:`database_access`.
+* Attach a requested optional target package with :doc:`target_supplements`.
+* Construct a new target-complete benchmark with :doc:`target_first_benchmark`.
+  Required finite targets determine eligibility before sampling, while grouping
+  and checker-label purity use the complete release.
+* Reproduce the paper's fixed assignments with :doc:`frozen_assignment_replay`.
+  Do not rebuild its groups or replace the bound metadata with a newer release.
+* Use :doc:`splitting` for general target-independent splits and later target
+  attachment. These supported API recipes do not regenerate the paper dataset.
 
-   This developer-manuscript workspace retains its dated, target-independent
-   workflow and verification record. For the current target-complete CR/NCR
-   workflow, use :doc:`target_first_benchmark`: fix required endpoint definitions
-   and finite-target eligibility before building cohorts, while retaining
-   whole-release grouping and label-purity checks. Target magnitudes are not
-   used for grouping or diversity selection. The archived verification record
-   is not a validation of later package changes.
+Executable examples
+--------------------
 
-Download the editable sources
------------------------------
+* :download:`Grouped workflow recipes <../../examples/grouped_workflow_recipes.md>`
+* :download:`Target-first benchmark builder <../../examples/build_target_first_benchmark.py>`
+* :download:`Frozen-assignment replay <../../examples/replay_common_input_benchmark.py>`
+* :download:`Optional target attachment <../../examples/attach_target_supplement.py>`
+* :download:`Benchmark handoff guide <../../ML_BENCHMARK_HANDOFF.md>`
 
-* :download:`Workspace index <../../manuscript/README.md>`
-* :download:`Manuscript draft <../../manuscript/manuscript.md>`
-* :download:`Reproducible workflow recipes <../../manuscript/workflows.md>`
-* :download:`Implementation and evidence map <../../manuscript/evidence.md>`
-* :download:`Figure and table plan <../../manuscript/figures_and_tables.md>`
-* :download:`Primary references and citation tasks <../../manuscript/references.md>`
-* :download:`BibTeX references <../../manuscript/references.bib>`
-* :download:`Editable workflow diagram <../../manuscript/figures/workflow.svg>`
-* :download:`Workflow diagram as PDF <../../manuscript/figures/workflow.pdf>`
-* :download:`Workflow diagram as 320-dpi PNG <../../manuscript/figures/workflow.png>`
-* :download:`Verification scope and results <../../manuscript/verification.json>`
+The grouped recipes are compiled and exercised on synthetic data by
+``tests/test_manuscript_workflows.py``. The target-first and replay examples
+have separate regression tests. These checks verify software behavior, not
+scientific feature quality, model performance or public data permission.
 
-Use the workspace in the source repository when following relative links
-between Markdown documents. Downloaded individual files do not automatically
-include their linked companions.
-
-.. image:: ../../manuscript/figures/workflow.svg
-   :alt: Structural evidence freezes assignments before a separate target snapshot is attached; model evaluation is downstream work.
-   :width: 690px
-
-The schematic shows the legacy target-independent design boundary. Its connected
-structural blocks are partition guards, not proof of chemical identity; missing
-evidence adds no match, and target availability never enters cohort selection.
-The complete criterion definitions and API examples are in the downloaded
-workflow guide and :doc:`splitting`.
-
-Verification and further work
------------------------------
-
-The manuscript workflow regression compiles the Python recipes, executes a
-small synthetic non-representative-diversity example, verifies frozen target
-attachment, parses the CLI examples, checks local links, and checks the
-diagram's editable text and minimum font size. It does not replace numerical,
-full-release, model-input, or scientific-backend verification. The downloadable
-verification record lists what was actually run.
-
-The figure plan preserves separate panel files, compact dimensions, readable
-typography, explicit missingness, and separate accessible-only/full-textural
-feature spaces. Model preprocessing coverage and predictive performance remain
-pending. Restricted structure-resolved target data are not distributed with
-these documents.
-
-See also :doc:`features`, :doc:`installation`, and :doc:`references`.
+Record source hashes, endpoint definitions, eligibility decisions and assignment
+digests with each new analysis. Preserve native nulls and zeros. All generated
+assignments are exploratory unless an independently audited official assignment
+manifest establishes otherwise. Structure-resolved inputs and results follow
+the distribution conditions in :doc:`database_access`.

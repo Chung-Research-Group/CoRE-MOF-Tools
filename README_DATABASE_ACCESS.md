@@ -7,6 +7,42 @@ Zenodo deposit, not this Python source tree. All CSD CIFs stay out
 of GitHub, GitHub Release assets and Zenodo. Modified and unmodified CSD CIFs
 have been built as separate local packages for review and subsequent CCDC handoff.
 
+## Publication destinations
+
+The public project software branch is
+<https://github.com/Chung-Research-Group/CoRE-MOF-Tools/tree/2026-core-mof-cod>.
+After advisor approval, the plotting/workflow contribution is planned as
+`2026-CoRE-MOF-COD` in
+<https://github.com/Chung-Research-Group/reproducible-workflows>. Database
+catalogues/access documents are planned for a new public repository under
+**Chung-Research-Group**, whose exact URL is not yet assigned. The new
+database repository, workflow contribution and Zenodo deposit are not
+claimed completed. The advisor-review repositories remain private.
+
+The current branch is not the source/environment/checkpoint archive for
+every completed fit. Exact computational evidence, authorized reviewer
+access, source permissions, recipient replay and production MOFid admission
+remain separate publication conditions. SI-CIF deposition requires asset-level
+rights clearance. Both CSD CIF categories and private identifier crosswalks
+stay outside public GitHub/Zenodo payloads.
+
+## Journal-review access and archived versions
+
+For the Digital Discovery manuscript, editors and anonymous reviewers need
+tested access to the permitted code and data supporting the reported results.
+Private GitHub collaborator access alone does not meet that requirement.
+Use an editor-mediated, version-bound read-only package or preview, preserving
+source restrictions. Never commit reviewer tokens or confidential access links.
+
+The software version used for each completed calculation or fit is distinct
+from a later documentation commit or a development branch. Custom code needs
+a persistent archive at acceptance, and the data/code DOIs and applicable
+software versions must be recorded before publication. Keep unassigned archive
+fields blank; a public source branch is not itself a persistent data deposit.
+The database and reproducible-workflow access guides describe their respective
+materials. This documentation does not publish data, grant licences or certify
+an untested reviewer-access route.
+
 ## CoRE IDs
 
 Current records use `YYYY[elements][topology]dimension[variant]serial`, for
@@ -14,8 +50,17 @@ example `2013[Cu][nan]3[ASR]5`. The fields are publication year, metals or
 metalloids, topology, bonded-framework dimensionality, curation variant and
 distinguishing serial number. `0000` denotes an unknown publication year and
 `nan` means that no unambiguous named topology was assigned. The dimension is
-not pore-channel dimensionality. Established published IDs are persistent,
-so their descriptive tokens need not change when newer metadata is available.
+not pore-channel dimensionality. Established IDs are persistent by default;
+newer metadata alone does not trigger renaming. A previously unavailable
+`[nan]` topology may be updated only with explicit user approval and a
+validated, unambiguous named CrystalNets SingleNodes result. Allocate the
+destination serial from the maintained registry for its publication year,
+elements, topology, dimension and variant, checking that the complete ID is
+collision-free. Update current identifier-bearing release artifacts
+consistently. Parsing and formatting do not validate topology evidence,
+allocate serials or perform these approved updates. Frozen benchmark
+translations must preserve structure membership and assignments; updated
+names alone do not authorize a new split or scientific recalculation.
 
 ```python
 from CoREMOF import parse_core_id
@@ -36,7 +81,8 @@ not part of the public release.
 
 | Resource | Structure records | Distribution route |
 | --- | ---: | --- |
-| Full metadata/JSON archive, without CIF bytes | 42,574 | Zenodo |
+| Target-free core metadata/JSON archive, without CIF bytes or targets | 42,574 | Zenodo |
+| Optional simulation-target supplement, explicitly attached | 42,574 ID rows, unavailable observations remain null | Zenodo |
 | COD CIF archive | 19,598 | Zenodo |
 | SI CIF archive | 5,727 | Zenodo |
 | Modified CSD CIF package | 13,001 | Local review, then CCDC |
@@ -50,8 +96,8 @@ package has its own membership manifest, checksum ledger and access/licensing
 document. It must not be presented as a
 COD/SI overlay or a complete loader-ready release.
 
-The local archives are `CoRE-MOF-COD_CSD_modified_cifs_20261001.zip` and
-`CoRE-MOF-COD_CSD_unmodified_cifs_20261001.zip`. Their private membership records
+The local archives are `CoRE-MOF-COD_CSD_modified_cifs_20261001_topology_v2.zip` and
+`CoRE-MOF-COD_CSD_unmodified_cifs_20261001_topology_v2.zip`. Their private membership records
 are `manifests/ccdc_package_manifest.json` and
 `manifests/classification_manifest.csv` inside each archive. The public catalogue
 records aggregate package counts and hashes, not structure-resolved CSD membership.
@@ -91,6 +137,18 @@ read-only summary and optional verification against a trusted metadata-ledger
 hash. Loading metadata does not verify absent CIF bytes, execute a checker,
 change targets or promote a staged release. `verify_cif_files=True` requires
 all CIFs in the loaded manifest.
+
+Default core metadata loading exposes no simulation responses and never locates
+or attaches target files automatically. Use `dataset.attach_target_supplement`
+with the explicit optional package and its independently received manifest
+checksum. The method checks compatible core hashes and exact ID coverage,
+preserves zero/null observations, and leaves groups and assignments unchanged.
+The three response values are attached, while statuses and calculation details
+remain in the optional supplement. See
+[target_supplements.rst](docs/source/target_supplements.rst) and
+`examples/attach_target_supplement.py`. Both historical complete-release and
+source-projection loaders hide legacy response columns unless explicitly called
+with `include_legacy_targets=True`. Physical source hashes remain unchanged.
 
 ## Source-only data
 

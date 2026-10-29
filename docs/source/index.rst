@@ -187,6 +187,7 @@ which optional scientific components are available.
    retrieval
    database_access
    release_exports
+   target_supplements
    frozen_assignment_replay
    release_mofid_replay
    release_racs_replay

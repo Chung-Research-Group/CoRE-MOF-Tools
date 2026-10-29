@@ -82,7 +82,7 @@ cohorts, attaches their individual targets, and writes a workflow receipt:
      --target-config targets.json \
      --require-target ch4_loading \
      --require-target h2_loading \
-     --require-target widom_ratio \
+     --require-target henry_selectivity \
      --output-directory target_first_outputs
 
 Replace the three example names with the exact endpoint names in your target

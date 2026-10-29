@@ -56,10 +56,9 @@ class DistributionTests(unittest.TestCase):
             "examples/README.md",
             "examples/CoREMOF_dataset_splitting_quickstart.ipynb",
             "COMBINED_TARGET_DATASET.md",
-            "CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json",
+            "examples/grouped_workflow_recipes.md",
             ".github/workflows/tests.yml",
             "docs/source/target_first_benchmark.rst",
-            "manuscript/workflows.md",
             ".agents/skills/coremof-dataset-use/SKILL.md",
         ):
             with self.subTest(file=relative):
@@ -74,17 +73,6 @@ class DistributionTests(unittest.TestCase):
             "docs/source/conf.py",
             "docs/source/_static/custom.css",
             "docs/source/_static/coremof-logo.png",
-            "manuscript/README.md",
-            "manuscript/manuscript.md",
-            "manuscript/workflows.md",
-            "manuscript/evidence.md",
-            "manuscript/figures_and_tables.md",
-            "manuscript/references.md",
-            "manuscript/references.bib",
-            "manuscript/verification.json",
-            "manuscript/figures/workflow.svg",
-            "manuscript/figures/workflow.pdf",
-            "manuscript/figures/workflow.png",
             "verify_upload.py",
         )
         for relative in required:
@@ -111,6 +99,10 @@ class DistributionTests(unittest.TestCase):
                 with self.subTest(artifact=name, file=relative):
                     self.assertNotIn("__pycache__", Path(relative).parts)
                     self.assertNotIn(".git", Path(relative).parts)
+                    self.assertFalse(relative.startswith("manuscript/"))
+                    self.assertNotEqual(
+                        relative, "CoRE-MOF-COD_COMBINED_TARGET_COVERAGE_20260904.json"
+                    )
                     self.assertFalse(relative.startswith("CoREMOF/data/SI/"))
                     self.assertFalse(relative.startswith("CoREMOF/data/mosaec/"))
                     self.assertNotIn(Path(relative).name, {

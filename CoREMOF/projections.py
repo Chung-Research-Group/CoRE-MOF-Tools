@@ -23,6 +23,8 @@ from .dataset import (
     _reject_retired_or_reserved_keys, _require_columns, _require_dataset_generation,
     _validate_cif_manifest, _validate_dataset_info, _validate_metadata_identity,
     _validate_parent_methods, _validate_parent_rows, _validate_published_labels,
+    _LEGACY_TARGET_COLUMNS, _validate_target_free_layout,
+    _without_legacy_target_information,
 )
 from .labels import CHECKER_COLUMNS, CHECKER_PRESETS, classify_checker_row
 
@@ -253,7 +255,8 @@ def export_source_projection(dataset, source_root, contract_path, *, sources,
             raise ReleaseValidationError("source feature values differ: " + name)
         snapshots[name] = snapshot
     info = {key: _plain(dataset.dataset_info[key]) for key in (
-        "dataset_version", "classification_definitions", "release_status", "definitions", "parent_grouping"
+        "dataset_version", "classification_definitions", "release_status", "definitions", "parent_grouping",
+        "metadata_layout",
     ) if key in dataset.dataset_info}
     info["structure_count"] = len(selected)
     labels = {record.structure_id: classify_checker_row(record.metadata, CHECKER_PRESETS["5checker"])
@@ -459,11 +462,19 @@ def _validate_contract(contract, tables, fields):
 
 
 def load_source_projection(source_root, contract_path, *, expected_sha256,
-                           verify_cif_files=False, dataset_class=CoREMOFDataset):
-    """Validate selected rows and a trusted contract without reading omitted rows."""
+                           verify_cif_files=False, dataset_class=CoREMOFDataset,
+                           include_legacy_targets=False):
+    """Validate selected rows and a trusted contract without reading omitted rows.
+
+    Original file and contract hashes remain bound even when a historical
+    combined table is exposed as a target-free view. The explicit compatibility
+    option is not allowed to bypass a declared target-free layout.
+    """
     _hash(expected_sha256)
     if type(verify_cif_files) is not bool:
         raise TypeError("verify_cif_files must be a boolean")
+    if type(include_legacy_targets) is not bool:
+        raise TypeError("include_legacy_targets must be a boolean")
     root = Path(source_root).expanduser().resolve()
     path = Path(contract_path).expanduser().resolve()
     if path.stat().st_size > 128 * 1024 * 1024:
@@ -501,6 +512,16 @@ def load_source_projection(source_root, contract_path, *, expected_sha256,
     _reject_retired_or_reserved_keys(methods, "parent_group_methods")
     _validate_parent_methods(methods, contract["dataset_info"], fields[_CORE_FILES[1]])
     _validate_cif_manifest(metadata, manifests, root=root, verify_files=verify_cif_files)
+    _validate_target_free_layout(contract["dataset_info"], fields[_CORE_FILES[0]])
+    if not include_legacy_targets:
+        metadata = {
+            sid: {name: value for name, value in row.items() if name not in _LEGACY_TARGET_COLUMNS}
+            for sid, row in metadata.items()
+        }
+    info = (
+        contract["dataset_info"] if include_legacy_targets
+        else _without_legacy_target_information(contract["dataset_info"])
+    )
     prefixes = _parent_prefixes(fields[_CORE_FILES[1]])
     immutable_parents = {sid: MappingProxyType(parents[sid]) for sid in order}
     records = [StructureRecord(sid, MappingProxyType(metadata[sid]),
@@ -508,7 +529,7 @@ def load_source_projection(source_root, contract_path, *, expected_sha256,
                for sid in order]
     hashes = {name: value.sha256 for name, value in sorted(snapshots.items())}
     hashes["source_projection.json"] = expected_sha256
-    result = dataset_class(root, records, _deep_freeze(contract["dataset_info"]),
+    result = dataset_class(root, records, _deep_freeze(info),
         _deep_freeze(methods), MappingProxyType(immutable_parents), MappingProxyType(hashes), verify_cif_files)
     result._authority_extra_state = _deep_freeze(contract)
     _register_dataset_generation(result, kind="source_projection", official_release_source=True)
