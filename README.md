@@ -17,6 +17,14 @@ separately versioned supplement attached only by explicit request. See
 [the target guide](docs/source/target_supplements.rst). Historical combined
 release tables require explicit `include_legacy_targets=True` for reproduction.
 
+Database/API usage examples live in this repository, starting with the
+[example guide](examples/README.md) and
+[dataset-splitting notebook](examples/CoREMOF_dataset_splitting_quickstart.ipynb).
+The database repository provides catalogue, access and metadata-reading
+examples. The separate paper-figure repository contains editable artwork,
+figure-specific data and plotting notebooks, not another copy of these API
+workflows or the manuscript.
+
 The CoRE-MOF-COD distribution separates **full metadata** from **CIF access**.
 The planned Zenodo distribution includes metadata for 42,574 structures and
 CIF archives for COD and SI only, together comprising 25,325 structures. The

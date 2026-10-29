@@ -443,13 +443,13 @@
     },
     {
       "path": "README.md",
-      "bytes": 29952,
-      "sha256": "8b6eb7a8b22e8487a5271706aff9a259012cddc6be5180eb81a8edbba3b4b809"
+      "bytes": 30397,
+      "sha256": "bc537e7472e61dabc50a7cd9ec4896abf7920def4f10d7d1dda2ceeaea3c3b00"
     },
     {
       "path": "README_DATABASE_ACCESS.md",
-      "bytes": 11464,
-      "sha256": "11e8bab61d1083f2ffad10d570673ec195b6f26e779c5b419eba1334be504bc3"
+      "bytes": 11692,
+      "sha256": "fe4a2f0ed904e1dbfb452d5bb5054abb32ddce6870e65b671c17baf94c704743"
     },
     {
       "path": "README_DATASET_SPLITTING.md",
@@ -528,8 +528,8 @@
     },
     {
       "path": "docs/source/database_access.rst",
-      "bytes": 7705,
-      "sha256": "baa6a8f6003e44cfef52f645a30df265c36837f3fa03b208ee2c4c3a8bddcde5"
+      "bytes": 7960,
+      "sha256": "7c8f845792eda54b16e5bb34b5cf2e24c5eaee96a698fc7e5b8443a732fcb630"
     },
     {
       "path": "docs/source/features.rst",
@@ -623,8 +623,8 @@
     },
     {
       "path": "docs/source/research_workflows.rst",
-      "bytes": 2080,
-      "sha256": "e6573ff8b06e4ac5e94598a77d33567009f638b98a5a776873c1c846342ea028"
+      "bytes": 2861,
+      "sha256": "e1369617e0695620ce696350a74216d7f07c578fe516c5cbe78487da68d89d84"
     },
     {
       "path": "docs/source/retrieval.rst",
@@ -638,8 +638,8 @@
     },
     {
       "path": "docs/source/target_first_benchmark.rst",
-      "bytes": 5912,
-      "sha256": "fc00b0883de98cd7717f0db86579e447db981bbfeb0eb6e9376009fa41aaa811"
+      "bytes": 6948,
+      "sha256": "f546de02453763033c846c6704060d5460e7ae209df5c2c6e1b281e971377e26"
     },
     {
       "path": "docs/source/target_supplements.rst",
@@ -663,8 +663,8 @@
     },
     {
       "path": "examples/README.md",
-      "bytes": 14398,
-      "sha256": "e675e5a30d68cd43a67db9b975e52f9424af0ff9f1f2e7c819b2f606245f53f6"
+      "bytes": 17164,
+      "sha256": "e0b00bbad746c63ea300059b28ec7e95f658acf9a66b5a9e8fc5292e69bf797c"
     },
     {
       "path": "examples/attach_target_supplement.py",
@@ -675,6 +675,11 @@
       "path": "examples/audit_combined_target_dataset.py",
       "bytes": 49991,
       "sha256": "0d5c1ead5cefdddc7a38e86fa575dc73d49d48bac8f90ef81cbf77b0c6171f30"
+    },
+    {
+      "path": "examples/benchmark_inputs.py",
+      "bytes": 1310,
+      "sha256": "cfb83bb968e29097bf4afbbb7460ae2f22a2be31dc5594d75ca7873ba12d8cbb"
     },
     {
       "path": "examples/build_combined_target_dataset.py",
@@ -840,6 +845,11 @@
       "path": "setup.py",
       "bytes": 5531,
       "sha256": "fb65a2d9c53731b0a19fa08a06f27e6283b594f462e665fe732619a94d946ae2"
+    },
+    {
+      "path": "tests/test_benchmark_inputs_example.py",
+      "bytes": 3055,
+      "sha256": "f7afeb975ba53b198d108bce831c812fe7cbad48c0d7d815f7990bc01a1bef90"
     },
     {
       "path": "tests/test_benchmarks.py",
@@ -1112,8 +1122,8 @@
       "sha256": "b9ed56a2d4abdfe5ed7ef136cdf1115bd73cef0a3ae5b07a5f387452132be432"
     }
   ],
-  "file_count": 222,
-  "bytes": 3191395,
+  "file_count": 224,
+  "bytes": 3201271,
   "errors": [],
   "publication_authorized": false,
   "scope": "Local code surface only. Not a software or data licence decision."

@@ -2,6 +2,52 @@
 
 Run `coremof doctor` before using an example. The notebooks are grouped by the external requirements they need.
 
+## Choose a database/API example
+
+This is the home for executable CoRE-MOF-Tools usage examples. The separate
+database repository supplies the release catalogue and data-access examples.
+The paper-figure repository supplies only editable figures, figure-specific
+data and plotting code. No manuscript files or copies of these database/API
+workflows are needed to run a figure notebook.
+
+| Task | Example or guide |
+|---|---|
+| Read verified metadata without CIFs | [`read_release_metadata.py`](read_release_metadata.py) |
+| Inspect saved checker results and choose a CR/NCR view | [`read_checker_results.py`](read_checker_results.py) |
+| Explicitly attach an optional target package | [`attach_target_supplement.py`](attach_target_supplement.py) |
+| Learn target joins, classification and grouped splitting interactively | [`CoREMOF_dataset_splitting_quickstart.ipynb`](CoREMOF_dataset_splitting_quickstart.ipynb) |
+| Use general grouped-split API recipes | [`grouped_workflow_recipes.md`](grouped_workflow_recipes.md) |
+| Build a new target-complete benchmark | [`build_target_first_benchmark.py`](build_target_first_benchmark.py) |
+| Replay the paper's existing assignments without resampling | [`replay_common_input_benchmark.py`](replay_common_input_benchmark.py) |
+| Preserve full-release relationships in source-only inputs | [`export_source_projection.py`](export_source_projection.py) |
+| Rank eligible candidates and optionally split them | [`screen_candidates.py`](screen_candidates.py) |
+
+### Compact helper used in the API schematic
+
+[`benchmark_inputs.py`](benchmark_inputs.py) contains the short illustrative
+helper shown in the paper's API schematic. From this source checkout's root,
+an analysis can import it after loading the core and explicitly merging its
+three declared numeric endpoints:
+
+```python
+from examples.benchmark_inputs import complete_target_ids, options
+
+eligible_ids = complete_target_ids(core, merged_targets)
+benchmark_options = dict(options)  # use a separate copy of the example defaults
+```
+
+`complete_target_ids` checks that the release and target table cover the same
+IDs, requires exactly three target columns, preserves release order and keeps
+finite numeric observations including zero. It excludes missing, boolean and
+nonnumeric observations without imputing or changing values. `options` is a
+small dictionary of illustrative cohort defaults, not an assignment receipt.
+Importing the module does not load data, write files, build a dataset or run
+calculations. Full-release grouping, label purity and model-input certification
+are not performed by this helper. Use the target-first builder for a complete
+new exploratory workflow and the frozen replay for existing assignments.
+
+## Requirements and detailed examples
+
 For an authorized metadata-only release, use
 [`read_release_metadata.py`](read_release_metadata.py) with an explicit
 `--expected-version`, after verifying the transferred archive. It reads saved

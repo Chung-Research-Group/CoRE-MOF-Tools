@@ -111,3 +111,26 @@ is incomplete. Existing output directories are rejected.
 
 This example creates new exploratory assignments. It does not reproduce an
 existing paper dataset or certify model graph, grid or descriptor inputs.
+
+Compact schematic helper
+------------------------
+
+The short helper shown in the API schematic is distributed as
+:download:`examples/benchmark_inputs.py <../../examples/benchmark_inputs.py>`.
+From the source checkout's root, after explicitly merging three declared
+numeric target columns, it can be imported as follows:
+
+.. code-block:: python
+
+   from examples.benchmark_inputs import complete_target_ids, options
+
+   eligible_ids = complete_target_ids(core, merged_targets)
+   benchmark_options = dict(options)
+
+The release and target table must have the same exact ID universe. The helper
+preserves release order and zero values and excludes missing, boolean,
+nonfinite and nonnumeric observations. Importing it performs no data loading
+or output writes. Its options illustrate cohort defaults only. Full-release
+grouping and label purity remain the benchmark API's responsibility, and
+model-input certification must be supplied separately. It is not a replacement
+for the complete target-first builder or frozen-assignment replay.

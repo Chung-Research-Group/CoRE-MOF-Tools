@@ -5,6 +5,11 @@ The examples connect target-free structure metadata, saved checker results,
 related-structure grouping and explicit target attachment. They do not submit
 calculations or train models.
 
+These database/API examples belong to the CoRE-MOF-Tools source tree. The
+database repository supplies catalogue and metadata-access examples. The
+separate paper-figure repository is limited to editable artwork, plotting
+notebooks and their exact figure inputs, not manuscript or API-workflow copies.
+
 Choose the analysis
 -------------------
 
@@ -25,7 +30,15 @@ Executable examples
 * :download:`Target-first benchmark builder <../../examples/build_target_first_benchmark.py>`
 * :download:`Frozen-assignment replay <../../examples/replay_common_input_benchmark.py>`
 * :download:`Optional target attachment <../../examples/attach_target_supplement.py>`
+* :download:`Compact API-schematic helper <../../examples/benchmark_inputs.py>`
 * :download:`Benchmark handoff guide <../../ML_BENCHMARK_HANDOFF.md>`
+
+The compact helper requires exactly three declared numeric target columns and
+the same release/target ID universe. It retains finite observations, including
+zero, in release order and exposes illustrative cohort options. It does not
+build groups, certify model inputs, write outputs or reproduce frozen
+assignments. See :doc:`target_first_benchmark` for its scope and the full
+executable workflow.
 
 The grouped recipes are compiled and exercised on synthetic data by
 ``tests/test_manuscript_workflows.py``. The target-first and replay examples

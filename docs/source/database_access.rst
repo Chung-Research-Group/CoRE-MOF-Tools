@@ -13,11 +13,15 @@ Publication destinations
 
 The public project branch is
 https://github.com/Chung-Research-Group/CoRE-MOF-Tools/tree/2026-core-mof-cod.
-After advisor approval, the planned workflow folder is ``2026-CoRE-MOF-COD``
-in https://github.com/Chung-Research-Group/reproducible-workflows. A separate
+After advisor approval, the planned figure-reproduction folder is
+``2026-CoRE-MOF-COD`` in
+https://github.com/Chung-Research-Group/reproducible-workflows. It contains
+editable artwork, figure-specific data and plotting notebooks, not database/API
+usage workflows or manuscript files. Those API examples belong to this tools
+repository, starting with :doc:`research_workflows`. A separate
 public database repository is planned under Chung-Research-Group; its exact
 URL is not yet assigned. The advisor-review repositories remain private.
-The new database repository, workflow contribution and Zenodo deposit are
+The new database repository, figure contribution and Zenodo deposit are
 not claimed completed.
 
 The current branch does not replace historically recorded fit implementations,
@@ -86,8 +90,8 @@ ASR/FSR/ION or CR/NCR labels. A CIF-only package does not reconstruct the
 complete release-loader contract.
 
 The built local archives are
-``CoRE-MOF-COD_CSD_modified_cifs_20261001.zip`` and
-``CoRE-MOF-COD_CSD_unmodified_cifs_20261001.zip``. Their membership records are
+``CoRE-MOF-COD_CSD_modified_cifs_20261001_topology_v2.zip`` and
+``CoRE-MOF-COD_CSD_unmodified_cifs_20261001_topology_v2.zip``. Their membership records are
 ``manifests/ccdc_package_manifest.json`` and
 ``manifests/classification_manifest.csv`` inside each archive. The public
 catalogue records aggregate counts and hashes, not structure-resolved CSD

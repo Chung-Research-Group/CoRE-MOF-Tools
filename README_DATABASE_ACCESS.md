@@ -11,12 +11,15 @@ have been built as separate local packages for review and subsequent CCDC handof
 
 The public project software branch is
 <https://github.com/Chung-Research-Group/CoRE-MOF-Tools/tree/2026-core-mof-cod>.
-After advisor approval, the plotting/workflow contribution is planned as
+After advisor approval, the figure-reproduction contribution is planned as
 `2026-CoRE-MOF-COD` in
-<https://github.com/Chung-Research-Group/reproducible-workflows>. Database
+<https://github.com/Chung-Research-Group/reproducible-workflows>. That contribution
+contains editable figures, figure-specific data and plotting notebooks only.
+Database/API usage examples remain in this tools repository's
+[example guide](examples/README.md), not in the figure repository. Database
 catalogues/access documents are planned for a new public repository under
 **Chung-Research-Group**, whose exact URL is not yet assigned. The new
-database repository, workflow contribution and Zenodo deposit are not
+database repository, figure contribution and Zenodo deposit are not
 claimed completed. The advisor-review repositories remain private.
 
 The current branch is not the source/environment/checkpoint archive for
@@ -39,7 +42,7 @@ from a later documentation commit or a development branch. Custom code needs
 a persistent archive at acceptance, and the data/code DOIs and applicable
 software versions must be recorded before publication. Keep unassigned archive
 fields blank; a public source branch is not itself a persistent data deposit.
-The database and reproducible-workflow access guides describe their respective
+The database access guide and figure-reproduction README describe their respective
 materials. This documentation does not publish data, grant licences or certify
 an untested reviewer-access route.
 
